@@ -28,13 +28,18 @@ function audioDurationFast(filePath: string): number {
   try {
     const ff = process.env.FFMPEG_PATH || "C:\\Windows\\system32\\ffmpeg.exe";
     if (!process.env.FFMPEG_PATH) process.env.FFMPEG_PATH = ff;
-    const out = execSync(`"${ff}" -i "${filePath}" -f null - 2>&1`, { encoding: "utf-8", timeout: 10000 });
+    const out = execSync(`"${ff}" -i "${filePath}" -f null - 2>&1`, { encoding: "utf-8", timeout: 10000, windowsHide: true, shell: "cmd.exe" });
     const m = out.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
     if (m) {
       const val = parseInt(m[1]) * 3600 + parseInt(m[2]) * 60 + parseInt(m[3]) + parseInt(m[4]) / 100;
+      console.log(`[srt] duration: ${val}s from ${filePath}`);
       if (val > 0) return val;
+    } else {
+      console.log(`[srt] no duration match in: ${out.slice(0, 200)}`);
     }
-  } catch {}
+  } catch (e: any) {
+    console.log(`[srt] audioDurationFast error: ${e.message?.slice(0, 100)}`);
+  }
   return 120;
 }
 

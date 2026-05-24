@@ -37,9 +37,6 @@ function loadJobs(): void {
   }
 }
 
-// Load persisted jobs on module init
-loadJobs();
-
 // Detect Python path — Bun on Windows doesn't inherit PATH for spawn/execSync
 function findPython(): string {
   if (process.env.PYTHON_PATH) return process.env.PYTHON_PATH;
@@ -103,6 +100,9 @@ export interface DubJob {
 }
 
 const jobs = new Map<string, DubJob>();
+
+// Load persisted jobs on module init
+loadJobs();
 
 export function getDubJobs(): DubJob[] {
   return [...jobs.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -277,37 +277,93 @@ async function runPipeline(job: DubJob, params: {
       const ok = await textToSrt(targetText, finalAudio, srtPathActual);
       if (ok && existsSync(srtPathActual)) {
         srtPath = srtPathActual;
-        job.log.push(`📄 SRT subtitles generated (${existsSync(srtPathActual) ? statSync(srtPathActual).size : 0} bytes)`);
+        const sz = statSync(srtPathActual).size;
+        job.log.push(`📄 SRT subtitles generated (${sz} bytes)`);
+        console.log(`[dub][srt] ✅ SRT created: ${srtPathActual} (${sz} bytes)`);
       } else {
-        job.log.push(`⚠️ Subtitle generation returned: ${ok}, exists: ${existsSync(srtPathActual)}`);
+        job.log.push(`⚠️ Subtitle generation failed (returned: ${ok}, file exists: ${existsSync(srtPathActual)})`);
+        console.log(`[dub][srt] ❌ textToSrt failed: ok=${ok}, exists=${existsSync(srtPathActual)}`);
       }
     } catch (e) {
-      job.log.push(`⚠️ Subtitle error: ${safeMessage(e)}`);
+      const msg = safeMessage(e);
+      job.log.push(`⚠️ Subtitle error: ${msg}`);
+      console.log(`[dub][srt] ❌ exception: ${msg}`);
     }
   }
 
-  // Step 6: Assemble — replace audio only, no subtitle burning (font issues on Windows)
+  // Step 6: Assemble — replace audio + burn subtitles
   job.status = "assembling"; job.progress = 80; job.updatedAt = new Date().toISOString();
   const outName = `dubbed_${job.id}.mp4`;
   const outPath = join(workDir, outName);
 
-  // If subtitles were generated, save SRT separately (don't burn)
+  // Save SRT separately always
   if (srtPath) {
     const srtOut = join(workDir, `${outName}.srt`);
     try { unlinkSync(srtOut); } catch {}
-    writeFileSync(srtOut, readFileSync(srtPath));
-    job.log.push(`📄 SRT subtitles: ${srtOut}`);
+    try {
+      writeFileSync(srtOut, readFileSync(srtPath));
+      job.log.push(`📁 SRT file saved: ${srtOut}`);
+      console.log(`[dub][srt] SRT saved to ${srtOut}`);
+    } catch (e) {
+      job.log.push(`⚠️ Could not copy SRT: ${safeMessage(e)}`);
+    }
   }
 
   // Replace audio — use aac for MP4 output, WAV input (no MPEG frame sync issues)
   if (!existsSync(finalAudio)) throw new Error("TTS audio file not found before assembly");
   const outSize = statSync(finalAudio).size;
   job.log.push(`🔊 TTS audio: ${(outSize/1024).toFixed(0)}KB`);
+
+  // First pass: assemble video + new audio
+  const tempOut = join(workDir, "temp_assembled.mp4");
   await runFFmpeg("assemble", ["-y", "-i", inputPath, "-i", finalAudio,
     "-map", "0:v:0", "-map", "1:a",
     "-c:v", "libx264", "-crf", "23", "-preset", "fast",
     "-c:a", "aac", "-b:a", "192k",
-    "-shortest", outPath], TTL * 3);
+    "-shortest", tempOut], TTL * 3);
+
+  // Second pass: burn subtitles if SRT exists
+  if (srtPath) {
+    try {
+      job.log.push(`🔥 Burning subtitles into video...`);
+      console.log(`[dub][burn] Burning subs from ${srtPath}`);
+      // Copy SRT to workDir for easy reference
+      const subsSafe = join(workDir, "subs_burn.srt");
+      writeFileSync(subsSafe, readFileSync(srtPath));
+      // Use direct execSync with cwd=workDir to avoid drive-letter issues in filter path
+      const ff = process.env.FFMPEG_PATH || "C:\\Windows\\system32\\ffmpeg.exe";
+      const burnCmd = `"${ff}" -y -i "${tempOut}" -vf "subtitles=subs_burn.srt:force_style='FontName=Arial,FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=1'" -c:a copy -c:v libx264 -crf 23 -preset fast "${outPath}"`;
+      console.log(`[dub][burn] cmd: ${burnCmd.slice(0, 250)}`);
+      execSync(burnCmd, { timeout: TTL * 2, windowsHide: true, cwd: workDir, stdio: "pipe", encoding: "utf-8", maxBuffer: 50 * 1024 * 1024 });
+      try { unlinkSync(tempOut); } catch {}
+      try { unlinkSync(subsSafe); } catch {}
+      job.log.push(`🔥 Subtitles burned into video`);
+      console.log(`[dub][burn] ✅ Burned OK`);
+    } catch (e: any) {
+      const errMsg = (e.stderr || e.stdout || e.message || "?").toString().slice(-300);
+      console.log(`[dub][burn] ❌ ${errMsg}`);
+      job.log.push(`⚠️ Could not burn subtitles: ${errMsg}`);
+      try { unlinkSync(outPath); } catch {}
+      try { unlinkSync(tempOut); } catch {}
+      // Re-assemble without subtitles
+      await runFFmpeg("assemble_final", ["-y", "-i", inputPath, "-i", finalAudio,
+        "-map", "0:v:0", "-map", "1:a",
+        "-c:v", "libx264", "-crf", "23", "-preset", "fast",
+        "-c:a", "aac", "-b:a", "192k",
+        "-shortest", outPath], TTL * 3);
+      job.log.push(`⚠️ Video without burned subtitles (SRT available separately)`);
+    }
+  } else {
+    // No subtitles — just rename temp to final
+    try { unlinkSync(outPath); } catch {}
+    try {
+      const { renameSync } = await import("node:fs");
+      renameSync(tempOut, outPath);
+    } catch {
+      writeFileSync(outPath, readFileSync(tempOut));
+      try { unlinkSync(tempOut); } catch {}
+    }
+  }
 
   job.status = "done"; job.progress = 100;
   job.outputPath = outPath;
