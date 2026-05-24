@@ -27,6 +27,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     { id: "skills", icon: Zap, label: "Skills", badge: "46" },
     { id: "plugins", icon: PlusCircle, label: "Add Tools / Plugins" },
     { id: "integrations", icon: Plug, label: "Integrations", badge: "30+" },
+    { id: "rag", icon: BookOpen, label: "Knowledge Base" },
   ]},
   { label: "Data", items: [
     { id: "sessions", icon: History, label: "Sessions" },

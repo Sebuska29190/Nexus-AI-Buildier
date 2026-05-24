@@ -31,6 +31,7 @@ import { ShoppingPage } from "./routes/ShoppingPage";
 import { EditorPage } from "./routes/EditorPage";
 import { SocialPage } from "./routes/SocialPage";
 import { IntegrationsPage } from "./routes/IntegrationsPage";
+import { RagPage } from "./routes/RagPage";
 
 // Page component map
 const pages: Record<string, React.ComponentType<any>> = {
@@ -61,6 +62,7 @@ const pages: Record<string, React.ComponentType<any>> = {
   editor: EditorPage,
   social: SocialPage,
   integrations: IntegrationsPage,
+  rag: RagPage,
   tools: WorkspacePage,
 };
 

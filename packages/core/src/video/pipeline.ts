@@ -228,7 +228,7 @@ async function runPipeline(jobId: string, params: VideoParams, signal: AbortSign
       const normalizedPath = join(workDir, "audio_normalized.mp3");
       const ff = ffmpegPath();
       await new Promise<void>((resolve, reject) => {
-        const proc = spawn(ff, ["-y", "-i", audioPath, "-map", "0:a", "-c:a", "copy", "-vn", "-write_xing", "0", normalizedPath]);
+        const proc = spawn(ff, ["-y", "-i", audioPath, "-map", "0:a", "-c:a", "copy", "-vn", normalizedPath]);
         proc.on("close", (code) => code === 0 ? resolve() : reject(new Error(`audio normalize exit ${code}`)));
         proc.on("error", reject);
       });

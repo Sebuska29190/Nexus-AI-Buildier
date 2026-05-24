@@ -1,7 +1,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-0.7.0-blue" alt="version">
   <img src="https://img.shields.io/badge/license-MIT%2BAttribution-green" alt="license">
-  <img src="https://img.shields.io/badge/tools-108-orange" alt="tools">
+  <img src="https://img.shields.io/badge/tools-120+-orange" alt="tools">
+  <img src="https://img.shields.io/badge/plugins-26-blueviolet" alt="plugins">
   <img src="https://img.shields.io/badge/skills-26-yellow" alt="skills">
   <img src="https://img.shields.io/badge/providers-12-purple" alt="providers">
   <img src="https://img.shields.io/badge/platforms-5-cyan" alt="platforms">
@@ -11,14 +12,15 @@
 
 ## What is Nova AI Builder?
 
-Nova AI Builder is a self-hosted platform for building, training, and deploying autonomous AI agents. It connects any LLM provider (DeepSeek, OpenAI, Anthropic, Gemini, Grok, Qwen, Kimi, and more) with a rich set of **108 tools**, **26+ reusable skills**, and **5 messaging platforms**. Everything runs locally — your API keys never leave your machine.
+Nova AI Builder is a self-hosted platform for building, training, and deploying autonomous AI agents. It connects any LLM provider (DeepSeek, OpenAI, Anthropic, Gemini, Grok, Qwen, Kimi, and more) with a rich set of **120+ tools**, **26 reusable plugins**, **26+ skills**, and **5 messaging platforms**. Everything runs locally — your API keys never leave your machine.
 
 ### Why Nova?
 
 | Feature | Nova | LangChain | AutoGPT | CrewAI |
 |---------|------|-----------|---------|--------|
 | **Web UI + Terminal** | ✅ Built-in | ❌ Need separate | ❌ CLI only | ❌ |
-| **Tool count** | 108 | Manual build | ~20 | ~15 |
+| **Tool count** | 120+ | Manual build | ~20 | ~15 |
+| **Plugin system** | ✅ 26 plugins with schema-driven config | ❌ | ❌ | ❌ |
 | **Self-improving skills** | ✅ AI creates skills from sessions | ❌ | ❌ | ❌ |
 | **Video dubbing (AI)** | ✅ Transcribe → Translate → TTS → SRT | ❌ | ❌ | ❌ |
 | **Natural-language cron** | ✅ | ❌ | ❌ | ❌ |
@@ -28,6 +30,9 @@ Nova AI Builder is a self-hosted platform for building, training, and deploying 
 | **Video generation** | ✅ FFmpeg pipeline | ❌ | ❌ | ❌ |
 | **AI Dubbing** | ✅ Whisper + Edge TTS | ❌ | ❌ | ❌ |
 | **Crypto trading agent** | ✅ Built-in | ❌ | ❌ | ❌ |
+| **RAG Knowledge Base** | ✅ FTS5 + LLM answers | ❌ | ❌ | ❌ |
+| **Integrations Hub** | ✅ 30+ services | ❌ | ❌ | ❌ |
+| **Social Media** | ✅ Bluesky, X/Twitter | ❌ | ❌ | ❌ |
 | **Messaging platforms** | 5 | Plugin | ❌ | ❌ |
 
 ---
@@ -44,22 +49,25 @@ Nova AI Builder is a self-hosted platform for building, training, and deploying 
   - [Natural-Language Cron Scheduler](#4-natural-language-cron-scheduler)
   - [Parallel Subagent Delegation](#5-parallel-subagent-delegation)
   - [Skill Hub (agentskills.io)](#6-skill-hub-agentskillsio)
-  - [File System & Workspace](#7-file-system--workspace)
-  - [Web Browser Automation](#8-web-browser-automation)
-  - [Web Search & Fetch](#9-web-search--fetch)
-  - [Video Generator & Editor](#10-video-generator--editor)
-  - [AI Video Dubbing](#11-ai-video-dubbing)
-  - [Crypto Trading Agent](#12-crypto-trading-agent)
-  - [Shopping Agent](#13-shopping-agent)
-  - [Messaging Platforms](#14-messaging-platforms)
-  - [Email Integration](#15-email-integration)
-  - [Computer Use (Mouse/Keyboard)](#16-computer-use-mousekeyboard)
-  - [Diagram & Wiki Generation](#17-diagram--wiki-generation)
-  - [Memory & Knowledge Base](#18-memory--knowledge-base)
-  - [Code Execution](#19-code-execution)
-  - [Canvas & Excalidraw](#20-canvas--excalidraw)
-  - [Social Media](#21-social-media)
-- [All 108 Tools](#all-108-tools)
+  - [Plugin System](#7-plugin-system)
+  - [File System & Workspace](#8-file-system--workspace)
+  - [Web Browser Automation](#9-web-browser-automation)
+  - [Web Search & Fetch](#10-web-search--fetch)
+  - [Video Generator & Editor](#11-video-generator--editor)
+  - [AI Video Dubbing](#12-ai-video-dubbing)
+  - [Crypto Trading Agent](#13-crypto-trading-agent)
+  - [RAG Knowledge Base](#14-rag-knowledge-base)
+  - [Integrations Hub](#15-integrations-hub)
+  - [Social Media](#16-social-media)
+  - [Shopping Agent](#17-shopping-agent)
+  - [Messaging Platforms](#18-messaging-platforms)
+  - [Email Integration](#19-email-integration)
+  - [Computer Use (Mouse/Keyboard)](#20-computer-use-mousekeyboard)
+  - [Diagram & Wiki Generation](#21-diagram--wiki-generation)
+  - [Memory & Knowledge Base](#22-memory--knowledge-base)
+  - [Code Execution](#23-code-execution)
+  - [Canvas & Excalidraw](#24-canvas--excalidraw)
+- [All 120+ Tools](#all-120-tools)
 - [Supported LLM Providers](#supported-llm-providers)
 - [UI Pages](#ui-pages)
 - [API Endpoints](#api-endpoints)
@@ -140,7 +148,7 @@ Navigate to **http://localhost:4123** in your browser.
 
 ### 2. Chat with the Assistant
 
-Click **Chat Assistant** in the sidebar. Type your message and press Enter. The assistant has access to all 108 tools.
+Click **Chat Assistant** in the sidebar. Type your message and press Enter. The assistant has access to 120+ tools.
 
 ### 3. Create Your First Agent
 
@@ -167,13 +175,13 @@ Click **Chat Assistant** in the sidebar. Type your message and press Enter. The 
 3. Type: `summarize crypto news every morning at 8am`
 4. Click **Create**
 
-### 6. Search Your Conversations
+### 8. Search Your Conversations
 
 1. Go to **Sessions** page
 2. Type a query in the search bar
 3. Results show highlight snippets from all past transcripts
 
-### 7. Install Skills from the Hub
+### 9. Install Skills from the Hub
 
 1. Go to **Skills** page
 2. In the "agentskills.io Hub" section, search for a skill
@@ -194,10 +202,13 @@ nova-ai-builder/
 │   │   │   ├── scheduler.ts        #   Background agent scheduler
 │   │   │   └── store.ts            #   Agent CRUD + file store
 │   │   │
-│   │   ├── plugin/                 # Tool registration system
-│   │   │   ├── tools.ts            #   41 core tools (all registered here)
-│   │   │   ├── community-skills.ts #   65 community skill tools
-│   │   │   └── tools_session_search.ts  #   FTS5 session search tools (2)
+│   │   ├── plugin/                 # Tool & plugin registration system
+│   │   │   ├── tools.ts            #   Core tools
+│   │   │   ├── community-skills.ts #   Community skill tools
+│   │   │   ├── community-plugins.ts #   26 plugins with configSchema
+│   │   │   ├── integrations.ts     #   30+ service integrations manager
+│   │   │   ├── social.ts           #   Social media posting tools
+│   │   │   └── tools_session_search.ts  #   FTS5 session search tools
 │   │   │
 │   │   ├── skill/                  # Skills subsystem
 │   │   │   ├── loader.ts           #   Load skills from disk
@@ -214,26 +225,28 @@ nova-ai-builder/
 │   │   │   ├── subagent.ts         #   spawnSubAgent, spawnParallel, mergeResults
 │   │   │   └── tools_parallel.ts   #   spawn_parallel tool registration
 │   │   │
-│   │   ├── crypto/                 # Crypto news + prices
+│   │   ├── crypto-hub/             # Crypto Hub V2 — dashboard, signals, alerts, portfolio
 │   │   ├── trading/                # Trading analysis pipeline
 │   │   ├── video/                  # FFmpeg video generation + dubbing
 │   │   │   ├── pipeline.ts         #   Video generation pipeline
 │   │   │   ├── tts.ts              #   Edge TTS engine (voice synthesis)
 │   │   │   ├── subtitles.ts        #   SRT subtitle generation
-│   │   │   ├── dubbing-service.ts  #   Full dubbing pipeline (new!)
+│   │   │   ├── dubbing-service.ts  #   Full dubbing pipeline
 │   │   │   ├── assembly.ts         #   Clip assembly
 │   │   │   ├── story.ts            #   Storyboard generation
 │   │   │   ├── editor-tools.ts     #   Editing utilities
 │   │   │   ├── burn_subs.py        #   Python subtitle burning script
 │   │   │   └── types.ts            #   Shared types
+│   │   ├── rag/                    # RAG Knowledge Base
+│   │   │   └── manager.ts          #   FTS5 indexing + LLM-powered Q&A
 │   │   ├── shopping/               # EU e-commerce product search
 │   │   ├── gateway/                # Platform adapters
-│   │   ├── api/                    # REST API (Hono routes — 163+ endpoints)
+│   │   ├── api/                    # REST API (Hono routes — 200+ endpoints)
 │   │   ├── terminal/               # WebSocket PTY terminal
 │   │   └── memory/                 # Memory store (markdown files + cache)
 │   │
 │   ├── ui/                         # React 19 + Vite 6 frontend (migrated from Svelte 5)
-│   │   └── src/routes/             #   23 pages, each = one .tsx component
+│   │   └── src/routes/             #   26 pages, each = one .tsx component
 │   │
 │   ├── provider-deepseek/          # LLM provider plugins (pluggable, 12 total)
 │   ├── provider-anthropic/
@@ -382,7 +395,36 @@ The open standard skill registry. Search, download, and publish reusable skills 
 
 ---
 
-### 7. File System & Workspace
+### 7. Plugin System
+
+Extend Nova with 26 community plugins from the GitHub ecosystem — tools, agents, channels, providers, skills, and UI. One-click install from the Plugins page.
+
+**Supported plugin types:**
+| Type | Examples |
+|------|----------|
+| **Tool** | MCP Servers Hub, Browser Use, Crawl4AI, Composio, ScreenPipe |
+| **Agent** | Open Interpreter, GPT Engineer, CrewAI, AutoGen, Smolagents |
+| **Channel** | Discord.py, Telegram Bot, Slack SDK |
+| **Provider** | LiteLLM, Ollama, vLLM |
+| **Skill** | LangChain, LlamaIndex, ChromaDB, Whisper, Tesseract OCR |
+| **UI** | Open WebUI, Flowise, Dify |
+
+**Schema-driven configuration:**
+Each plugin defines its own `configSchema` — required fields, types (text/password/url/select/number), help text, and defaults. When you click **Configure** on a plugin, you get a proper form with labels, placeholders, and links — no raw JSON editing required.
+
+**How it works:**
+1. Browse available plugins on the **Plugins** page
+2. Click **Install** — Nova clones the repo, detects the project type, and runs setup
+3. Click **Configure** to fill in API keys, tokens, and settings
+4. The plugin becomes available in the agent's toolset
+
+**Key tools:** `getPluginConfig`, `savePluginConfig` (backend API)
+
+**UI page:** `Plugins`
+
+---
+
+### 8. File System & Workspace
 
 Agents have full file system access within a configurable workspace root. Multi-folder support allows referencing multiple directories.
 
@@ -404,7 +446,7 @@ Agents have full file system access within a configurable workspace root. Multi-
 
 ---
 
-### 8. Web Browser Automation
+### 9. Web Browser Automation
 
 Stealth browser (Chromium) with fingerprint spoofing. Navigate, extract, screenshot, click, type — all through a headless browser.
 
@@ -412,7 +454,7 @@ Stealth browser (Chromium) with fingerprint spoofing. Navigate, extract, screens
 
 ---
 
-### 9. Web Search & Fetch
+### 10. Web Search & Fetch
 
 Multiple search backends: Brave Search API, DuckDuckGo, Google Custom Search, arXiv, YouTube.
 
@@ -424,7 +466,7 @@ Multiple search backends: Brave Search API, DuckDuckGo, Google Custom Search, ar
 
 ---
 
-### 10. Video Generator & Editor
+### 11. Video Generator & Editor
 
 Full FFmpeg-based pipeline for automated video creation and editing.
 
@@ -443,7 +485,7 @@ Full FFmpeg-based pipeline for automated video creation and editing.
 
 ---
 
-### 11. AI Video Dubbing
+### 12. AI Video Dubbing
 
 Translate and re-voice any MP4 video with AI. Full 6-step pipeline:
 
@@ -478,7 +520,7 @@ Translate and re-voice any MP4 video with AI. Full 6-step pipeline:
 
 ---
 
-### 12. Crypto Trading Agent
+### 13. Crypto Trading Agent
 
 Real-time crypto market analysis and signal generation.
 
@@ -497,7 +539,84 @@ Real-time crypto market analysis and signal generation.
 
 ---
 
-### 13. Shopping Agent
+---
+
+### 14. RAG Knowledge Base
+
+Upload documents (TXT, MD, CSV, JSON, PDF) and query them with natural language. Nova indexes content with FTS5 full-text search and uses an LLM to generate answers from relevant documents.
+
+**Capabilities:**
+- **File types:** TXT, Markdown, CSV, JSON, text-based PDFs
+- **FTS5 full-text search** — fast keyword matching across all documents
+- **LLM-powered answers** — combines retrieved chunks with context for human-like responses
+- **Automatic chunking** — splits large documents into searchable pieces
+- **Per-document management** — upload, list, delete individual documents
+
+**How it works:**
+1. Upload a document via the **RAG** page or API
+2. Nova splits it into chunks and indexes them in SQLite FTS5
+3. Query with natural language — Nova finds relevant chunks and synthesizes an answer
+4. Sources are shown alongside answers for verification
+
+**Key tools:** `rag_query`, `rag_upload`, `rag_list`, `rag_delete`
+
+**UI page:** `RAG`
+
+---
+
+### 15. Integrations Hub
+
+Connect 30+ external services to Nova through a centralized integration manager. Each service has dedicated configuration, authentication, and status monitoring.
+
+**Available integrations:**
+
+| Category | Services |
+|----------|----------|
+| **Social** | Bluesky, X/Twitter, LinkedIn, Instagram, Facebook, TikTok, YouTube |
+| **Messaging** | Telegram, Discord, Slack, WhatsApp, WeChat |
+| **Productivity** | Notion, Linear, Airtable, Google Sheets, Google Calendar, Google Drive |
+| **AI & Data** | HuggingFace, Replicate, Weights & Biases, ComfyUI |
+| **DevOps** | GitHub, GitLab, Docker Hub, Pulumi, Cloudflare |
+| **Finance** | CoinGecko, TradingView, Alpha Vantage |
+| **Media** | Pexels, Pixabay, ElevenLabs |
+| **Other** | Email (IMAP/SMTP), RSS Feeds, Webhooks |
+
+**How it works:**
+1. Go to the **Integrations** page
+2. Toggle any service on
+3. Fill in the required credentials (API keys, tokens, URLs)
+4. The integration becomes available as tools for the agent
+
+**Key tools:** `integration_list`, `integration_configure`, `integration_status`
+
+**UI page:** `Integrations`
+
+---
+
+### 16. Social Media
+
+Multi-platform social media management — post text, images, and videos to Bluesky and X/Twitter.
+
+**Capabilities:**
+- **Bluesky** — post text updates with news automation (cron-scheduled RSS → AI → post)
+- **X/Twitter** — search recent tweets
+- **Multi-account** — manage multiple Bluesky accounts
+- **Scheduled posting** — cron-driven automated content publishing
+- **Deduplication** — prevents reposting identical content
+
+**How it works:**
+1. Configure Bluesky credentials: `BSKY_IDENTIFIER`, `BSKY_APP_PASSWORD` in `.env`
+2. Use `social_post` to publish updates
+3. Use `social_upload_video` to share video content
+4. Set up cron jobs for automated news posting
+
+**Key tools:** `social_list_accounts`, `social_add_account`, `social_post`, `social_upload_video`, `social_remove_account`, `x_search`
+
+**UI page:** `Social`
+
+---
+
+### 17. Shopping Agent
 
 Search for products across European e-commerce sites.
 
@@ -515,7 +634,7 @@ Search for products across European e-commerce sites.
 
 ---
 
-### 14. Messaging Platforms
+### 18. Messaging Platforms
 
 Nova connects to 5 messaging platforms as a bot. It can receive messages as agent prompts and send responses back.
 
@@ -531,7 +650,7 @@ Nova connects to 5 messaging platforms as a bot. It can receive messages as agen
 
 ---
 
-### 15. Email Integration
+### 19. Email Integration
 
 Full IMAP/SMTP email capabilities.
 
@@ -541,7 +660,7 @@ Full IMAP/SMTP email capabilities.
 
 ---
 
-### 16. Computer Use (Mouse/Keyboard)
+### 20. Computer Use (Mouse/Keyboard)
 
 Direct mouse and keyboard control (requires running on a real desktop).
 
@@ -549,7 +668,7 @@ Direct mouse and keyboard control (requires running on a real desktop).
 
 ---
 
-### 17. Diagram & Wiki Generation
+### 21. Diagram & Wiki Generation
 
 Generate architecture diagrams and project wikis.
 
@@ -557,7 +676,7 @@ Generate architecture diagrams and project wikis.
 
 ---
 
-### 18. Memory & Knowledge Base
+### 22. Memory & Knowledge Base
 
 Persistent storage across sessions. Agents save reports, users save notes.
 
@@ -571,7 +690,7 @@ Persistent storage across sessions. Agents save reports, users save notes.
 
 ---
 
-### 19. Code Execution
+### 23. Code Execution
 
 Safe code execution in isolated environments.
 
@@ -579,7 +698,7 @@ Safe code execution in isolated environments.
 
 ---
 
-### 20. Canvas & Excalidraw
+### 24. Canvas & Excalidraw
 
 Generate design mockups, wireframes, and Excalidraw diagrams.
 
@@ -587,17 +706,8 @@ Generate design mockups, wireframes, and Excalidraw diagrams.
 
 ---
 
-### 21. Social Media
 
-X (Twitter) integration — search recent tweets.
-
-**Key tool:** `x_search`
-
-**Configuration:** Set `X_BEARER_TOKEN` in `.env`
-
----
-
-## All 108 Tools
+## All 120+ Tools
 
 | # | Tool Name | Description |
 |---|-----------|-------------|
@@ -672,7 +782,19 @@ X (Twitter) integration — search recent tweets.
 | 87-97 | `workspace_*` | All workspace file operations (11 tools) |
 | 98 | `x_search` | Search tweets via X/Twitter API |
 | 99 | `youtube_search` | Search YouTube |
-| 100-108 | Additional community tools | (_community skills_) |
+| 100 | `social_post` | Post text to connected social accounts (Bluesky, X) |
+| 101 | `social_upload_video` | Upload video to connected social accounts |
+| 102 | `social_list_accounts` | List connected social media accounts |
+| 103 | `social_add_account` | Connect a new social media account |
+| 104 | `social_remove_account` | Disconnect a social media account |
+| 105 | `rag_query` | Query uploaded documents with natural language |
+| 106 | `rag_upload` | Upload document to RAG knowledge base |
+| 107 | `rag_list` | List uploaded RAG documents |
+| 108 | `rag_delete` | Delete a RAG document |
+| 109 | `integration_list` | List all integrations with status |
+| 110 | `integration_configure` | Configure an integration |
+| 111 | `integration_status` | Check integration health |
+| 112+ | Additional community tools | (_26 plugins, community skills_) |
 
 ---
 
@@ -705,17 +827,20 @@ Providers auto-detect: set the corresponding `API_KEY` in `.env` and the provide
 | **Agents** | `/agents` | Create, manage, and run autonomous agents + parallel workers |
 | **Sessions** | `/sessions` | View past conversations + FTS5 search |
 | **Skills** | `/skills` | Browse, install, and publish skills (local + agentskills.io hub) |
-| **Cron** | `/cron` | Schedule recurring tasks with natural language |
+| **Cron** | `/cron` | Schedule recurring tasks with natural language — run now, pause/resume, history |
 | **Channels** | `/channels` | Manage Telegram, Discord, Slack, WhatsApp connections |
 | **Workspace** | `/workspace` | File system browser with file operations |
-| **Trading** | `/trading` | Crypto analysis, signals, and live dashboard |
+| **Trading** | `/trading` | Crypto Hub V2 — dashboard, signals, alerts, portfolio with P&L |
 | **Video** | `/video` | Preset-based video generation |
-| **Video Editor** | `/editor` | AI Dubbing — upload, transcribe, translate, re-voice (NEW!) |
+| **Video Editor** | `/editor` | AI Dubbing — upload, transcribe, translate, re-voice |
 | **Video Editor (Advanced)** | `/video-editor` | Advanced scene-by-scene video editing |
+| **RAG** | `/rag` | Document upload, FTS5 search, LLM-powered Q&A |
+| **Integrations** | `/integrations` | Connect 30+ external services (Bluesky, Notion, GitHub, etc.) |
+| **Social** | `/social` | Multi-platform social media posting (Bluesky, X) |
 | **Shopping** | `/shopping` | European e-commerce product search |
 | **Memory DB** | `/memory` | Persistent memory store |
-| **Tools** | `/tools` | Browse and inspect all 108 registered tools |
-| **Plugins** | `/plugins` | Discover and install plugins |
+| **Tools** | `/tools` | Browse and inspect all registered tools |
+| **Plugins** | `/plugins` | Discover, install, and configure 26 community plugins with schema-driven forms |
 | **Worker** | `/worker` | Background worker job management |
 | **Terminal** | `/terminal` | WebSocket-based terminal emulator |
 | **Config** | `/config` | Server configuration management |
@@ -762,6 +887,41 @@ POST /api/dub/start           — Start dubbing job (multipart: video + language
 GET  /api/dub/jobs            — List all dubbing jobs
 GET  /api/dub/jobs/:id        — Get job details (status, progress, logs)
 GET  /api/dub/download/:id    — Download dubbed MP4 output
+```
+
+### Plugins
+```
+GET  /api/plugins             — List all community plugins with install status
+GET  /api/plugins/:id         — Get single plugin details
+POST /api/plugins/:id/install — Install a plugin (clone repo + setup)
+POST /api/plugins/:id/uninstall — Uninstall a plugin
+GET  /api/plugins/:id/config  — Get plugin configuration
+POST /api/plugins/:id/config  — Save plugin configuration
+```
+
+### Integrations
+```
+GET  /api/integrations        — List all integrations with status
+POST /api/integrations/:id/toggle — Enable/disable an integration
+GET  /api/integrations/:id/config — Get integration config
+POST /api/integrations/:id/config — Save integration config
+```
+
+### Social Media
+```
+POST /api/social/post         — Post text to connected social accounts
+POST /api/social/upload-video — Upload video to social accounts
+GET  /api/social/accounts     — List connected accounts
+POST /api/social/accounts     — Add social account
+DELETE /api/social/accounts/:id — Remove social account
+```
+
+### RAG Knowledge Base
+```
+GET  /api/rag/documents       — List uploaded documents
+POST /api/rag/upload          — Upload document (multipart)
+DELETE /api/rag/documents/:id — Delete document
+POST /api/rag/query           — Query documents with natural language
 ```
 
 ### Channels
@@ -824,6 +984,10 @@ SLACK_SIGNING_SECRET=...
 EMAIL_IMAP_HOST=imap.gmail.com
 EMAIL_IMAP_USER=you@gmail.com
 EMAIL_IMAP_PASS=your-app-password
+
+# ─── SOCIAL MEDIA ────────────────────────────────────
+BSKY_IDENTIFIER=infonews24h.bsky.social    # Bluesky handle
+BSKY_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx      # Bluesky app password
 
 # ─── VIDEO DUBBING ────────────────────────────────────────
 FFMPEG_PATH=C:\Windows\system32\ffmpeg.exe  # Windows: explicit FFmpeg path

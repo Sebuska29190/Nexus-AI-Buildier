@@ -92,7 +92,7 @@ export async function createVideo(
   isShort = false,
   quality = "medium",
   animationStyle = "ken-burns",
-  effects?: string,  // comma-separated: "vignette,glitch,vhs,grain,bloom"
+  effects?: string,
 ): Promise<boolean> {
   const ff = ffmpegPath();
   const duration = await audioDuration(audioFile);
@@ -202,32 +202,28 @@ export async function createVideo(
 
   if (clipFiles.length === 0) return false;
 
+  if (clipFiles.length === 0) return false;
+
   // Concat clips
   const concatList = join(imagesDir, "clips.txt");
   writeFileSync(concatList, clipFiles.map((p) => `file '${p}'`).join("\n"));
 
   const baseCmd = ["-y", "-f", "concat", "-safe", "0", "-i", concatList, "-i", audioFile];
-  const hasSrt = Boolean(srtFile && existsSync(srtFile));
+  const hasSrt = Boolean(srtFile && srtFile.trim() && existsSync(srtFile));
   const hasEffects = Boolean(effects && effects.trim());
 
   try {
-    // Step 1: Assemble base video (images + audio) without subtitles
+    // Assemble base video (images + audio) without subtitles
     const baseVideo = (hasSrt || hasEffects) ? outputFile.replace(".mp4", "_base.mp4") : outputFile;
 
-    if (hasSrt || hasEffects) {
-      await runFFmpeg([...baseCmd, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
-        "-crf", q.crf, "-preset", q.preset, "-maxrate", q.maxrate, "-bufsize", q.bufsize,
-        "-c:a", "aac", "-b:a", "192k", "-shortest", baseVideo]);
-    } else {
-      // No subtitles and no effects — direct output
-      await runFFmpeg([...baseCmd, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
-        "-crf", q.crf, "-preset", q.preset, "-maxrate", q.maxrate, "-bufsize", q.bufsize,
-        "-c:a", "aac", "-b:a", "192k", "-shortest", outputFile]);
-    }
+    await runFFmpeg([...baseCmd, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
+      "-crf", q.crf, "-preset", q.preset, "-maxrate", q.maxrate, "-bufsize", q.bufsize,
+      "-c:a", "aac", "-b:a", "192k", "-shortest",
+      hasSrt || hasEffects ? baseVideo : outputFile]);
 
     let currentVideo = baseVideo;
 
-    // Step 2: Apply visual effects (BEFORE subtitles so text stays sharp)
+    // Step 2: Apply visual effects
     if (hasEffects) {
       const effectList = effects.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
       if (effectList.length > 0) {
@@ -245,19 +241,17 @@ export async function createVideo(
       }
     }
 
-    // Step 3: Burn subtitles LAST (on top of effects, stays crisp)
+    // Step 3: Burn subtitles LAST
     if (hasSrt) {
       try {
         await burnSubtitles(currentVideo, outputFile, srtFile!, isShort, quality);
         try { unlinkSync(currentVideo); } catch {}
       } catch (subErr) {
         console.warn(`[burnSubtitles] failed, falling back to no subtitles: ${subErr instanceof Error ? subErr.message : subErr}`);
-        // Just rename currentVideo to outputFile
         copyFileSync(currentVideo, outputFile);
         try { unlinkSync(currentVideo); } catch {}
       }
     } else if (hasEffects) {
-      // Rename fx file to final output
       copyFileSync(currentVideo, outputFile);
       try { unlinkSync(currentVideo); } catch {}
     }
@@ -269,7 +263,7 @@ export async function createVideo(
   for (const cp of clipFiles) try { unlinkSync(cp); } catch {}
   try { unlinkSync(concatList); } catch {}
 
-  return existsSync(outputFile) && (existsSync(outputFile) ? true : false);
+  return existsSync(outputFile);
 }
 
 export async function burnSubtitles(inputVideo: string, outputVideo: string, srtFile: string, isShort = false, quality = "medium"): Promise<void> {

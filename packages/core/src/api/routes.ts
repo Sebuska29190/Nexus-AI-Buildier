@@ -31,7 +31,7 @@ import { runAutoBugFixer } from "../agent/auto-bug-fixer.ts";
 import { workspaceManager } from "../workspace/manager.ts";
 import { kernel, agentFS, ledger } from "../kernel/index.ts";
 import { tmuxAvailable, listSessions as tmuxListSessions, createSession as tmuxCreateSession, killSession as tmuxKillSession, sendKeys as tmuxSendKeys, capturePane as tmuxCapturePane, getStatus as tmuxGetStatus } from "../tmux/tools.ts";
-import { listCommunityPlugins, getCommunityPlugin, installPlugin, uninstallPlugin } from "../plugin/community-plugins.ts";
+import { listCommunityPlugins, getCommunityPlugin, installPlugin, uninstallPlugin, getPluginConfig, savePluginConfig } from "../plugin/community-plugins.ts";
 import { agentScheduler } from "../agent/scheduler.ts";
 import { getAllProviderConfigs, saveProviderConfig, deleteProviderConfig, testProviderConnection } from "../config/provider-config.ts";
 import { logStore } from "../log/capture.ts";
@@ -925,6 +925,17 @@ Return valid JSON only (no markdown, no code fences):
     if (!result.success) return c.json({ error: result.error }, 400);
     return c.json({ status: "uninstalled" });
   });
+  app.get("/api/plugins/:id/config", (c) => {
+    try { return c.json({ config: getPluginConfig(c.req.param("id")) }); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+  app.post("/api/plugins/:id/config", async (c) => {
+    try {
+      const body = await c.req.json<Record<string, string>>();
+      savePluginConfig(c.req.param("id"), body);
+      return c.json({ status: "saved" });
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
 
   // ─── Config / Provider API Keys ────────────────────────────────────────────
   app.get("/api/config/providers", (c) => {
@@ -1494,23 +1505,23 @@ Return valid JSON only (no markdown, no code fences):
   });
 
   // ─── Integrations ─────────────────────────────────────────────
-  app.get("/api/integrations/services", (c) => {
+  app.get("/api/integrations/services", async (c) => {
     try {
-      const { integrationManager } = require("../integrations/manager.ts");
+      const { integrationManager } = await import("../integrations/manager.ts");
       return c.json({ services: integrationManager.listServices() });
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.get("/api/integrations/accounts", (c) => {
+  app.get("/api/integrations/accounts", async (c) => {
     try {
-      const { integrationManager } = require("../integrations/manager.ts");
+      const { integrationManager } = await import("../integrations/manager.ts");
       return c.json({ accounts: integrationManager.listAccounts() });
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
   app.post("/api/integrations/accounts", async (c) => {
     try {
-      const { integrationManager } = require("../integrations/manager.ts");
+      const { integrationManager } = await import("../integrations/manager.ts");
       const body = await c.req.json<{ service: string; name: string; config: Record<string, string> }>();
       if (!body.service || !body.name) return c.json({ error: "service and name required" }, 400);
       const acc = integrationManager.addAccount(body.service, body.name, body.config || {});
@@ -1518,9 +1529,9 @@ Return valid JSON only (no markdown, no code fences):
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.delete("/api/integrations/accounts/:id", (c) => {
+  app.delete("/api/integrations/accounts/:id", async (c) => {
     try {
-      const { integrationManager } = require("../integrations/manager.ts");
+      const { integrationManager } = await import("../integrations/manager.ts");
       const ok = integrationManager.removeAccount(c.req.param("id"));
       if (!ok) return c.json({ error: "Not found" }, 404);
       return c.json({ status: "deleted" });
@@ -1529,7 +1540,7 @@ Return valid JSON only (no markdown, no code fences):
 
   app.put("/api/integrations/accounts/:id/toggle", async (c) => {
     try {
-      const { integrationManager } = require("../integrations/manager.ts");
+      const { integrationManager } = await import("../integrations/manager.ts");
       const body = await c.req.json<{ enabled: boolean }>();
       const acc = integrationManager.toggleAccount(c.req.param("id"), body.enabled);
       if (!acc) return c.json({ error: "Not found" }, 404);
@@ -1539,17 +1550,79 @@ Return valid JSON only (no markdown, no code fences):
 
   app.post("/api/integrations/accounts/:id/test", async (c) => {
     try {
-      const { integrationManager } = require("../integrations/manager.ts");
+      const { integrationManager } = await import("../integrations/manager.ts");
       const result = await integrationManager.testConnection(c.req.param("id"));
       return c.json(result);
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.get("/api/integrations/accounts/:id/logs", (c) => {
+  app.get("/api/integrations/accounts/:id/logs", async (c) => {
     try {
-      const { integrationManager } = require("../integrations/manager.ts");
+      const { integrationManager } = await import("../integrations/manager.ts");
       const limit = parseInt(c.req.query("limit") || "20");
       return c.json({ logs: integrationManager.getLogs(c.req.param("id"), limit) });
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  // ─── RAG Pipeline ────────────────────────────────────────────
+  app.get("/api/rag/documents", async (c) => {
+    try { const { ragManager } = await import("../rag/manager.ts"); return c.json({ documents: ragManager.listDocuments() }); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.post("/api/rag/upload", async (c) => {
+    try {
+      const { ragManager } = await import("../rag/manager.ts");
+      const ct = c.req.header("content-type") || "";
+      if (ct.includes("multipart/form-data")) {
+        const fd = await c.req.parseBody();
+        const file = fd.file as File;
+        if (!file) return c.json({ error: "file required" }, 400);
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const doc = await ragManager.uploadDocument(file.name, buffer);
+        return c.json({ document: doc }, 201);
+      }
+      const body = await c.req.json<{ filename: string; content: string }>();
+      if (!body.filename || !body.content) return c.json({ error: "filename and content required" }, 400);
+      const doc = await ragManager.uploadDocument(body.filename, body.content);
+      return c.json({ document: doc }, 201);
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.get("/api/rag/documents/:id", async (c) => {
+    try {
+      const { ragManager } = await import("../rag/manager.ts");
+      const doc = ragManager.getDocument(c.req.param("id"));
+      if (!doc) return c.json({ error: "Not found" }, 404);
+      return c.json({ document: doc });
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.get("/api/rag/documents/:id/content", async (c) => {
+    try {
+      const { ragManager } = await import("../rag/manager.ts");
+      const content = ragManager.getDocumentContent(c.req.param("id"));
+      if (!content) return c.json({ error: "Not found" }, 404);
+      return c.json({ content });
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.delete("/api/rag/documents/:id", async (c) => {
+    try {
+      const { ragManager } = await import("../rag/manager.ts");
+      const ok = ragManager.deleteDocument(c.req.param("id"));
+      if (!ok) return c.json({ error: "Not found" }, 404);
+      return c.json({ status: "deleted" });
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.post("/api/rag/query", async (c) => {
+    try {
+      const { ragManager } = await import("../rag/manager.ts");
+      const body = await c.req.json<{ question: string }>();
+      if (!body.question) return c.json({ error: "question required" }, 400);
+      const answer = await ragManager.query(body.question);
+      return c.json({ answer, question: body.question });
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
@@ -1659,107 +1732,57 @@ Return valid JSON only (no markdown, no code fences):
     return c.json({ error: err instanceof Error ? err.message : "Internal error" }, 500);
   });
 
-  // ─── Crypto & Trading Hub (unified) ─────────────────────────────────────
-  app.get("/api/crypto-hub/market", async (c) => {
-    try {
-      const data = await cryptoHub.refreshMarket();
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+  // ─── Crypto & Trading Hub V2 ────────────────────────────────────────
+  app.get("/api/crypto-hub/dashboard", async (c) => {
+    try { const { getDashboard } = await import("../crypto-hub/v2.ts"); return c.json(await getDashboard()); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.get("/api/crypto-hub/global", async (c) => {
-    try {
-      const data = await cryptoHub.getGlobalData();
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+  app.get("/api/crypto-hub/coin/:symbol", async (c) => {
+    try { const { getCoinDetail } = await import("../crypto-hub/v2.ts"); return c.json(await getCoinDetail(c.req.param("symbol"))); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.get("/api/crypto-hub/news", async (c) => {
-    try {
-      const data = await cryptoHub.refreshNews();
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+  app.get("/api/crypto-hub/alerts", async (c) => {
+    try { const { listAlerts } = await import("../crypto-hub/v2.ts"); return c.json({ alerts: listAlerts() }); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.get("/api/crypto-hub/whales", async (c) => {
+  app.post("/api/crypto-hub/alerts", async (c) => {
     try {
-      const data = await cryptoHub.refreshWhales();
-      return c.json({ alerts: data });
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+      const { addAlert } = await import("../crypto-hub/v2.ts");
+      const body = await c.req.json<{ symbol: string; type: string; value: number; message?: string; channel?: string; channelConfig?: string }>();
+      return c.json(addAlert(body.symbol, body.type, body.value, body.message, body.channel, body.channelConfig));
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.delete("/api/crypto-hub/alerts/:id", async (c) => {
+    try { const { removeAlert } = await import("../crypto-hub/v2.ts"); return c.json({ removed: removeAlert(c.req.param("id")) }); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
   app.get("/api/crypto-hub/portfolio", async (c) => {
-    try {
-      const data = await cryptoHub.refreshPortfolio();
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+    try { const { getPortfolioWithPnL } = await import("../crypto-hub/v2.ts"); return c.json(await getPortfolioWithPnL()); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.post("/api/crypto-hub/portfolio/position", async (c) => {
+  app.post("/api/crypto-hub/portfolio", async (c) => {
     try {
-      const { symbol, amount, buyPrice, note } = await c.req.json();
-      const data = cryptoHub.addPosition(symbol, "", amount, buyPrice, note);
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+      const { addPortfolioEntry } = await import("../crypto-hub/v2.ts");
+      const body = await c.req.json<{ symbol: string; amount: number; buyPrice: number; notes?: string }>();
+      return c.json(addPortfolioEntry(body.symbol, body.amount, body.buyPrice, body.notes));
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.delete("/api/crypto-hub/portfolio/position/:symbol", async (c) => {
-    try {
-      const { symbol } = c.req.param();
-      const { amount, sellPrice } = await c.req.json();
-      const data = cryptoHub.removePosition(symbol, amount, sellPrice);
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+  app.delete("/api/crypto-hub/portfolio/:id", async (c) => {
+    try { const { removePortfolioEntry } = await import("../crypto-hub/v2.ts"); return c.json({ removed: removePortfolioEntry(c.req.param("id")) }); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
-  app.get("/api/crypto-hub/watchlist", async (c) => {
-    try {
-      const data = await cryptoHub.getWatchlist();
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
+  app.get("/api/crypto-hub/check-alerts", async (c) => {
+    try { const { checkAlerts } = await import("../crypto-hub/v2.ts"); return c.json({ triggered: await checkAlerts() }); }
+    catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
-
-  app.post("/api/crypto-hub/watchlist", async (c) => {
-    try {
-      const { symbol } = await c.req.json();
-      const data = await cryptoHub.addToWatchlist(symbol);
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
-  });
-
-  app.delete("/api/crypto-hub/watchlist/:symbol", async (c) => {
-    try {
-      const { symbol } = c.req.param();
-      const data = await cryptoHub.removeFromWatchlist(symbol);
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
-  });
-
-  app.get("/api/crypto-hub/search", async (c) => {
-    try {
-      const q = c.req.query("q") || "";
-      const data = await cryptoHub.searchCoins(q);
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
-  });
-
-  app.get("/api/crypto-hub/analyze/:symbol", async (c) => {
-    try {
-      const { symbol } = c.req.param();
-      const signal = await cryptoHub.analyzeSymbol(symbol);
-      return c.json({ signal });
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
-  });
-
-  app.get("/api/crypto-hub/history/:symbol", async (c) => {
-    try {
-      const { symbol } = c.req.param();
-      const days = c.req.query("days") || "7";
-      const data = await cryptoHub.getPriceHistory(symbol, days === "max" ? "max" : parseInt(days));
-      return c.json(data);
-    } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
-  });
-
   // ── Social Media Accounts API ────────────────────────────
   app.get("/api/social/accounts", async (c) => {
     const { listAccounts } = await import("../social/manager.ts");

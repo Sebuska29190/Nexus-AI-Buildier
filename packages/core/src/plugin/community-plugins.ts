@@ -33,6 +33,20 @@ export interface CommunityPlugin {
   systemDependencies?: string[];
   /** Other plugin IDs this plugin depends on */
   dependencies?: string[];
+  /** Configuration schema — fields the user needs to fill in */
+  configSchema?: PluginConfigField[];
+}
+
+export interface PluginConfigField {
+  key: string;
+  label: string;
+  type: "text" | "password" | "url" | "select" | "number";
+  required: boolean;
+  placeholder?: string;
+  helpText?: string;
+  defaultValue?: string;
+  options?: string[];
+  section?: string;
 }
 
 const PLUGINS_DIR = join(process.cwd(), "plugins");
@@ -56,6 +70,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🔌",
     usage: "After installing, MCP servers become available as tools in Nova's agent system.\n\n**Usage:**\n1. Restart Nova to pick up the new MCP servers\n2. Use `@` in chat to invoke MCP tools (e.g. `@filesystem`, `@github`)\n3. Configure server settings in Nova's MCP config file\n\n**Example:**\n```\n@filesystem list files in /home/project\n```",
     toolsProvided: ["filesystem", "github", "postgresql", "puppeteer", "sqlite"],
+    configSchema: [
+      { key: "transport", label: "Transport type", type: "select", required: true, defaultValue: "stdio", options: ["stdio", "sse"], helpText: "How MCP servers communicate \u2014 stdio (local process) or SSE (HTTP endpoint)" },
+      { key: "serversDir", label: "Servers directory", type: "text", required: false, defaultValue: "./mcp-servers", placeholder: "./mcp-servers", helpText: "Directory where MCP server configs are stored" },
+      { key: "githubToken", label: "GitHub Personal Access Token", type: "password", required: false, helpText: "For GitHub MCP server \u2014 get from https://github.com/settings/tokens" },
+    ],
   },
   {
     id: "continue-dev",
@@ -71,6 +90,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🔄",
     usage: "Continue integrates Nova's AI capabilities into your IDE.\n\n**Usage:**\n1. Open VS Code or JetBrains\n2. Install the Continue extension from the marketplace\n3. Configure Continue to use Nova as the backend provider\n4. Use `Cmd+I` (macOS) or `Ctrl+I` (Windows/Linux) to open Continue inline\n\n**Example:**\nSelect code in your editor, press `Cmd+I`, and ask Nova to refactor it.",
     toolsProvided: ["continue-edit", "continue-chat", "continue-review"],
+    configSchema: [
+      { key: "novaEndpoint", label: "Nova API URL", type: "url", required: true, defaultValue: "http://localhost:3001", placeholder: "http://localhost:3001", helpText: "Nova backend URL for Continue to connect to" },
+      { key: "apiKey", label: "Nova API Key", type: "password", required: false, helpText: "If Nova requires authentication" },
+      { key: "model", label: "Default Model", type: "text", required: false, defaultValue: "gpt-4", placeholder: "gpt-4", helpText: "Default model to use in Continue" },
+    ],
   },
   {
     id: "browser-use",
@@ -86,6 +110,12 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🌐",
     usage: "Browser Use gives Nova the ability to control a real browser.\n\n**Usage:**\n1. After install, the `@browser-use` tool becomes available in chat\n2. Tell Nova what to do on a website\n3. Nova will launch a browser, navigate, click, type, and extract data\n\n**Example:**\n```\n@browser-use Go to example.com and take a screenshot of the homepage\n```",
     toolsProvided: ["browser-use"],
+    configSchema: [
+      { key: "headless", label: "Headless mode", type: "select", required: true, defaultValue: "true", options: ["true", "false"], helpText: "Run browser without visible window" },
+      { key: "viewportWidth", label: "Viewport width", type: "number", required: false, defaultValue: "1280", placeholder: "1280", helpText: "Browser viewport width in pixels" },
+      { key: "viewportHeight", label: "Viewport height", type: "number", required: false, defaultValue: "720", placeholder: "720", helpText: "Browser viewport height in pixels" },
+      { key: "userDataDir", label: "Browser profile path", type: "text", required: false, helpText: "Path to Chrome user data directory for persistent sessions" },
+    ],
   },
   {
     id: "crawl4ai",
@@ -101,6 +131,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🕷️",
     usage: "Crawl4AI extracts clean markdown content from websites for LLM consumption.\n\n**Usage:**\n1. After install, the `@crawl4ai` tool becomes available\n2. Provide a URL and optional instructions\n3. Returns clean, structured markdown content\n\n**Example:**\n```\n@crawl4ai https://docs.example.com/api extract all endpoint descriptions\n```",
     toolsProvided: ["crawl4ai"],
+    configSchema: [
+      { key: "maxPages", label: "Max pages per crawl", type: "number", required: false, defaultValue: "50", placeholder: "50", helpText: "Maximum pages to crawl per request" },
+      { key: "rateLimit", label: "Requests per second", type: "number", required: false, defaultValue: "2", placeholder: "2", helpText: "Rate limit to avoid being blocked" },
+      { key: "userAgent", label: "Custom User-Agent", type: "text", required: false, helpText: "Override default user agent string" },
+    ],
   },
   {
     id: "composio",
@@ -116,6 +151,10 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🧩",
     usage: "Composio provides 250+ third-party integrations for Nova's agents.\n\n**Usage:**\n1. After install, individual integrations appear as tools (e.g. `@github`, `@gmail`)\n2. Each integration requires authentication (OAuth or API key)\n3. Use `@` in chat to invoke any integration\n\n**Example:**\n```\n@gmail Find emails from last week about the project proposal\n```",
     toolsProvided: ["github", "gmail", "slack", "jira", "notion", "linear", "asana", "gitlab"],
+    configSchema: [
+      { key: "apiKey", label: "Composio API Key", type: "password", required: true, helpText: "Get from https://app.composio.dev/settings" },
+      { key: "defaultIntegrations", label: "Default integrations", type: "text", required: false, placeholder: "github,gmail,slack", helpText: "Comma-separated list of integrations to enable by default" },
+    ],
   },
   {
     id: "screenpipe",
@@ -131,6 +170,12 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "📺",
     usage: "ScreenPipe records your screen and audio, then makes them searchable with AI.\n\n**Usage:**\n1. After install, ScreenPipe runs as a background service\n2. It continuously captures screen content and audio\n3. Use `@screenpipe` in chat to query what was on your screen\n4. Great for meeting notes, code references, and research recall\n\n**Example:**\n```\n@screenpipe What was that error message I saw 10 minutes ago?\n```",
     toolsProvided: ["screenpipe"],
+    configSchema: [
+      { key: "storagePath", label: "Storage directory", type: "text", required: false, defaultValue: "./screenpipe-data", placeholder: "./screenpipe-data", helpText: "Where recordings and transcriptions are stored" },
+      { key: "fps", label: "Capture FPS", type: "number", required: false, defaultValue: "1", placeholder: "1", helpText: "Frames per second for screen capture (lower = less storage)" },
+      { key: "recordAudio", label: "Record audio", type: "select", required: false, defaultValue: "true", options: ["true", "false"], helpText: "Capture microphone audio alongside screen" },
+      { key: "ocrLang", label: "OCR language", type: "text", required: false, defaultValue: "en", placeholder: "en", helpText: "Language code for OCR (e.g. en, pl, de)" },
+    ],
   },
 
   // ── Agent Plugins ───────────────────────────────────────────────
@@ -148,6 +193,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "💻",
     usage: "Open Interpreter lets Nova execute code and control your computer.\n\n**Usage:**\n1. After install, the `@open-interpreter` agent becomes available\n2. Ask Nova to run code, control the OS, or browse the web\n3. Open Interpreter runs Python, shell commands, and more\n\n**Example:**\n```\n@open-interpreter Create a data visualization of this CSV file\n```",
     toolsProvided: ["open-interpreter"],
+    configSchema: [
+      { key: "apiKey", label: "OpenAI / Anthropic API Key", type: "password", required: true, helpText: "API key for the LLM backend" },
+      { key: "model", label: "Model", type: "text", required: false, defaultValue: "gpt-4", placeholder: "gpt-4", helpText: "LLM model to use" },
+      { key: "autoRun", label: "Auto-run mode", type: "select", required: false, defaultValue: "ask", options: ["ask", "auto", "safe"], helpText: "Auto: run without asking. Ask: confirm each command. Safe: no dangerous ops" },
+    ],
   },
   {
     id: "gpt-engineer",
@@ -163,6 +213,12 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🏗️",
     usage: "GPT Engineer generates complete project codebases from specifications.\n\n**Usage:**\n1. After install, the `@gpt-engineer` agent becomes available\n2. Describe the project you want to build in natural language\n3. GPT Engineer generates the full project structure and code\n\n**Example:**\n```\n@gpt-engineer Build a REST API for a todo app with FastAPI and SQLite\n```",
     toolsProvided: ["gpt-engineer"],
+    configSchema: [
+      { key: "apiKey", label: "OpenAI API Key", type: "password", required: true, helpText: "Get from https://platform.openai.com/api-keys" },
+      { key: "model", label: "Model", type: "text", required: false, defaultValue: "gpt-4", placeholder: "gpt-4", helpText: "Model for code generation" },
+      { key: "temperature", label: "Temperature", type: "number", required: false, defaultValue: "0.1", placeholder: "0.1", helpText: "Lower = more deterministic code (0.0-1.0)" },
+      { key: "outputDir", label: "Output directory", type: "text", required: false, defaultValue: "./generated", placeholder: "./generated", helpText: "Where generated projects are saved" },
+    ],
   },
   {
     id: "crewAI",
@@ -178,6 +234,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "👥",
     usage: "CrewAI creates teams of specialized AI agents that work together.\n\n**Usage:**\n1. After install, the `@crewai` agent becomes available\n2. Define roles (researcher, writer, reviewer) and a task\n3. CrewAI orchestrates the team to complete the task collaboratively\n\n**Example:**\n```\n@crewai Research the latest AI trends and write a summary report\n```",
     toolsProvided: ["crewai"],
+    configSchema: [
+      { key: "apiKey", label: "OpenAI / Anthropic API Key", type: "password", required: true, helpText: "API key for the model provider" },
+      { key: "model", label: "Model", type: "text", required: false, defaultValue: "gpt-4", placeholder: "gpt-4", helpText: "Default LLM model for agents" },
+      { key: "maxRPM", label: "Max requests per minute", type: "number", required: false, defaultValue: "60", placeholder: "60", helpText: "Rate limit for API calls" },
+    ],
   },
   {
     id: "autogen",
@@ -193,6 +254,12 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🤖",
     usage: "AutoGen enables multi-agent conversations to solve complex tasks.\n\n**Usage:**\n1. After install, the `@autogen` agent becomes available\n2. Describe a complex task that benefits from multiple perspectives\n3. AutoGen spawns specialized agents that converse and collaborate\n\n**Example:**\n```\n@autogen Design a microservices architecture for an e-commerce platform\n```",
     toolsProvided: ["autogen"],
+    configSchema: [
+      { key: "apiKey", label: "OpenAI API Key (or Azure)", type: "password", required: true, helpText: "Get from https://platform.openai.com/api-keys" },
+      { key: "endpoint", label: "API Endpoint", type: "url", required: false, defaultValue: "https://api.openai.com/v1", placeholder: "https://api.openai.com/v1", helpText: "Custom API endpoint (e.g. Azure, local)" },
+      { key: "model", label: "Model", type: "text", required: false, defaultValue: "gpt-4", placeholder: "gpt-4", helpText: "Default model for all agents" },
+      { key: "maxAgents", label: "Max agents per task", type: "number", required: false, defaultValue: "3", placeholder: "3", helpText: "Maximum number of agents in a conversation" },
+    ],
   },
   {
     id: "smolagents",
@@ -208,6 +275,10 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🦎",
     usage: "Smolagents provides lightweight agents that can browse the web and use tools.\n\n**Usage:**\n1. After install, the `@smolagents` agent becomes available\n2. Ask it to perform web research or use HuggingFace tools\n3. Ideal for lightweight, focused tasks\n\n**Example:**\n```\n@smolagents Find the latest papers on transformer architectures\n```",
     toolsProvided: ["smolagents"],
+    configSchema: [
+      { key: "apiKey", label: "HuggingFace or OpenAI API Key", type: "password", required: true, helpText: "Get from https://huggingface.co/settings/tokens or https://platform.openai.com" },
+      { key: "model", label: "Model", type: "text", required: false, defaultValue: "HuggingFaceH4/zephyr-7b-beta", placeholder: "HuggingFaceH4/zephyr-7b-beta", helpText: "Model ID (HuggingFace or OpenAI format)" },
+    ],
   },
   {
     id: "pydantic-ai",
@@ -223,6 +294,10 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "✅",
     usage: "Pydantic AI provides type-safe agents with structured outputs.\n\n**Usage:**\n1. After install, the `@pydantic-ai` agent becomes available\n2. Define Pydantic models for structured output schemas\n3. Get validated, type-safe responses from the agent\n\n**Example:**\n```\n@pydantic-ai Extract structured data: name, email, phone from this text\n```",
     toolsProvided: ["pydantic-ai"],
+    configSchema: [
+      { key: "apiKey", label: "API Key", type: "password", required: true, helpText: "OpenAI or Anthropic API key" },
+      { key: "model", label: "Model", type: "text", required: false, defaultValue: "openai/gpt-4", placeholder: "openai/gpt-4", helpText: "Provider/model format (e.g. openai/gpt-4, anthropic/claude-3)" },
+    ],
   },
 
   // ── Channel Plugins ─────────────────────────────────────────────
@@ -240,6 +315,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "💬",
     usage: "Discord.py Bridge connects Nova to Discord servers.\n\n**Usage:**\n1. After install, configure your Discord bot token in Nova settings\n2. The `@discord` channel becomes available for sending messages\n3. Nova can read messages, manage channels, and join voice\n\n**Example:**\n```\n@discord Send a welcome message to #general\n```",
     toolsProvided: ["discord"],
+    configSchema: [
+      { key: "botToken", label: "Discord Bot Token", type: "password", required: true, helpText: "Get from https://discord.com/developers/applications" },
+      { key: "clientId", label: "Client ID", type: "text", required: false, helpText: "Discord application Client ID (for slash commands)" },
+      { key: "guildId", label: "Guild ID (optional)", type: "text", required: false, helpText: "Restrict bot to a specific server. Leave empty for global commands" },
+    ],
   },
   {
     id: "telegram-bot",
@@ -255,6 +335,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "✈️",
     usage: "Telegram Bot API connects Nova to Telegram.\n\n**Usage:**\n1. After install, create a bot via @BotFather and get the token\n2. Configure the token in Nova settings\n3. The `@telegram` channel becomes available\n\n**Example:**\n```\n@telegram Send a poll to my group about meeting times\n```",
     toolsProvided: ["telegram"],
+    configSchema: [
+      { key: "botToken", label: "Bot Token", type: "password", required: true, helpText: "Get from @BotFather on Telegram \u2014 https://t.me/BotFather" },
+      { key: "webhookUrl", label: "Webhook URL", type: "url", required: false, helpText: "For production: your server URL for webhook mode. Leave empty for polling" },
+      { key: "allowedUsers", label: "Allowed user IDs", type: "text", required: false, placeholder: "123456,789012", helpText: "Comma-separated Telegram user IDs allowed to use the bot. Empty = anyone" },
+    ],
   },
   {
     id: "slack-sdk",
@@ -270,6 +355,12 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "💼",
     usage: "Slack SDK Bridge connects Nova to Slack workspaces.\n\n**Usage:**\n1. After install, create a Slack app and get the bot token\n2. Configure the token in Nova settings\n3. The `@slack` channel becomes available\n\n**Example:**\n```\n@slack Post a message in #engineering about the deployment\n```",
     toolsProvided: ["slack"],
+    configSchema: [
+      { key: "botToken", label: "Slack Bot Token", type: "password", required: true, helpText: "Start with xoxb- \u2014 get from https://api.slack.com/apps" },
+      { key: "signingSecret", label: "Signing Secret", type: "password", required: false, helpText: "For verifying Slack requests \u2014 get from app Settings > Basic Info" },
+      { key: "appToken", label: "App-Level Token", type: "password", required: false, helpText: "For Socket Mode \u2014 starts with xapp- (optional)" },
+      { key: "defaultChannel", label: "Default channel", type: "text", required: false, placeholder: "#general", helpText: "Default Slack channel for messages" },
+    ],
   },
 
   // ── Provider Plugins ────────────────────────────────────────────
@@ -287,6 +378,13 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "⚡",
     usage: "LiteLLM adds 100+ LLM providers to Nova's model selection.\n\n**Usage:**\n1. After install, new model providers appear in the model dropdown\n2. Configure API keys in Nova settings for each provider\n3. Switch models via the dropdown or `/model <name>` command\n\n**Example:**\n```\n/model claude-3-opus-20240229\n```",
     toolsProvided: [],
+    configSchema: [
+      { key: "masterKey", label: "Master API Key", type: "password", required: false, helpText: "LiteLLM proxy master key for admin operations" },
+      { key: "openaiKey", label: "OpenAI API Key", type: "password", required: false, helpText: "API key for OpenAI models" },
+      { key: "anthropicKey", label: "Anthropic API Key", type: "password", required: false, helpText: "API key for Anthropic/Claude models" },
+      { key: "cohereKey", label: "Cohere API Key", type: "password", required: false, helpText: "API key for Cohere models" },
+      { key: "port", label: "Proxy port", type: "number", required: false, defaultValue: "4000", placeholder: "4000", helpText: "Port for LiteLLM proxy server" },
+    ],
   },
   {
     id: "ollama",
@@ -303,6 +401,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     usage: "Ollama lets you run LLMs locally on your own hardware.\n\n**Usage:**\n1. After install, ensure Ollama is running (`ollama serve`)\n2. Pull models: `ollama pull llama3`\n3. Local models appear in Nova's model dropdown\n4. Switch via `/model ollama/llama3`\n\n**Example:**\n```\n/model ollama/llama3\n```",
     toolsProvided: [],
     systemDependencies: ["ollama"],
+    configSchema: [
+      { key: "serverUrl", label: "Ollama Server URL", type: "url", required: false, defaultValue: "http://localhost:11434", placeholder: "http://localhost:11434", helpText: "Ollama server address (default: localhost:11434)" },
+      { key: "defaultModel", label: "Default model", type: "text", required: false, defaultValue: "llama3", placeholder: "llama3", helpText: "Model to pull/use by default" },
+      { key: "keepAlive", label: "Keep model loaded (min)", type: "number", required: false, defaultValue: "5", placeholder: "5", helpText: "Minutes to keep model in memory after last use" },
+    ],
   },
   {
     id: "vllm",
@@ -318,6 +421,12 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🚀",
     usage: "vLLM provides high-throughput LLM inference serving.\n\n**Usage:**\n1. After install, start a vLLM server with your model\n2. Configure the endpoint in Nova settings\n3. Use vLLM-hosted models in Nova's model dropdown\n\n**Example:**\n```\n/model vllm/mistralai/Mistral-7B-Instruct-v0.2\n```",
     toolsProvided: [],
+    configSchema: [
+      { key: "serverUrl", label: "vLLM Server URL", type: "url", required: true, defaultValue: "http://localhost:8000", placeholder: "http://localhost:8000", helpText: "vLLM inference server address" },
+      { key: "apiKey", label: "API Key (optional)", type: "password", required: false, helpText: "If vLLM server requires authentication" },
+      { key: "model", label: "Model name", type: "text", required: false, placeholder: "mistralai/Mistral-7B-Instruct-v0.2", helpText: "Model name as served by vLLM" },
+      { key: "maxTokens", label: "Max tokens", type: "number", required: false, defaultValue: "2048", placeholder: "2048", helpText: "Maximum tokens per request" },
+    ],
   },
 
   // ── Skill Plugins ───────────────────────────────────────────────
@@ -335,6 +444,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "⛓️",
     usage: "LangChain adds RAG capabilities to Nova.\n\n**Usage:**\n1. After install, LangChain tools become available in chat\n2. Use `@langchain` to load documents, query vector stores, or run chains\n3. Supports PDF, HTML, Markdown, and more document formats\n\n**Example:**\n```\n@langchain Load the PDF and answer questions about its contents\n```",
     toolsProvided: ["langchain"],
+    configSchema: [
+      { key: "apiKey", label: "OpenAI / Anthropic API Key", type: "password", required: true, helpText: "API key for LLM calls within chains" },
+      { key: "vectorStorePath", label: "Vector store path", type: "text", required: false, defaultValue: "./data/vectorstore", placeholder: "./data/vectorstore", helpText: "Directory for persistent vector storage" },
+      { key: "embeddingModel", label: "Embedding model", type: "text", required: false, defaultValue: "text-embedding-3-small", placeholder: "text-embedding-3-small", helpText: "Model for document embeddings" },
+    ],
   },
   {
     id: "llama-index",
@@ -350,6 +464,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🦙",
     usage: "LlamaIndex provides advanced data indexing and RAG.\n\n**Usage:**\n1. After install, the `@llama-index` tool becomes available\n2. Ingest data from files, databases, or APIs\n3. Query your indexed data with natural language\n\n**Example:**\n```\n@llama-index Index the documentation folder and answer: what is the API key format?\n```",
     toolsProvided: ["llama-index"],
+    configSchema: [
+      { key: "apiKey", label: "OpenAI API Key", type: "password", required: true, helpText: "Get from https://platform.openai.com/api-keys" },
+      { key: "storageDir", label: "Index storage directory", type: "text", required: false, defaultValue: "./data/llama-index", placeholder: "./data/llama-index", helpText: "Directory for persistent index storage" },
+      { key: "chunkSize", label: "Chunk size", type: "number", required: false, defaultValue: "1024", placeholder: "1024", helpText: "Document chunk size for indexing" },
+    ],
   },
   {
     id: "chromadb",
@@ -365,6 +484,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🎯",
     usage: "ChromaDB provides vector storage and semantic search.\n\n**Usage:**\n1. After install, the `@chromadb` tool becomes available\n2. Store document embeddings and search by semantic similarity\n3. Great for building knowledge bases and memory\n\n**Example:**\n```\n@chromadb Search for documents related to authentication patterns\n```",
     toolsProvided: ["chromadb"],
+    configSchema: [
+      { key: "persistPath", label: "Persistence directory", type: "text", required: false, defaultValue: "./data/chromadb", placeholder: "./data/chromadb", helpText: "Where ChromaDB stores its data" },
+      { key: "serverUrl", label: "Server URL (optional)", type: "url", required: false, helpText: "For client-server mode. Leave empty for embedded mode" },
+      { key: "collectionName", label: "Default collection", type: "text", required: false, defaultValue: "nova-knowledge", placeholder: "nova-knowledge", helpText: "Default collection name for documents" },
+    ],
   },
   {
     id: "whisper",
@@ -380,6 +504,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🎤",
     usage: "Whisper provides speech-to-text transcription.\n\n**Usage:**\n1. After install, the `@whisper` tool becomes available\n2. Provide an audio file or recording\n3. Whisper transcribes it with high accuracy\n\n**Example:**\n```\n@whisper Transcribe this meeting recording and summarize the key points\n```",
     toolsProvided: ["whisper"],
+    configSchema: [
+      { key: "modelSize", label: "Model size", type: "select", required: false, defaultValue: "base", options: ["tiny", "base", "small", "medium", "large", "turbo"], helpText: "Larger models = better accuracy but slower and more RAM" },
+      { key: "device", label: "Compute device", type: "select", required: false, defaultValue: "cpu", options: ["cpu", "cuda", "mps"], helpText: "cpu: universal, cuda: NVIDIA GPU, mps: Apple Silicon" },
+      { key: "language", label: "Language code (optional)", type: "text", required: false, placeholder: "en", helpText: "ISO code (en, pl, de, fr...). Empty = auto-detect" },
+    ],
   },
   {
     id: "tesseract",
@@ -396,6 +525,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     usage: "Tesseract OCR extracts text from images and scanned documents.\n\n**Usage:**\n1. After install, the `@tesseract` tool becomes available\n2. Provide an image or PDF with text\n3. Tesseract extracts the text content\n\n**Example:**\n```\n@tesseract Extract text from this scanned invoice\n```",
     toolsProvided: ["tesseract"],
     systemDependencies: ["tesseract-ocr"],
+    configSchema: [
+      { key: "binaryPath", label: "Tesseract binary path", type: "text", required: false, helpText: "Full path to tesseract executable. Leave empty to search PATH" },
+      { key: "language", label: "OCR languages", type: "text", required: false, defaultValue: "eng", placeholder: "eng+pol", helpText: "Language codes with + separator (e.g. eng+pol for English + Polish)" },
+      { key: "psmMode", label: "Page segmentation mode", type: "select", required: false, defaultValue: "3", options: ["3", "6", "4", "1"], helpText: "3=auto, 6=block of text, 4=single column, 1=automatic" },
+    ],
   },
 
   // ── UI Plugins ──────────────────────────────────────────────────
@@ -414,6 +548,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     usage: "Open WebUI provides a ChatGPT-like interface for Nova.\n\n**Usage:**\n1. After install, start the Open WebUI service\n2. Access the web interface at the configured port\n3. It connects to Nova's backend for AI responses\n\n**Example:**\nOpen your browser to `http://localhost:3000` to access the chat UI.",
     toolsProvided: [],
     pythonVersionRequirement: ">=3.11,<3.13",
+    configSchema: [
+      { key: "port", label: "Web UI port", type: "number", required: false, defaultValue: "3000", placeholder: "3000", helpText: "Port for Open WebUI server" },
+      { key: "ollamaUrl", label: "Ollama backend URL", type: "url", required: false, defaultValue: "http://localhost:11434", placeholder: "http://localhost:11434", helpText: "Backend Ollama server for model inference" },
+      { key: "authEnabled", label: "Enable authentication", type: "select", required: false, defaultValue: "true", options: ["true", "false"], helpText: "Require login to access the UI" },
+    ],
   },
   {
     id: "flowise",
@@ -429,6 +568,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     icon: "🔀",
     usage: "Flowise provides a visual drag-and-drop workflow builder.\n\n**Usage:**\n1. After install, start the Flowise service\n2. Access the flow builder at the configured port\n3. Drag and drop LangChain components to create AI workflows\n\n**Example:**\nOpen your browser to `http://localhost:3001` to build AI flows visually.",
     toolsProvided: [],
+    configSchema: [
+      { key: "port", label: "Flowise port", type: "number", required: false, defaultValue: "3001", placeholder: "3001", helpText: "Port for Flowise server" },
+      { key: "apiKey", label: "API Key (optional)", type: "password", required: false, helpText: "Protect Flowise with API key authentication" },
+      { key: "llmApiKey", label: "Default LLM API Key", type: "password", required: false, helpText: "Default API key for LLM nodes in flows (OpenAI)" },
+    ],
   },
   {
     id: "dify",
@@ -445,6 +589,11 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     usage: "Dify provides a full LLM app development platform.\n\n**Usage:**\n1. After install, start Dify with Docker Compose\n2. Access the dashboard at the configured port\n3. Build, deploy, and monitor AI applications\n\n**Example:**\nOpen your browser to `http://localhost:3002` to access the Dify dashboard.",
     toolsProvided: [],
     systemDependencies: ["docker", "docker-compose"],
+    configSchema: [
+      { key: "port", label: "Dify dashboard port", type: "number", required: false, defaultValue: "3002", placeholder: "3002", helpText: "Port for Dify dashboard" },
+      { key: "apiKey", label: "Dify API Key", type: "password", required: false, helpText: "API key for Dify API access" },
+      { key: "llmApiKey", label: "Default LLM API Key", type: "password", required: false, helpText: "Default API key for LLM providers within Dify" },
+    ],
   },
 ];
 
@@ -991,10 +1140,31 @@ export async function uninstallPlugin(id: string): Promise<{ success: boolean; e
     removeDir(targetDir);
     delete state[id];
     saveState(state);
+    // Remove config
+    const configFile = join(PLUGINS_DIR, `${id}.config.json`);
+    try { rmSync(configFile, { force: true }); } catch {}
     return { success: true };
   } catch (err: unknown) {
     return { success: false, error: safeMessage(err) };
   }
+}
+
+// ─── Plugin Configuration ─────────────────────────────────────
+
+export function getPluginConfig(id: string): Record<string, string> {
+  const configFile = join(PLUGINS_DIR, `${id}.config.json`);
+  try {
+    if (existsSync(configFile)) {
+      return JSON.parse(readFileSync(configFile, "utf-8"));
+    }
+  } catch {}
+  return {};
+}
+
+export function savePluginConfig(id: string, config: Record<string, string>): void {
+  if (!existsSync(PLUGINS_DIR)) mkdirSync(PLUGINS_DIR, { recursive: true });
+  const configFile = join(PLUGINS_DIR, `${id}.config.json`);
+  writeFileSync(configFile, JSON.stringify(config, null, 2));
 }
 
 console.log(`  ✓ Community plugin registry ready (${COMMUNITY_PLUGINS.length} plugins)`);

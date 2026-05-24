@@ -9,8 +9,8 @@ export function PluginsPage() {
   const [filterType, setFilterType] = useState("all");
   const [configPlugin, setConfigPlugin] = useState<any>(null);
   const [configValues, setConfigValues] = useState<Record<string, string>>({});
-  const [configRawJson, setConfigRawJson] = useState("");
   const [configSaving, setConfigSaving] = useState(false);
+  const [configLoading, setConfigLoading] = useState(false);
 
   useEffect(() => { loadPlugins(); }, []);
 
@@ -61,19 +61,14 @@ export function PluginsPage() {
     setConfigSaving(true);
     setErrorMsg("");
     try {
-      let body: any;
-      if (Object.keys(configValues).length > 0) {
-        body = configValues;
-      } else if (configRawJson.trim()) {
-        try { body = JSON.parse(configRawJson); }
-        catch { throw new Error("Invalid JSON configuration"); }
-      } else {
-        body = {};
+      const filtered: Record<string, string> = {};
+      for (const [k, v] of Object.entries(configValues)) {
+        if (!k.startsWith("_")) filtered[k] = v;
       }
-      const res = await fetch("/api/plugins/" + id + "/configure", {
+      const res = await fetch("/api/plugins/" + id + "/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(filtered),
       });
       if (!res.ok) throw new Error(await res.text());
       await loadPlugins();
@@ -87,8 +82,15 @@ export function PluginsPage() {
 
   function openConfig(plugin: any) {
     setConfigPlugin(plugin);
-    setConfigValues(plugin.config || plugin.settings || {});
-    setConfigRawJson("");
+    setConfigValues({});
+    setConfigLoading(true);
+    fetch(`/api/plugins/${plugin.id || plugin.name}/config`)
+      .then(r => r.ok ? r.json() : { config: {} })
+      .then(data => {
+        setConfigValues(data.config || plugin.config || plugin.settings || {});
+        setConfigLoading(false);
+      })
+      .catch(() => setConfigLoading(false));
   }
 
   function filteredPlugins() {
@@ -241,30 +243,79 @@ export function PluginsPage() {
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <p className="text-xs text-slate-400">Configure settings for this plugin.</p>
-              {Object.keys(configValues).length === 0 ? (
-                <div>
-                  <p className="text-xs text-slate-400 mb-2">Plugin has no predefined config. Enter raw JSON configuration:</p>
-                  <textarea
-                    value={configRawJson}
-                    onChange={(e) => setConfigRawJson(e.target.value)}
-                    placeholder='{"apiKey": "..."}'
-                    rows={6}
-                    className="w-full bg-[#020408]/60 border border-slate-800 rounded-lg p-3 text-xs text-white font-mono focus:outline-none focus:border-[#00f2fe] resize-none"
-                  />
-                </div>
+              {configLoading ? (
+                <div className="flex items-center justify-center py-8"><span className="w-4 h-4 border-2 border-[#00f2fe] border-t-transparent rounded-full animate-spin"></span></div>
+              ) : configPlugin.configSchema && configPlugin.configSchema.length > 0 ? (
+                <>
+                  <p className="text-[10px] text-slate-400">Configure {configPlugin.name}:</p>
+                  {configPlugin.configSchema.map((field: any) => (
+                    <div key={field.key}>
+                      <label className="text-[11px] text-slate-300 font-medium block mb-1">
+                        {field.label}
+                        {field.required && <span className="text-red-400 ml-1">*</span>}
+                      </label>
+                      {field.type === "select" ? (
+                        <select value={configValues[field.key] || field.defaultValue || ""}
+                          onChange={(e) => setConfigValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                          className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-2 text-xs text-white">
+                          <option value="">Select...</option>
+                          {field.options?.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      ) : (
+                        <input type={field.type === "password" ? "password" : field.type === "url" ? "url" : "text"}
+                          value={configValues[field.key] || field.defaultValue || ""}
+                          onChange={(e) => setConfigValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                          placeholder={field.placeholder || field.label}
+                          className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-2 text-xs text-white placeholder-slate-600" />
+                      )}
+                      {field.helpText && <p className="text-[9px] text-slate-500 mt-1">{field.helpText}</p>}
+                    </div>
+                  ))}
+                </>
               ) : (
-                Object.entries(configValues).map(([key, val]) => (
-                  <div key={key}>
-                    <label className="text-[11px] text-slate-400 font-medium block mb-1">{key}</label>
-                    <input
-                      type="text"
-                      value={configValues[key] || ""}
-                      onChange={(e) => setConfigValues((prev) => ({ ...prev, [key]: e.target.value }))}
-                      className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#00f2fe]"
-                    />
-                  </div>
-                ))
+                <>
+                  <p className="text-[11px] text-slate-400">Enter configuration values for this plugin:</p>
+                  {Object.keys(configValues).length === 0 ? (
+                    <>
+                      <p className="text-[10px] text-slate-500">No saved config. Add settings below:</p>
+                      <div className="flex items-center gap-2">
+                        <input type="text" placeholder="Key"
+                          className="w-1/3 bg-[#020408]/60 border border-slate-800 rounded px-3 py-2 text-xs text-white placeholder-slate-600"
+                          value={configValues._newKey || ""}
+                          onChange={(e) => setConfigValues(prev => ({ ...prev, _newKey: e.target.value }))} />
+                        <input type="text" placeholder="Value"
+                          className="flex-1 bg-[#020408]/60 border border-slate-800 rounded px-3 py-2 text-xs text-white placeholder-slate-600"
+                          value={configValues._newVal || ""}
+                          onChange={(e) => setConfigValues(prev => ({ ...prev, _newVal: e.target.value }))} />
+                        <button className="btn-premium px-3 py-2 rounded text-[10px]"
+                          onClick={() => {
+                            if (configValues._newKey && configValues._newKey !== "_newKey") {
+                              setConfigValues(prev => ({ ...prev, [prev._newKey]: prev._newVal }));
+                            }
+                          }}>Add</button>
+                      </div>
+                      {Object.entries(configValues).filter(([k]) => !k.startsWith("_")).map(([key, val]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-400 w-1/3">{key}</span>
+                          <input type="text" value={val as string}
+                            onChange={(e) => setConfigValues(prev => ({ ...prev, [key]: e.target.value }))}
+                            className="flex-1 bg-[#020408]/60 border border-slate-800 rounded px-2 py-1 text-[10px] text-white" />
+                          <button onClick={() => { const { [key]: _, ...rest } = configValues; setConfigValues(rest); }}
+                            className="text-red-400 text-[9px]">✕</button>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    Object.entries(configValues).map(([key, val]) => (
+                      <div key={key}>
+                        <label className="text-[11px] text-slate-400 font-medium block mb-1">{key}</label>
+                        <input type="text" value={val as string}
+                          onChange={(e) => setConfigValues(prev => ({ ...prev, [key]: e.target.value }))}
+                          className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-2 text-xs text-white font-mono" />
+                      </div>
+                    ))
+                  )}
+                </>
               )}
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button onClick={() => setConfigPlugin(null)}
