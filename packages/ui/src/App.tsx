@@ -29,6 +29,7 @@ import { WorkspacePage } from "./routes/WorkspacePage";
 import { CryptoHubPage } from "./routes/CryptoHubPage";
 import { ShoppingPage } from "./routes/ShoppingPage";
 import { EditorPage } from "./routes/EditorPage";
+import { SocialPage } from "./routes/SocialPage";
 
 // Page component map
 const pages: Record<string, React.ComponentType<any>> = {
@@ -57,6 +58,7 @@ const pages: Record<string, React.ComponentType<any>> = {
   settings: ConfigPage,
   apikeys: EnvPage,
   editor: EditorPage,
+  social: SocialPage,
   tools: WorkspacePage,
 };
 

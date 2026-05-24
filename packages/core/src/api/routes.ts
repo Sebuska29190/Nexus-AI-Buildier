@@ -1604,5 +1604,64 @@ Return valid JSON only (no markdown, no code fences):
     } catch (err) { return c.json({ error: safeMessage(err) }, 500); }
   });
 
+  // ── Social Media Accounts API ────────────────────────────
+  app.get("/api/social/accounts", async (c) => {
+    const { listAccounts } = await import("../social/manager.ts");
+    return c.json({ accounts: listAccounts() });
+  });
+
+  app.post("/api/social/accounts", async (c) => {
+    try {
+      const body = await c.req.json<{ name: string; platform: string }>();
+      const { addAccount } = await import("../social/manager.ts");
+      const account = addAccount({ name: body.name, platform: body.platform });
+      return c.json({ account }, 201);
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.delete("/api/social/accounts/:id", async (c) => {
+    const { removeAccount } = await import("../social/manager.ts");
+    const ok = removeAccount(c.req.param("id"));
+    return c.json({ ok });
+  });
+
+  app.post("/api/social/accounts/:id/launch", async (c) => {
+    try {
+      const id = c.req.param("id");
+      const { getAccount } = await import("../social/manager.ts");
+      const account = getAccount(id);
+      if (!account) return c.json({ error: "Account not found" }, 404);
+
+      const loginUrls: Record<string, string> = {
+        tiktok: "https://www.tiktok.com/login",
+        instagram: "https://www.instagram.com/accounts/login/",
+        youtube: "https://accounts.google.com/ServiceLogin?service=youtube",
+        linkedin: "https://www.linkedin.com/login",
+        facebook: "https://www.facebook.com/login",
+        reddit: "https://www.reddit.com/login",
+        threads: "https://www.threads.net/login",
+        pinterest: "https://www.pinterest.com/login",
+        bluesky: "https://bsky.app",
+      };
+      const loginUrl = loginUrls[account.platform] || `https://www.${account.platform}.com/login`;
+      const profileDir = account.profileDir;
+
+      const { execSync } = await import("node:child_process");
+      const { existsSync } = await import("node:fs");
+
+      // Kill any existing Chrome processes using this profile (common on Windows)
+      try {
+        execSync(`powershell -Command "Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match '${profileDir.replace(/\\/g, '\\\\')}' } | Stop-Process -Force -ErrorAction SilentlyContinue"`, { timeout: 3000, windowsHide: true });
+      } catch {}
+
+      // Launch Chrome with profile
+      const cmd = `cmd.exe /c start "" chrome --user-data-dir="${profileDir}" "${loginUrl}" --new-window`;
+      console.log(`[social] Launching browser for ${account.name}`);
+      execSync(cmd, { timeout: 5000, windowsHide: false });
+
+      return c.json({ ok: true, message: `🌐 Browser opened for **${account.name}** (${account.platform}).\n\nLog in, then close the browser window. Session will be saved.` });
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
   return app;
 }

@@ -1,5 +1,7 @@
 ﻿import type { ToolPlugin, ToolContext } from "@nova/sdk";
 import { execSync } from "node:child_process";
+import { bskyTools } from "../bsky/tools.ts";
+import { socialTools } from "../social/tools.ts";
 
 // ─── Dangerous Command Patterns (safety guard) ──────────────────
 const DANGEROUS_PATTERNS: { pattern: RegExp; reason: string }[] = [
@@ -784,4 +786,16 @@ registerTool({
     return snapshots.map(s => `- ${s.id}: ${s.description} (${s.files.length} files, ${new Date(s.createdAt).toLocaleString()})`).join("\n");
   },
 });
+
+// ── Bluesky Tools ──────────────────────────────────────────
+for (const key of Object.keys(bskyTools)) {
+  registerTool(bskyTools[key]);
+}
+
+// ── Social Media Tools ────────────────────────────────────
+console.log(`[social] registering ${Object.keys(socialTools).length} tool(s)`);
+for (const key of Object.keys(socialTools)) {
+  registerTool(socialTools[key]);
+  console.log(`[social] registered: ${key}`);
+}
 

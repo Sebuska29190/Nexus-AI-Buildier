@@ -20,3 +20,7 @@
 - [Workspace Set: D:\nova](2026-05-23-Workspace Set_ D__nova.md) — 2026-05-23 `[workspace, filesystem]`
 - [Workspace Set: D:\nova](2026-05-24-Workspace Set_ D__nova.md) — 2026-05-24 `[workspace, filesystem]`
 - [Workspace Set: D:\nova](2026-05-24-Workspace Set_ D__nova.md) — 2026-05-24 `[workspace, filesystem]`
+- [Workspace Set: D:\home\user](2026-05-24-Workspace Set_ D__home_user.md) — 2026-05-24 `[workspace, filesystem]`
+- [Workspace Set: D:\nova](2026-05-24-Workspace Set_ D__nova.md) — 2026-05-24 `[workspace, filesystem]`
+- [Workspace Set: D:\nova](2026-05-24-Workspace Set_ D__nova.md) — 2026-05-24 `[workspace, filesystem]`
+- [Workspace Set: D:\nova\video_output\job_mpju4ohw](2026-05-24-Workspace Set_ D__nova_video_output_job_mpju4ohw.md) — 2026-05-24 `[workspace, filesystem]`

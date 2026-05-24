@@ -1,1 +1,2 @@
 - [File Created: d:\nova\RAPORT_BLEDOW.md](2026-05-23-File Created_ d__nova_RAPORT_BLEDOW.md.md) — 2026-05-23 `[workspace, file-created, md]`
+- [File Created: bsky_login.py](2026-05-24-File Created_ bsky_login.py.md) — 2026-05-24 `[workspace, file-created, py]`

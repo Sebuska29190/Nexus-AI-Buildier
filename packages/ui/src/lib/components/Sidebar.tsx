@@ -2,7 +2,7 @@ import {
   MessageSquare, Users, Zap, PlusCircle, History, Radio, Brain,
   FolderGit2, Video, FileCode, Cpu, Coins, ShoppingBag, Terminal,
   Settings, KeyRound, ScrollText, UserCog, ToyBrick, Calendar,
-  BarChart3, BookOpen, Search, Sliders, Orbit, Sparkles
+  BarChart3, BookOpen, Search, Sliders, Orbit, Sparkles, Globe2
 } from "lucide-react";
 
 interface SidebarProps {
@@ -36,6 +36,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     { id: "workspace", icon: FolderGit2, label: "Workspace" },
     { id: "video", icon: Video, label: "Video Gen" },
     { id: "editor", icon: FileCode, label: "Video Editor" },
+    { id: "social", icon: Globe2, label: "Social Media" },
     { id: "worker", icon: Cpu, label: "Worker Nodes" },
     { id: "crypto-hub", icon: Coins, label: "Crypto & Trading" },
     { id: "shopping", icon: ShoppingBag, label: "Smart Shopping" },
