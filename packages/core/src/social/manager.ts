@@ -1,14 +1,15 @@
 /**
- * Social Media Manager — browser-based automation for posting to any social platform.
+ * Social Media Manager — browser-based + API-based automation for posting to social platforms.
  *
- * How it works:
- * 1. User clicks "Add Account" → browser opens to the platform's login page
- * 2. User logs in manually → browser profile (cookies) saved to disk
- * 3. Subsequent posts use the saved profile → no re-login needed
- * 4. Each platform has a "script" (navigation steps) for posting
+ * Auth methods:
+ * - "browser" — opens Chrome with saved profile, user logs in manually
+ * - "api_key" — user provides API token/app password, verified via API call
+ *
+ * Supports: Bluesky (API), TikTok (browser), Instagram (browser), YouTube (browser),
+ * LinkedIn (browser), Facebook (browser), Reddit (browser), Threads (browser), X/Twitter (API)
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 const SOCIAL_DIR = join(process.cwd(), "data", "social");
@@ -17,13 +18,82 @@ mkdirSync(SOCIAL_DIR, { recursive: true });
 export interface SocialAccount {
   id: string;
   name: string;
-  platform: string; // "tiktok", "instagram", "youtube", "linkedin", etc.
-  profileDir: string; // path to browser profile directory
+  platform: string;
+  authMethod: "browser" | "api_key";
+  authStatus: "pending" | "connected" | "error";
+  profileDir: string;     // for browser-method — path to Chrome profile
+  apiConfig: Record<string, string>;  // for api_key method — { apiKey, endpoint, ... }
   username?: string;
-  avatar?: string;
   createdAt: string;
   lastUsed?: string;
+  errorMessage?: string;
 }
+
+// ─── Platform definitions ──────────────────────────────────────
+
+export interface PlatformDef {
+  id: string;
+  name: string;
+  icon: string;
+  authMethod: "browser" | "api_key";
+  loginUrl?: string;
+  apiFields?: { key: string; label: string; type: "text" | "password" | "url"; required: boolean }[];
+  verifyFn?: (config: Record<string, string>) => Promise<{ ok: boolean; username?: string; error?: string }>;
+}
+
+const apiVerifyFns: Record<string, (cfg: Record<string, string>) => Promise<{ ok: boolean; username?: string; error?: string }>> = {
+  bluesky: async (cfg) => {
+    try {
+      const r = await fetch("https://bsky.social/xrpc/com.atproto.server.createSession", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: cfg.identifier, password: cfg.appPassword }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        return { ok: false, error: (e as any).message || `HTTP ${r.status}` };
+      }
+      const data = await r.json() as any;
+      return { ok: true, username: data.handle };
+    } catch (e: any) {
+      return { ok: false, error: e.message };
+    }
+  },
+  x: async (cfg) => {
+    try {
+      const r = await fetch("https://api.twitter.com/2/users/me", {
+        headers: { Authorization: `Bearer ${cfg.apiKey}` },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!r.ok) return { ok: false, error: `HTTP ${r.status}` };
+      const data = await r.json() as any;
+      return { ok: true, username: data.data?.username };
+    } catch (e: any) {
+      return { ok: false, error: e.message };
+    }
+  },
+};
+
+export const PLATFORM_DEFS: PlatformDef[] = [
+  { id: "bluesky",    name: "Bluesky",  icon: "🦋", authMethod: "api_key", apiFields: [
+    { key: "identifier", label: "Handle or Email", type: "text", required: true },
+    { key: "appPassword", label: "App Password", type: "password", required: true },
+  ], verifyFn: apiVerifyFns.bluesky },
+  { id: "x",           name: "X / Twitter", icon: "🐦", authMethod: "api_key", apiFields: [
+    { key: "apiKey", label: "Bearer Token", type: "password", required: true },
+    { key: "apiSecret", label: "API Secret (optional)", type: "password", required: false },
+  ], verifyFn: apiVerifyFns.x },
+  { id: "tiktok",      name: "TikTok",       icon: "🎵", authMethod: "browser", loginUrl: "https://www.tiktok.com/login" },
+  { id: "instagram",   name: "Instagram",    icon: "📸", authMethod: "browser", loginUrl: "https://www.instagram.com/accounts/login/" },
+  { id: "youtube",     name: "YouTube",      icon: "▶️", authMethod: "browser", loginUrl: "https://accounts.google.com/ServiceLogin?service=youtube" },
+  { id: "linkedin",    name: "LinkedIn",     icon: "💼", authMethod: "browser", loginUrl: "https://www.linkedin.com/login" },
+  { id: "facebook",    name: "Facebook",     icon: "👍", authMethod: "browser", loginUrl: "https://www.facebook.com/login" },
+  { id: "reddit",      name: "Reddit",       icon: "👽", authMethod: "browser", loginUrl: "https://www.reddit.com/login" },
+  { id: "threads",     name: "Threads",      icon: "🧵", authMethod: "browser", loginUrl: "https://www.threads.net/login" },
+];
+
+// ─── Persistence ───────────────────────────────────────────────
 
 const accounts: SocialAccount[] = [];
 const ACCOUNTS_FILE = join(SOCIAL_DIR, "accounts.json");
@@ -46,6 +116,12 @@ function saveAccounts(): void {
 
 loadAccounts();
 
+// ─── CRUD ──────────────────────────────────────────────────────
+
+export function getPlatformDef(platform: string): PlatformDef | undefined {
+  return PLATFORM_DEFS.find(p => p.id === platform);
+}
+
 export function listAccounts(): SocialAccount[] {
   return [...accounts];
 }
@@ -57,18 +133,22 @@ export function getAccount(id: string): SocialAccount | undefined {
 export function addAccount(params: {
   name: string;
   platform: string;
-  username?: string;
+  apiConfig?: Record<string, string>;
 }): SocialAccount {
+  const platDef = getPlatformDef(params.platform);
+  const authMethod = platDef?.authMethod || "browser";
   const id = `social_${Date.now().toString(36)}`;
-  const profileDir = join(SOCIAL_DIR, "profiles", id);
-  mkdirSync(profileDir, { recursive: true });
+  const profileDir = authMethod === "browser" ? join(SOCIAL_DIR, "profiles", id) : "";
+  if (authMethod === "browser") mkdirSync(profileDir, { recursive: true });
 
   const account: SocialAccount = {
     id,
     name: params.name,
     platform: params.platform,
+    authMethod,
+    authStatus: "pending",
     profileDir,
-    username: params.username,
+    apiConfig: params.apiConfig || {},
     createdAt: new Date().toISOString(),
   };
 
@@ -81,11 +161,9 @@ export function removeAccount(id: string): boolean {
   const idx = accounts.findIndex(a => a.id === id);
   if (idx === -1) return false;
   const account = accounts[idx];
-  // Remove profile directory
-  try {
-    const fs = require("node:fs");
-    fs.rmSync(account.profileDir, { recursive: true, force: true });
-  } catch {}
+  if (account.profileDir) {
+    try { rmSync(account.profileDir, { recursive: true, force: true }); } catch {}
+  }
   accounts.splice(idx, 1);
   saveAccounts();
   return true;
@@ -100,9 +178,49 @@ export function updateAccount(id: string, updates: Partial<SocialAccount>): Soci
   return account;
 }
 
-// ── Browser Profile Manager ──────────────────────────────
-// Returns the path to a Chrome user data dir for the given account
-export function getProfilePath(accountId: string): string | null {
-  const account = getAccount(accountId);
-  return account ? account.profileDir : null;
+// ─── Auth ──────────────────────────────────────────────────────
+
+export async function verifyAndConnect(id: string): Promise<{ ok: boolean; username?: string; error?: string }> {
+  const account = getAccount(id);
+  if (!account) return { ok: false, error: "Account not found" };
+
+  const platDef = getPlatformDef(account.platform);
+  if (!platDef) return { ok: false, error: "Unknown platform" };
+
+  if (platDef.authMethod === "api_key" && platDef.verifyFn) {
+    const result = await platDef.verifyFn(account.apiConfig);
+    if (result.ok) {
+      updateAccount(id, { authStatus: "connected", username: result.username, errorMessage: undefined });
+    } else {
+      updateAccount(id, { authStatus: "error", errorMessage: result.error });
+    }
+    return result;
+  }
+
+  // Browser-based — mark as pending, user must log in
+  if (platDef.authMethod === "browser") {
+    updateAccount(id, { authStatus: "pending" });
+    return { ok: true, username: account.username };
+  }
+
+  return { ok: false, error: "No auth method available" };
+}
+
+export async function verifyBrowserLogin(id: string): Promise<{ ok: boolean; error?: string }> {
+  const account = getAccount(id);
+  if (!account) return { ok: false, error: "Account not found" };
+
+  // Check if profile has any cookies (Chrome stores them in Cookies file)
+  try {
+    const { readdirSync } = await import("node:fs");
+    const files = readdirSync(account.profileDir);
+    const hasCookies = files.some(f => f.toLowerCase().includes("cookie") || f.toLowerCase().includes("local storage"));
+    if (hasCookies) {
+      updateAccount(id, { authStatus: "connected", errorMessage: undefined });
+      return { ok: true };
+    }
+    return { ok: false, error: "No browser session found. Try logging in through the browser." };
+  } catch {
+    return { ok: false, error: "Could not check profile directory" };
+  }
 }

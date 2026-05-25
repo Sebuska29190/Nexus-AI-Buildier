@@ -1983,11 +1983,16 @@ Return valid JSON only (no markdown, no code fences):
     return c.json({ accounts: listAccounts() });
   });
 
+  app.get("/api/social/platforms", async (c) => {
+    const { PLATFORM_DEFS } = await import("../social/manager.ts");
+    return c.json({ platforms: PLATFORM_DEFS });
+  });
+
   app.post("/api/social/accounts", async (c) => {
     try {
-      const body = await c.req.json<{ name: string; platform: string }>();
+      const body = await c.req.json<{ name: string; platform: string; apiConfig?: Record<string, string> }>();
       const { addAccount } = await import("../social/manager.ts");
-      const account = addAccount({ name: body.name, platform: body.platform });
+      const account = addAccount({ name: body.name, platform: body.platform, apiConfig: body.apiConfig });
       return c.json({ account }, 201);
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
@@ -1998,6 +2003,22 @@ Return valid JSON only (no markdown, no code fences):
     return c.json({ ok });
   });
 
+  app.post("/api/social/accounts/:id/connect", async (c) => {
+    try {
+      const id = c.req.param("id");
+      const body = await c.req.json<{ apiConfig?: Record<string, string> }>().catch(() => ({}));
+      const { getAccount, updateAccount, verifyAndConnect } = await import("../social/manager.ts");
+
+      // If apiConfig provided, update it first
+      if (body.apiConfig) {
+        updateAccount(id, { apiConfig: body.apiConfig });
+      }
+
+      const result = await verifyAndConnect(id);
+      return c.json(result);
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
   app.post("/api/social/accounts/:id/launch", async (c) => {
     try {
       const id = c.req.param("id");
@@ -2005,34 +2026,57 @@ Return valid JSON only (no markdown, no code fences):
       const account = getAccount(id);
       if (!account) return c.json({ error: "Account not found" }, 404);
 
-      const loginUrls: Record<string, string> = {
-        tiktok: "https://www.tiktok.com/login",
-        instagram: "https://www.instagram.com/accounts/login/",
-        youtube: "https://accounts.google.com/ServiceLogin?service=youtube",
-        linkedin: "https://www.linkedin.com/login",
-        facebook: "https://www.facebook.com/login",
-        reddit: "https://www.reddit.com/login",
-        threads: "https://www.threads.net/login",
-        pinterest: "https://www.pinterest.com/login",
-        bluesky: "https://bsky.app",
-      };
-      const loginUrl = loginUrls[account.platform] || `https://www.${account.platform}.com/login`;
+      const { PLATFORM_DEFS } = await import("../social/manager.ts");
+      const platDef = PLATFORM_DEFS.find((p: any) => p.id === account.platform);
+      const loginUrl = platDef?.loginUrl || `https://www.${account.platform}.com/login`;
       const profileDir = account.profileDir;
 
+      if (!profileDir || !existsSync(profileDir)) {
+        return c.json({ error: "No browser profile for this account" }, 400);
+      }
+
       const { execSync } = await import("node:child_process");
-      const { existsSync } = await import("node:fs");
 
-      // Kill any existing Chrome processes using this profile (common on Windows)
-      try {
-        execSync(`powershell -Command "Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match '${profileDir.replace(/\\/g, '\\\\')}' } | Stop-Process -Force -ErrorAction SilentlyContinue"`, { timeout: 3000, windowsHide: true });
-      } catch {}
+      // Find Chrome/Edge/Brave
+      const browsers = [
+        "chrome", "msedge", "brave", "google-chrome",
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      ];
 
-      // Launch Chrome with profile
-      const cmd = `cmd.exe /c start "" chrome --user-data-dir="${profileDir}" "${loginUrl}" --new-window`;
-      console.log(`[social] Launching browser for ${account.name}`);
-      execSync(cmd, { timeout: 5000, windowsHide: false });
+      let browserCmd = "";
+      for (const b of browsers) {
+        try {
+          execSync(`where ${b}`, { timeout: 1000, windowsHide: true });
+          browserCmd = b;
+          break;
+        } catch {
+          // Check full path
+          if (existsSync(b)) { browserCmd = b; break; }
+        }
+      }
 
-      return c.json({ ok: true, message: `🌐 Browser opened for **${account.name}** (${account.platform}).\n\nLog in, then close the browser window. Session will be saved.` });
+      if (!browserCmd) {
+        return c.json({ error: "No browser found. Install Chrome, Edge, or Brave." }, 500);
+      }
+
+      execSync(`start "" "${browserCmd}" --user-data-dir="${profileDir}" "${loginUrl}" --new-window`, {
+        timeout: 5000, shell: "cmd.exe", windowsHide: false,
+      });
+
+      return c.json({
+        ok: true,
+        message: `🌐 Browser opened for **${account.name}**.\nLog in, then click "Verify Login" to confirm.`,
+      });
+    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
+  });
+
+  app.post("/api/social/accounts/:id/verify", async (c) => {
+    try {
+      const { verifyBrowserLogin } = await import("../social/manager.ts");
+      const result = await verifyBrowserLogin(c.req.param("id"));
+      return c.json(result);
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
