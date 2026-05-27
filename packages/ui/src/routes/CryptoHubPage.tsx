@@ -56,6 +56,7 @@ export function CryptoHubPage() {
   }
 
   async function removeAlert(id: string) {
+    if (!confirm("Delete this price alert?")) return;
     try { await fetch(`/api/crypto-hub/alerts/${id}`, { method: "DELETE" }); setAlerts(alerts.filter(a => a.id !== id)); } catch {}
   }
 
@@ -74,6 +75,7 @@ export function CryptoHubPage() {
   }
 
   async function removePosition(id: string) {
+    if (!confirm("Remove this portfolio position?")) return;
     try {
       await fetch(`/api/crypto-hub/portfolio/${id}`, { method: "DELETE" });
       const r = await fetch("/api/crypto-hub/portfolio");

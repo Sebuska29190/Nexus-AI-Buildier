@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useToast } from "../lib/components/ui/Toast";
 
 const LANGUAGES = [
   { value: "en", label: "English" }, { value: "fr", label: "French" }, { value: "es", label: "Spanish" },
@@ -8,6 +9,7 @@ const LANGUAGES = [
 ];
 
 export function EditorPage() {
+  const { showToast } = useToast();
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoFileName, setVideoFileName] = useState("");
   const [sourceLang, setSourceLang] = useState("auto");
@@ -41,7 +43,7 @@ export function EditorPage() {
       setVideoFile(null);
       setVideoFileName("");
       await loadJobs();
-    } catch (e: any) { alert("Dub failed: " + e.message); }
+    } catch (e: any) { showToast("Dub failed: " + (e.message || e), "error"); }
     setLoading(false);
   }
 

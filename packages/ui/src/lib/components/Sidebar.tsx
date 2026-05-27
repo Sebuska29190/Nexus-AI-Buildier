@@ -1,9 +1,10 @@
+import { useState } from "react";
 import {
   MessageSquare, Users, Zap, PlusCircle, History, Radio, Brain,
   FolderGit2, Video, FileCode, Cpu, Coins, ShoppingBag, Terminal,
   Settings, KeyRound, ScrollText, UserCog, ToyBrick, Calendar,
-  BarChart3, BookOpen, Search, Sliders, Orbit, Sparkles, Globe2, Plug,
-  GitBranch, Building2, Activity
+  BarChart3, BookOpen, Search, Sliders, Orbit, Globe2, Plug,
+  GitBranch, Building2, Activity, Menu, X
 } from "lucide-react";
 
 interface SidebarProps {
@@ -61,6 +62,10 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 ];
 
 export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps) {
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return window.innerWidth < 768; } catch { return false; }
+  });
+
   function resumeSession(id: string) {
     window.dispatchEvent(new CustomEvent("nova-resume-session", { detail: { sessionId: id } }));
   }
@@ -70,18 +75,43 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
     .slice(0, 5);
 
+  if (collapsed) {
+    return (
+      <aside className="w-14 bg-[#0e1117]/90 border-r border-gray-800 flex flex-col items-center z-20 backdrop-blur-md">
+        <button onClick={() => setCollapsed(false)} className="p-3 text-gray-400 hover:text-white transition-colors" title="Expand sidebar">
+          <Menu size={18} />
+        </button>
+        <nav className="flex flex-col gap-1 mt-2 w-full px-2">
+          {navGroups.flatMap(g => g.items).slice(0, 10).map((item) => {
+            const Icon = item.icon;
+            return (
+              <button key={item.id} type="button" onClick={() => onRoute(item.id)}
+                title={item.label}
+                className={`p-2 rounded-lg transition-all ${route === item.id ? "bg-teal-500/10 text-teal-400" : "text-gray-500 hover:text-white hover:bg-gray-800/50"}`}>
+                <Icon size={16} />
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="w-64 bg-[#0e1117]/90 border-r border-gray-800 flex flex-col justify-between z-20 backdrop-blur-md">
+    <aside className="w-64 bg-[#0e1117]/90 border-r border-gray-800 flex flex-col justify-between z-20 backdrop-blur-md max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-30">
       <div className="overflow-y-auto flex-1">
         {/* Branding */}
         <div className="p-5 border-b border-gray-800 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
             <Orbit size={18} />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="font-extrabold text-sm tracking-wide text-white font-mono">NOVA AI</h1>
             <span className="text-[9px] text-teal-500 tracking-widest uppercase font-mono font-semibold">BUILDER SUITE</span>
           </div>
+          <button onClick={() => setCollapsed(true)} className="text-gray-500 hover:text-white transition-colors max-md:hidden" title="Collapse sidebar">
+            <X size={16} />
+          </button>
         </div>
 
         {/* Quick nav input: resume by session ID */}

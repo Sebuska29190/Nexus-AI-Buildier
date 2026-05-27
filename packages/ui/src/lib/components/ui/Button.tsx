@@ -4,7 +4,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
-  icon?: string;
+  icon?: React.ReactNode;
 }
 
 export function Button({
@@ -12,7 +12,7 @@ export function Button({
   size = "md",
   disabled = false,
   loading = false,
-  icon = "",
+  icon,
   className = "",
   children,
   ...rest

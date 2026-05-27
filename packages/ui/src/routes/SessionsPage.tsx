@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { api } from "../lib/api";
 
 export function SessionsPage() {
   const [sessions, setSessions] = useState<any[]>([]);
-  const [selectedSession, setSelectedSession] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,6 +47,7 @@ export function SessionsPage() {
   }
 
   async function deleteSession(id: string) {
+    if (!confirm("Delete this session? This cannot be undone.")) return;
     try {
       await fetch(`/api/sessions/${id}`, { method: "DELETE" });
       setSessions((prev) => prev.filter((s) => s.id !== id));
@@ -106,7 +107,7 @@ export function SessionsPage() {
                   <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">{result.role}</span>
                   <span className="text-[9px] text-slate-600">rank: {Math.round(result.rank * 100) / 100}</span>
                 </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: result.snippet }} />
+                <p className="text-[11px] text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(result.snippet) }} />
               </div>
             ))}
           </div>
@@ -171,18 +172,6 @@ export function SessionsPage() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {selectedSession && (
-        <div className="glass-panel rounded-xl p-5 mt-6 border border-[#00f2fe]/20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-sm text-white">Session Details</h3>
-            <button className="text-xs text-slate-500 hover:text-slate-300 transition-colors" onClick={() => setSelectedSession(null)}>Close</button>
-          </div>
-          <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">
-            {JSON.stringify(selectedSession, null, 2)}
-          </pre>
         </div>
       )}
     </div>

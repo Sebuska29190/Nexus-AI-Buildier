@@ -203,10 +203,3 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 export function useI18n() {
   return useContext(I18nContext);
 }
-
-// Direct function for non-component usage
-let _lang = "pl";
-try { _lang = localStorage.getItem("nova-lang") || "pl"; } catch { /* noop */ }
-export function t(key: string, fallback = key): string {
-  return dicts[_lang]?.[key] ?? fallback;
-}

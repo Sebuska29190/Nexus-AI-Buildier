@@ -90,6 +90,7 @@ export function WorkerPage() {
   }
 
   async function deleteJob(id: string) {
+    if (!confirm("Delete this job? This cannot be undone.")) return;
     try {
       const res = await fetch(`/api/worker/jobs/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await res.text());

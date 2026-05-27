@@ -50,12 +50,16 @@ export interface VideoParams {
   scriptText?: string;
   // NEW: user controls
   imageCount?: number;       // 1-20, default 6
-  animationStyle?: string;   // "ken-burns" | "zoom" | "fade" | "slide" | "none" | "cinematic-zoom" | "parallax" | "whip-pan" | "random" | "blur-zoom"
+  animationStyle?: string;   // "ken-burns" | "zoom" | "fade" | "slide" | "none" | "cinematic-zoom" | "parallax" | "whip-pan" | "random" | "blur-zoom" | "dolly-zoom" | "sway" | "parallax-deep" | "pulse" | "rotate-zoom" | "shake" | "cinematic-pan"
   imageStyle?: string;       // visual style hint e.g. "cinematic", "anime", "3d render"
   effects?: string;          // comma-separated visual effects: "vignette,glitch,vhs,grain,bloom"
   audioPath?: string;        // pre-recorded audio file path (skip TTS, use duration from file)
   useAudioEffects?: boolean; // add music-like effects to uploaded audio (reverb, compression etc.)
   transcriptionSegments?: Array<{ text: string; start: number; end: number }>; // Whisper timestamps
+  transition?: string;       // clip transition: "cut" | "fade" | "dissolve" | "wipe-left" | "wipe-right" | "wipe-up" | "wipe-down" | "zoom-in" | "zoom-out" | "blur" | "glitch-cut" | "light-leak" | "random"
+  transitionDuration?: number; // 0.3-1.5s, default 0.5
+  subtitleAnimation?: string; // subtitle animation: "static" | "typewriter" | "word-fade" | "bounce-in" | "highlight"
+  composition?: string;       // composition mode: "single" | "picture-in-picture" | "split-screen" | "grid"
   /** Path to input video file for dubbing (MP4) */
   inputVideoPath?: string;
   /** Source language of input video (for translation dubbing) */

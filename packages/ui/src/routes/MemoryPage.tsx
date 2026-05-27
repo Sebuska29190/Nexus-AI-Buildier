@@ -25,6 +25,7 @@ export function MemoryPage() {
   }
 
   async function deleteMemory(id: string) {
+    if (!confirm("Delete this memory entry?")) return;
     try {
       await fetch(`/api/memory/${id}`, { method: "DELETE" });
       setMemories((prev) => prev.filter((m) => m.id !== id));

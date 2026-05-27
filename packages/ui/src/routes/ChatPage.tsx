@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { marked } from "marked";
 import hljs from "highlight.js";
+import DOMPurify from "dompurify";
 import { api } from "../lib/api";
 import { Send, Bot, Sparkles, Paperclip, Settings, X, Save, Sliders, User, Puzzle, Cpu, Command, Terminal, Globe, Brain, Search, Users, BookOpen, Trash2, HelpCircle, List, Mic, Volume2 } from "lucide-react";
 
@@ -522,7 +523,7 @@ export function ChatPage({
                   }`}>
                     {msg.role === "assistant" ? (
                       <div className="prose-nova text-sm text-gray-200 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }} />
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content) as string) }} />
                     ) : (
                       <div className="whitespace-pre-wrap">{msg.content}</div>
                     )}

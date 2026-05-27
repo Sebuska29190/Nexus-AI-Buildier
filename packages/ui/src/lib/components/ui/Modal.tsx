@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 
 interface ModalProps {
   open: boolean;
@@ -9,13 +9,35 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title = "", size = "md", children }: ModalProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const handleKeydown = useCallback((e: KeyboardEvent) => {
-    if (e.key === "Escape") onClose();
+    if (e.key === "Escape") {
+      onClose();
+      return;
+    }
+    if (e.key === "Tab" && containerRef.current) {
+      const focusable = containerRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
   }, [onClose]);
 
   useEffect(() => {
     if (open) {
       document.addEventListener("keydown", handleKeydown);
+      // Auto-focus the first focusable element
+      requestAnimationFrame(() => {
+        containerRef.current?.querySelector<HTMLElement>("input, button, textarea, select")?.focus();
+      });
       return () => document.removeEventListener("keydown", handleKeydown);
     }
   }, [open, handleKeydown]);
@@ -32,6 +54,8 @@ export function Modal({ open, onClose, title = "", size = "md", children }: Moda
     <div
       role="dialog"
       aria-modal="true"
+      aria-label={title}
+      ref={containerRef}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-300 animate-fade-in"
     >

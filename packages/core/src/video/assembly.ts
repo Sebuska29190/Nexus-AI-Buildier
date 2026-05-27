@@ -83,6 +83,145 @@ export function ffmpegPath(): string {
   return which("ffmpeg") || "ffmpeg";
 }
 
+// ─── Transition helpers ──────────────────────────────────────────
+const TRANSITION_MAP: Record<string, string> = {
+  "fade": "fade",
+  "dissolve": "dissolve",
+  "wipe-left": "wipeleft",
+  "wipe-right": "wiperight",
+  "wipe-up": "wipeup",
+  "wipe-down": "wipedown",
+  "zoom-in": "smoothup",
+  "zoom-out": "smoothdown",
+  "blur": "fadeblack",
+  "glitch-cut": "fade",
+  "light-leak": "dissolve",
+};
+
+const TRANSITION_TYPES = Object.keys(TRANSITION_MAP);
+
+function resolveXfadeName(transition: string): string {
+  return TRANSITION_MAP[transition] || "fade";
+}
+
+/**
+ * Chain xfade filters across N clips: [0,1] → out01, [out01,2] → out012, ...
+ * Returns { filterComplex, outputLabel } for the final merged stream.
+ */
+/**
+ * Build xfade filter chain. Limits to first MAX_XFADE transitions
+ * to avoid excessive FFmpeg processing time. Remaining clips are concatenated.
+ */
+const MAX_XFADE = 4; // max clips for xfade (3 ops) — more is too slow
+
+function buildXfadeChain(
+  clipCount: number,
+  clipDurations: number[],
+  transitionType: string,
+  duration: number,
+): { filterComplex: string; outputLabel: string; xfadeCount: number } {
+  if (clipCount < 2) return { filterComplex: "", outputLabel: "", xfadeCount: 0 };
+
+  const xfadeName = transitionType === "random" ? "" : resolveXfadeName(transitionType);
+  const filters: string[] = [];
+  let prevLabel = "[0:v]";
+
+  // Limit: only apply xfade to first MAX_XFADE clips
+  const xfadeEnd = Math.min(clipCount, MAX_XFADE);
+  let cumulativeTime = 0;
+
+  for (let i = 1; i < xfadeEnd; i++) {
+    cumulativeTime += clipDurations[i - 1];
+    const offset = Math.max(0, cumulativeTime - duration);
+    const transition = transitionType === "random"
+      ? resolveXfadeName(TRANSITION_TYPES[Math.floor(Math.random() * TRANSITION_TYPES.length)])
+      : xfadeName;
+    const outLabel = `[vout${i}]`;
+    filters.push(`${prevLabel}[${i}:v]xfade=transition=${transition}:duration=${duration.toFixed(2)}:offset=${offset.toFixed(2)}${outLabel}`);
+    prevLabel = outLabel;
+  }
+
+  return { filterComplex: filters.join(";"), outputLabel: prevLabel, xfadeCount: xfadeEnd - 1 };
+}
+
+async function applyTransitions(
+  clipFiles: string[],
+  clipDurations: number[],
+  audioFile: string,
+  outputFile: string,
+  transitionType: string,
+  transitionDuration: number,
+  quality: { crf: string; preset: string; maxrate: string; bufsize: string },
+  fps: number,
+): Promise<boolean> {
+  if (clipFiles.length < 2) return false;
+
+  const { filterComplex, outputLabel, xfadeCount } = buildXfadeChain(clipFiles.length, clipDurations, transitionType, transitionDuration);
+  if (!filterComplex) return false;
+
+  console.log(`[transitions] ${xfadeCount} xfade ops on first ${xfadeCount + 1} clips, rest concatenated`);
+
+  const tmpVideo = outputFile.replace(".mp4", "_xfade.mp4");
+  try {
+    if (xfadeCount < clipFiles.length - 1) {
+      // Mixed approach: xfade first N clips, concat the rest
+      // Step 1: xfade the first batch
+      const xfadeInputArgs: string[] = [];
+      for (let i = 0; i <= xfadeCount; i++) xfadeInputArgs.push("-i", clipFiles[i]);
+      const xfadeTmp = outputFile.replace(".mp4", "_xfade_batch.mp4");
+      await runFFmpeg([
+        "-y", ...xfadeInputArgs,
+        "-filter_complex", filterComplex,
+        "-map", outputLabel, "-an",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
+        "-crf", quality.crf, "-preset", quality.preset,
+        "-maxrate", quality.maxrate, "-bufsize", quality.bufsize,
+        xfadeTmp,
+      ]);
+
+      // Step 2: concat xfade result + remaining clips
+      const concatList = outputFile.replace(".mp4", "_concat.txt");
+      const concatEntries = [xfadeTmp, ...clipFiles.slice(xfadeCount + 1)];
+      writeFileSync(concatList, concatEntries.map(p => `file '${p}'`).join("\n"));
+      await runFFmpeg([
+        "-y", "-f", "concat", "-safe", "0", "-i", concatList, "-i", audioFile,
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
+        "-crf", quality.crf, "-preset", quality.preset,
+        "-maxrate", quality.maxrate, "-bufsize", quality.bufsize,
+        "-c:a", "aac", "-b:a", "192k", "-shortest",
+        outputFile,
+      ]);
+      try { unlinkSync(xfadeTmp); } catch {}
+      try { unlinkSync(concatList); } catch {}
+    } else {
+      // All clips get xfade (small count)
+      const inputArgs: string[] = [];
+      for (const cf of clipFiles) inputArgs.push("-i", cf);
+      await runFFmpeg([
+        "-y", ...inputArgs,
+        "-filter_complex", filterComplex,
+        "-map", outputLabel, "-an",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
+        "-crf", quality.crf, "-preset", quality.preset,
+        "-maxrate", quality.maxrate, "-bufsize", quality.bufsize,
+        tmpVideo,
+      ]);
+      await runFFmpeg([
+        "-y", "-i", tmpVideo, "-i", audioFile,
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest",
+        outputFile,
+      ]);
+      try { unlinkSync(tmpVideo); } catch {}
+    }
+
+    return existsSync(outputFile);
+  } catch (e) {
+    console.warn(`[transitions] xfade failed, falling back to concat: ${safeMessage(e)}`);
+    try { unlinkSync(tmpVideo); } catch {}
+    return false;
+  }
+}
+
 export async function createVideo(
   imagesDir: string,
   audioFile: string,
@@ -93,6 +232,10 @@ export async function createVideo(
   quality = "medium",
   animationStyle = "ken-burns",
   effects?: string,
+  transition?: string,
+  transitionDuration?: number,
+  subtitleAnimation?: string,
+  composition?: string,
 ): Promise<boolean> {
   const ff = ffmpegPath();
   const duration = await audioDuration(audioFile);
@@ -139,7 +282,7 @@ export async function createVideo(
   // Generate animated clips with user-chosen animation style
   const clipFiles: string[] = [];
   // For "random" style: pre-assign a different style per image
-  const RANDOM_STYLES = ["ken-burns", "zoom", "fade", "slide", "cinematic-zoom", "parallax", "blur-zoom"];
+  const RANDOM_STYLES = ["ken-burns", "zoom", "fade", "slide", "cinematic-zoom", "parallax", "blur-zoom", "dolly-zoom", "sway", "pulse", "cinematic-pan"];
   const actualStyle = animationStyle === "random"
     ? (() => { const r: string[] = []; for (let i = 0; i < images.length; i++) r.push(RANDOM_STYLES[i % RANDOM_STYLES.length]); return r; })()
     : null;
@@ -184,6 +327,34 @@ export async function createVideo(
       case "blur-zoom":
         vf = `${scalePad},zoompan=z='1+${(0.5 / dFrames).toFixed(6)}*on':d=${dFrames}:s=${resW}x${resH},boxblur=2:1:enable='between(t,0,0.4)+between(t,${(durations[i] - 0.5).toFixed(1)},${durations[i]})'`;
         break;
+      case "dolly-zoom":
+        // Hitchcock effect: zoom in while pulling back (inverse zoom + scale)
+        vf = `${scalePad},zoompan=z='if(eq(on,1),1.5,max(1.5-${(0.8 / dFrames).toFixed(6)}*on,0.8))':d=${dFrames}:s=${resW}x${resH}`;
+        break;
+      case "sway":
+        // Gentle handheld sway via sinusoidal X offset in crop
+        vf = `scale=${resW * 1.08}:${resH}:force_original_aspect_ratio=increase,setpts=PTS-STARTPTS,${scalePad},crop=${resW}:${resH}:'${resW * 0.04}+${resW * 0.02}*sin(2*PI*t/3)':0`;
+        break;
+      case "parallax-deep":
+        // Deep parallax: scale up more + shift based on index for multi-plane feel
+        vf = `scale=${resW * 1.25}:${resH}:force_original_aspect_ratio=increase,setpts=PTS-STARTPTS,${scalePad},crop=${resW}:${resH}:'${Math.floor((i % 4) * 0.04 * resW)}+${Math.floor(0.02 * resW)}*sin(2*PI*t/4)':0`;
+        break;
+      case "pulse":
+        // Pulsating zoom (sinusoidal)
+        vf = `${scalePad},zoompan=z='1+0.15*sin(2*PI*t/${Math.max(2, durations[i] / 2).toFixed(1)})':d=${dFrames}:s=${resW}x${resH}`;
+        break;
+      case "rotate-zoom":
+        // Slow rotation + zoom (spiral effect)
+        vf = `${scalePad},zoompan=z='1+${(0.3 / dFrames).toFixed(6)}*on':d=${dFrames}:s=${resW}x${resH}:x='iw/2-(iw/zoom/2)+${(20 / dFrames).toFixed(6)}*on':y='ih/2-(ih/zoom/2)'`;
+        break;
+      case "shake":
+        // Camera shake simulation via random X/Y crop offset per frame
+        vf = `scale=${resW * 1.1}:${resH * 1.1}:force_original_aspect_ratio=increase,setpts=PTS-STARTPTS,${scalePad},crop=${resW}:${resH}:'${resW * 0.05}+${resW * 0.015}*random(1)':('${resH * 0.05}+${resH * 0.01}*random(2)')`;
+        break;
+      case "cinematic-pan":
+        // Slow left-to-right pan
+        vf = `scale=${resW * 1.2}:${resH}:force_original_aspect_ratio=increase,setpts=PTS-STARTPTS,${scalePad},crop=${resW}:${resH}:'(${resW * 0.2})*t/${durations[i].toFixed(1)}':0`;
+        break;
       default: // ken-burns
         const startZoom = (i % 2 === 0) ? 1.0 : 1.3;
         vf = `${scalePad},zoompan=z='${startZoom}+${(0.4 / dFrames).toFixed(6)}*on':d=${dFrames}:s=${resW}x${resH}`;
@@ -204,57 +375,82 @@ export async function createVideo(
 
   if (clipFiles.length === 0) return false;
 
-  // Concat clips
-  const concatList = join(imagesDir, "clips.txt");
-  writeFileSync(concatList, clipFiles.map((p) => `file '${p}'`).join("\n"));
-
-  const baseCmd = ["-y", "-f", "concat", "-safe", "0", "-i", concatList, "-i", audioFile];
   const hasSrt = Boolean(srtFile && srtFile.trim() && existsSync(srtFile));
   const hasEffects = Boolean(effects && effects.trim());
+  const hasTransitions = Boolean(transition && transition !== "cut" && clipFiles.length > 1);
+  const baseVideo = (hasSrt || hasEffects) ? outputFile.replace(".mp4", "_base.mp4") : outputFile;
 
   try {
-    // Assemble base video (images + audio) without subtitles
-    const baseVideo = (hasSrt || hasEffects) ? outputFile.replace(".mp4", "_base.mp4") : outputFile;
+  // Apply transitions or simple concat
+  let usedTransitions = false;
+  if (hasTransitions && clipFiles.length <= 4) {
+    console.log(`[transitions] Applying: ${transition} (${transitionDuration || 0.5}s)`);
+    const minClipDur = Math.min(...durations);
+    const td = Math.min(1.5, Math.max(0.3, transitionDuration || 0.5, minClipDur * 0.4));
+    usedTransitions = await applyTransitions(clipFiles, durations, audioFile, baseVideo, transition!, td, q, fps);
+    if (!usedTransitions) console.log(`[transitions] xfade failed, falling back to concat`);
+  } else if (hasTransitions) {
+    console.log(`[transitions] Skipped: ${clipFiles.length} clips > 4 (xfade too slow)`);
+  }
 
+  if (!usedTransitions) {
+    // Simple concat (default fallback)
+    const concatList = join(imagesDir, "clips.txt");
+    writeFileSync(concatList, clipFiles.map((p) => `file '${p}'`).join("\n"));
+    const baseCmd = ["-y", "-f", "concat", "-safe", "0", "-i", concatList, "-i", audioFile];
     await runFFmpeg([...baseCmd, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
       "-crf", q.crf, "-preset", q.preset, "-maxrate", q.maxrate, "-bufsize", q.bufsize,
       "-c:a", "aac", "-b:a", "192k", "-shortest",
       hasSrt || hasEffects ? baseVideo : outputFile]);
+    try { unlinkSync(concatList); } catch {}
+  }
 
-    let currentVideo = baseVideo;
+  let currentVideo = baseVideo;
 
-    // Step 2: Apply visual effects
-    if (hasEffects) {
-      const effectList = effects.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-      if (effectList.length > 0) {
-        console.log(`[effects] Applying: ${effectList.join(", ")}`);
-        const fxFilters = buildEffectsFilter(effectList, isShort);
-        if (fxFilters) {
-          const withFxFile = outputFile.replace(".mp4", "_fx.mp4");
-          await runFFmpeg(["-y", "-i", currentVideo, "-vf", fxFilters,
-            "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-crf", q.crf, "-preset", q.preset,
-            "-c:a", "copy", withFxFile]);
-          try { unlinkSync(currentVideo); } catch {}
-          currentVideo = withFxFile;
-        }
+  // Step 2: Apply visual effects
+  if (hasEffects) {
+    const effectList = effects.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+    if (effectList.length > 0) {
+      console.log(`[effects] Applying: ${effectList.join(", ")}`);
+      const fxFilters = buildEffectsFilter(effectList, isShort);
+      if (fxFilters) {
+        const withFxFile = outputFile.replace(".mp4", "_fx.mp4");
+        await runFFmpeg(["-y", "-i", currentVideo, "-vf", fxFilters,
+          "-c:v", "libx264", "-pix_fmt", "yuv420p",
+          "-crf", q.crf, "-preset", q.preset,
+          "-c:a", "copy", withFxFile]);
+        try { unlinkSync(currentVideo); } catch {}
+        currentVideo = withFxFile;
       }
     }
+  }
 
-    // Step 3: Burn subtitles LAST
-    if (hasSrt) {
-      try {
-        await burnSubtitles(currentVideo, outputFile, srtFile!, isShort, quality);
-        try { unlinkSync(currentVideo); } catch {}
-      } catch (subErr) {
-        console.warn(`[burnSubtitles] failed, falling back to no subtitles: ${subErr instanceof Error ? subErr.message : subErr}`);
-        copyFileSync(currentVideo, outputFile);
-        try { unlinkSync(currentVideo); } catch {}
-      }
-    } else if (hasEffects) {
+  // Step 3: Composition mode (PiP, split-screen, grid)
+  const hasComposition = Boolean(composition && composition !== "single");
+  if (hasComposition) {
+    console.log(`[composition] Applying: ${composition}`);
+    const compFile = outputFile.replace(".mp4", "_comp.mp4");
+    const compOk = await applyComposition(currentVideo, compFile, composition!, q, fps);
+    if (compOk) {
+      try { unlinkSync(currentVideo); } catch {}
+      currentVideo = compFile;
+    }
+  }
+
+  // Step 4: Burn subtitles LAST
+  if (hasSrt) {
+    try {
+      await burnSubtitles(currentVideo, outputFile, srtFile!, isShort, quality, subtitleAnimation);
+      try { unlinkSync(currentVideo); } catch {}
+    } catch (subErr) {
+      console.warn(`[burnSubtitles] failed, falling back to no subtitles: ${subErr instanceof Error ? subErr.message : subErr}`);
       copyFileSync(currentVideo, outputFile);
       try { unlinkSync(currentVideo); } catch {}
     }
+  } else if (hasEffects || hasComposition) {
+    copyFileSync(currentVideo, outputFile);
+    try { unlinkSync(currentVideo); } catch {}
+  }
   } catch (e) {
     console.warn(`[assembly] failed: ${safeMessage(e)}`);
   }
@@ -266,7 +462,71 @@ export async function createVideo(
   return existsSync(outputFile);
 }
 
-export async function burnSubtitles(inputVideo: string, outputVideo: string, srtFile: string, isShort = false, quality = "medium"): Promise<void> {
+// ─── Composition modes ───────────────────────────────────────────
+async function applyComposition(
+  inputVideo: string,
+  outputVideo: string,
+  mode: string,
+  q: { crf: string; preset: string; maxrate: string; bufsize: string },
+  fps: number,
+): Promise<boolean> {
+  const ff = ffmpegPath();
+  let filter = "";
+
+  switch (mode) {
+    case "picture-in-picture": {
+      // Main video + small pip in bottom-right corner (30% size)
+      filter = "[0:v]split[main][pip];" +
+        "[pip]scale=iw*0.3:ih*0.3[pip_small];" +
+        "[main][pip_small]overlay=W-w-20:H-h-20[out]";
+      break;
+    }
+    case "split-screen": {
+      // Left half: original, Right half: same video delayed by 0.5s
+      filter = "[0:v]split[a][b];" +
+        "[a]crop=iw/2:ih:0:0[left];" +
+        "[b]crop=iw/2:ih:iw/2:0,setpts=PTS+0.5/TB[right];" +
+        "[left][right]hstack[out]";
+      break;
+    }
+    case "grid": {
+      // 2x2 grid: same video with different time offsets
+      filter = "[0:v]split[a][b][c][d];" +
+        "[a]crop=iw/2:ih/2:0:0[a1];" +
+        "[b]crop=iw/2:ih/2:iw/2:0,setpts=PTS+0.3/TB[b1];" +
+        "[c]crop=iw/2:ih/2:0:ih/2,setpts=PTS+0.6/TB[c1];" +
+        "[d]crop=iw/2:ih/2:iw/2:ih/2,setpts=PTS+0.9/TB[d1];" +
+        "[a1][b1]hstack[top];" +
+        "[c1][d1]hstack[bottom];" +
+        "[top][bottom]vstack[out]";
+      break;
+    }
+    default:
+      return false;
+  }
+
+  if (!filter) return false;
+
+  try {
+    await runFFmpeg([
+      "-y", "-i", inputVideo,
+      "-filter_complex", filter,
+      "-map", "[out]",
+      "-map", "0:a?",
+      "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", String(fps),
+      "-crf", q.crf, "-preset", q.preset,
+      "-maxrate", q.maxrate, "-bufsize", q.bufsize,
+      "-c:a", "copy",
+      outputVideo,
+    ]);
+    return existsSync(outputVideo);
+  } catch (e) {
+    console.warn(`[composition] failed: ${safeMessage(e)}`);
+    return false;
+  }
+}
+
+export async function burnSubtitles(inputVideo: string, outputVideo: string, srtFile: string, isShort = false, quality = "medium", subtitleAnimation?: string): Promise<void> {
   // Use Python PIL + FFmpeg overlay (avoids all drawtext escaping issues)
   const pyScript = join(__SDIR, "burn_subs.py");
   if (!existsSync(pyScript)) throw new Error("burn_subs.py not found");
@@ -274,6 +534,9 @@ export async function burnSubtitles(inputVideo: string, outputVideo: string, srt
   const args = [pyScript, inputVideo, srtFile, outputVideo];
   if (isShort) args.push("--short");
   args.push(`--quality=${quality}`);
+  if (subtitleAnimation && subtitleAnimation !== "static") {
+    args.push(`--animation=${subtitleAnimation}`);
+  }
 
   const proc = spawn("python", args);
   let stderr = "";
@@ -348,6 +611,42 @@ function buildEffectsFilter(effects: string[], isShort: boolean): string | null 
         break;
       case "pixelate":
         filters.push("scale=iw/8:ih/8:flags=neighbor,scale=iw*8:ih*8:flags=neighbor");
+        break;
+      case "lens_flare":
+        // Simulate lens flare with bright spot overlay
+        filters.push("split[orig],[orig]geq=r='clip(r(X,Y)+80*sin(PI*X/iw)*cos(PI*Y/ih),0,255)':g='clip(g(X,Y)+40*sin(PI*X/iw)*cos(PI*Y/ih),0,255)':b='clip(b(X,Y)+20*sin(PI*X/iw)*cos(PI*Y/ih),0,255)'[flare],[orig][flare]blend=all_mode=screen:all_opacity=0.25");
+        break;
+      case "light_leak":
+        // Warm light leak overlay with animated hue
+        filters.push("split[orig],[orig]geq=r='clip(r(X,Y)+120*pow(sin(PI*X/iw+PI*t/4),2)*pow(cos(PI*Y/ih),2),0,255)':g='clip(g(X,Y)+50*pow(sin(PI*X/iw+PI*t/4),2)*pow(cos(PI*Y/ih),2),0,255)':b='clip(b(X,Y)+10*pow(sin(PI*X/iw+PI*t/4),2)*pow(cos(PI*Y/ih),2),0,255)'[leak],[orig][leak]blend=all_mode=screen:all_opacity=0.35");
+        break;
+      case "bokeh":
+        // Bokeh effect: blurred bright spots overlay
+        filters.push("split[orig],[orig]gblur=sigma=12,eq=brightness=0.15[blur],[orig][blur]blend=all_mode=screen:all_opacity=0.2");
+        break;
+      case "chromatic_aberration":
+        // Chromatic aberration: slight R/B channel offset
+        filters.push("rgbashift=rh=-3:bh=3:rv=0:bv=0");
+        break;
+      case "film_burn":
+        // Film burn: red gradient on edges
+        filters.push("geq=r='clip(r(X,Y)+60*gt(X,iw*0.85)+60*lt(X,iw*0.15),0,255)':g='clip(g(X,Y)-20*gt(X,iw*0.85)-20*lt(X,iw*0.15),0,255)':b='clip(b(X,Y)-30*gt(X,iw*0.85)-30*lt(X,iw*0.15),0,255)'");
+        break;
+      case "speed_ramp":
+        // Speed ramp: slow→fast→slow within clip
+        filters.push("setpts='if(between(T,0,1),PTS*2,between(T,1,3),PTS*0.5,PTS*1.5)'");
+        break;
+      case "mirror":
+        // Mirror effect: horizontal flip + blend
+        filters.push("hflip");
+        break;
+      case "thermal":
+        // Thermal vision
+        filters.push("colorscale=thermal");
+        break;
+      case "neon_glow":
+        // Neon glow: high contrast + colorize
+        filters.push("eq=contrast=1.8:brightness=0.1,colorize=0.3:0.5:0.8");
         break;
       default:
         break;

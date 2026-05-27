@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 
+const SENSITIVE_KEYS = /token|api[_-]?key|secret|password|pass|auth/i;
+function maskValue(key: string, value: unknown): string {
+  const s = String(value);
+  if (SENSITIVE_KEYS.test(key) && s.length > 0) {
+    return s.length <= 8 ? "********" : s.slice(0, 3) + "****" + s.slice(-3);
+  }
+  return s.length > 25 ? s.slice(0, 25) + "..." : s;
+}
+
 interface ChannelDef {
   type: string;
   icon: string;
@@ -176,7 +185,7 @@ export function ChannelsPage() {
                     <p className="text-[10px] text-blue-400 mb-1 font-semibold uppercase tracking-wider">Saved config</p>
                     {Object.entries(savedCfg).map(([k, v]) => (
                       <div key={k} className="text-[10px] text-slate-400 font-mono">
-                        <span className="text-slate-500">{k}:</span> {v}
+                        <span className="text-slate-500">{k}:</span> {maskValue(k, v)}
                       </div>
                     ))}
                   </div>
@@ -189,7 +198,7 @@ export function ChannelsPage() {
                       <div className="space-y-1 mb-4 p-2 bg-[#020408]/40 rounded-lg">
                         {Object.entries(ch.config).map(([k, v]) => (
                           <div key={k} className="text-[10px] text-slate-400 font-mono truncate">
-                            <span className="text-slate-500">{k}:</span> {String(v).length > 25 ? String(v).slice(0, 25) + "..." : String(v)}
+                            <span className="text-slate-500">{k}:</span> {maskValue(k, v)}
                           </div>
                         ))}
                       </div>

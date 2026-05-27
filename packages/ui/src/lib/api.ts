@@ -1,18 +1,31 @@
 const BASE = import.meta.env.VITE_NOVA_API_URL || "http://localhost:4123";
 
-async function get(path: string) {
-  const res = await fetch(BASE + path);
-  if (!res.ok) throw new Error(`GET ${path} ${res.status}`);
-  return res.json();
+async function get(path: string, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(BASE + path, { signal: controller.signal });
+    if (!res.ok) throw new Error(`GET ${path} ${res.status}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-async function post(path: string, body?: unknown) {
-  const res = await fetch(BASE + path, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`POST ${path} ${res.status}: ${await res.text().catch(() => "")}`);
-  return res.json();
+async function post(path: string, body?: unknown, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(BASE + path, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`POST ${path} ${res.status}: ${await res.text().catch(() => "")}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export const api = {
@@ -29,51 +42,47 @@ export const api = {
     post("/api/agent/send", { message, model, agentId }),
 
   // SSE streaming chat with session persistence
-  chatSend: (message: string, model: string, sessionKey?: string, onChunk?: (text: string) => void, signal?: AbortSignal) => {
-    return new Promise<{ text: string; sessionKey: string }>(async (resolve, reject) => {
-      try {
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (sessionKey) headers["x-nova-session-key"] = sessionKey;
+  chatSend: async (message: string, model: string, sessionKey?: string, onChunk?: (text: string) => void, signal?: AbortSignal): Promise<{ text: string; sessionKey: string }> => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (sessionKey) headers["x-nova-session-key"] = sessionKey;
 
-        const res = await fetch(BASE + "/v1/chat/completions", {
-          method: "POST",
-          headers,
-          signal,
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: message }],
-            stream: true,
-          }),
-        });
-        if (!res.ok) { reject(new Error(`API ${res.status}`)); return; }
-
-        const newSessionKey = res.headers.get("x-nova-session-id") || sessionKey || "";
-        const reader = res.body?.getReader();
-        if (!reader) { reject(new Error("No body")); return; }
-
-        const decoder = new TextDecoder();
-        let buf = "", fullText = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          const lines = buf.split("\n");
-          buf = lines.pop() || "";
-          for (const line of lines) {
-            const t = line.trim();
-            if (t.startsWith("data: ") && t !== "data: [DONE]") {
-              try {
-                const j = JSON.parse(t.slice(6));
-                if (j.choices?.[0]?.delta?.content) {
-                  fullText += j.choices[0].delta.content;
-                  onChunk?.(fullText);
-                }
-              } catch { /* skip parse errors */ }
-            }
-          }
-        }
-        resolve({ text: fullText, sessionKey: newSessionKey });
-      } catch (e) { reject(e); }
+    const res = await fetch(BASE + "/v1/chat/completions", {
+      method: "POST",
+      headers,
+      signal,
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: message }],
+        stream: true,
+      }),
     });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+
+    const newSessionKey = res.headers.get("x-nova-session-id") || sessionKey || "";
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("No body");
+
+    const decoder = new TextDecoder();
+    let buf = "", fullText = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() || "";
+      for (const line of lines) {
+        const t = line.trim();
+        if (t.startsWith("data: ") && t !== "data: [DONE]") {
+          try {
+            const j = JSON.parse(t.slice(6));
+            if (j.choices?.[0]?.delta?.content) {
+              fullText += j.choices[0].delta.content;
+              onChunk?.(fullText);
+            }
+          } catch { /* skip parse errors */ }
+        }
+      }
+    }
+    return { text: fullText, sessionKey: newSessionKey };
   },
 };

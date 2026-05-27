@@ -60,16 +60,12 @@ const pages: Record<string, React.ComponentType<any>> = {
   workspace: WorkspacePage,
   "crypto-hub": CryptoHubPage,
   shopping: ShoppingPage,
-  settings: ConfigPage,
-  apikeys: EnvPage,
-  editor: EditorPage,
   "social": SocialPage,
   "integrations": IntegrationsPage,
   "rag": RagPage,
   "chambers": ChambersPage,
   "workflows": WorkflowsPage,
   "tools-analytics": ToolsAnalyticsPage,
-  "tools": WorkspacePage,
 };
 
 function AppContent() {
@@ -85,6 +81,7 @@ function AppContent() {
   const [route, setRoute] = useState("chat");
   const [workspaceName, setWorkspaceName] = useState("");
   const [resumeSessionId, setResumeSessionId] = useState("");
+  const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat");
   const { showToast } = useToast();
 
   async function refresh() {
@@ -116,6 +113,11 @@ function AppContent() {
     } else {
       showToast("Directory picker not available in this browser", "info");
     }
+  }
+
+  function handleNewChat() {
+    setResumeSessionId("");
+    setRoute("chat");
   }
 
   useEffect(() => {
@@ -157,10 +159,12 @@ function AppContent() {
           <StatusBar
             connected={connected}
             version={version || "0.6.1"}
-            selectedModel={models[0]?.id || "deepseek/deepseek-chat"}
+            selectedModel={selectedModel}
             models={models}
             workspaceName={workspaceName}
             onWorkspacePick={triggerWorkspacePicker}
+            onModelChange={setSelectedModel}
+            onNewChat={handleNewChat}
           />
 
           <main className="flex-1 overflow-y-auto relative p-6 z-10" id="main-content">

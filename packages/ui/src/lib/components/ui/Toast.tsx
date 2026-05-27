@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, useCallback } from "react";
 
-type ToastType = "success" | "error" | "info";
+type ToastType = "success" | "error" | "info" | "warning";
 
 interface Toast {
   id: number;
@@ -50,11 +50,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             success: "bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/30",
             error: "bg-[#ef4444]/15 text-[#ef4444] border-[#ef4444]/30",
             info: "bg-[#2dd4bf]/15 text-[#2dd4bf] border-[#2dd4bf]/30",
+            warning: "bg-[#eab308]/15 text-[#eab308] border-[#eab308]/30",
           };
           const icons: Record<string, string> = {
             success: "✅",
             error: "❌",
             info: "ℹ️",
+            warning: "⚠️",
           };
 
           return (

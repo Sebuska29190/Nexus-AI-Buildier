@@ -78,7 +78,7 @@ export function WorkflowsPage() {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => run(w.id)} className="text-[9px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg hover:bg-emerald-500/30">▶ Run</button>
-                <button onClick={async () => { await fetch(`/api/workflows/${w.id}`, { method: "DELETE" }); fetch("/api/workflows").then(r => r.json()).then(d => setWorkflows(d.workflows)); }}
+                <button onClick={async () => { if (!confirm("Delete this workflow?")) return; await fetch(`/api/workflows/${w.id}`, { method: "DELETE" }); fetch("/api/workflows").then(r => r.json()).then(d => setWorkflows(d.workflows)); }}
                   className="text-[9px] bg-red-950/20 text-red-400 px-2 py-1 rounded-lg hover:bg-red-950/40">✕</button>
               </div>
             </div>

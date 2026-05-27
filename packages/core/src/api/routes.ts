@@ -751,6 +751,10 @@ Return valid JSON only (no markdown, no code fences):
         audioPath,
         useAudioEffects: false,
         transcriptionSegments,
+        transition: fd.transition as string | undefined,
+        transitionDuration: fd.transitionDuration ? parseFloat(fd.transitionDuration as string) : undefined,
+        subtitleAnimation: fd.subtitleAnimation as string | undefined,
+        composition: fd.composition as string | undefined,
       };
       const job = await startVideoGeneration(params);
       return c.json({ job, transcribed: transcribedText.slice(0, 200) }, 201);

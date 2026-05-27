@@ -351,7 +351,7 @@ async function runPipeline(jobId: string, params: VideoParams, signal: AbortSign
     const outputPath = join(workDir, outputFilename);
 
     const timestamps = imagePrompts.map((p: any) => ({ seconds: p.seconds ?? null }));
-    const assemblyOk = await createVideo(imagesDir, audioPath, outputPath, srtPath, timestamps, isShort, quality, params.animationStyle, params.effects);
+    const assemblyOk = await createVideo(imagesDir, audioPath, outputPath, srtPath, timestamps, isShort, quality, params.animationStyle, params.effects, params.transition, params.transitionDuration, params.subtitleAnimation, params.composition);
     if (!assemblyOk) throw new Error("Video assembly failed");
 
     const sizeMb = existsSync(outputPath) ? readFileSync(outputPath).length / 1048576 : 0;

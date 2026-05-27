@@ -53,6 +53,7 @@ export function AgentsPage() {
     } catch {}
   }
   async function deleteAgentMemory(agentId: string, memoryId: string) {
+    if (!confirm("Delete this memory entry?")) return;
     try {
       await fetch(`/api/agents/${agentId}/memory/${memoryId}`, { method: "DELETE" });
       loadAgentMemory(agentId);
@@ -105,6 +106,7 @@ export function AgentsPage() {
   }
 
   async function deleteAgent(id: string) {
+    if (!confirm("Delete this agent? This cannot be undone.")) return;
     try {
       await fetch("/api/agents/" + id, { method: "DELETE" });
       if (selectedAgent?.id === id) setSelectedAgent(null);

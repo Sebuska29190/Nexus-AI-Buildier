@@ -44,6 +44,7 @@ export class VoiceMode {
   private state: VoiceState = "idle";
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private isMuted = false;
+  private stopping = false;
 
   constructor(config: Partial<VoiceConfig> = {}, callbacks: VoiceCallback) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -113,6 +114,11 @@ export class VoiceMode {
     };
 
     this.recognition.onend = () => {
+      if (this.stopping) {
+        this.stopping = false;
+        this.setState("idle");
+        return;
+      }
       if (this.state === "listening" && this.config.continuous) {
         // Restart if still in listening mode
         try { this.recognition?.start(); } catch {}
@@ -133,6 +139,7 @@ export class VoiceMode {
    * Stop listening.
    */
   stop(): void {
+    this.stopping = true;
     try {
       this.recognition?.stop();
     } catch {}

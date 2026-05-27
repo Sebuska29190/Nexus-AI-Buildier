@@ -21,9 +21,25 @@ const ANIMATIONS = [
   { value: "ken-burns", label: "Ken Burns" }, { value: "zoom", label: "Zoom" },
   { value: "fade", label: "Fade" }, { value: "slide", label: "Slide" },
   { value: "cinematic-zoom", label: "Cinematic" }, { value: "parallax", label: "Parallax" },
-  { value: "blur-zoom", label: "Blur Zoom" }, { value: "none", label: "Static" },
+  { value: "blur-zoom", label: "Blur Zoom" }, { value: "dolly-zoom", label: "Dolly Zoom" },
+  { value: "sway", label: "Sway" }, { value: "parallax-deep", label: "Deep Parallax" },
+  { value: "pulse", label: "Pulse" }, { value: "rotate-zoom", label: "Rotate Zoom" },
+  { value: "shake", label: "Shake" }, { value: "cinematic-pan", label: "Cinematic Pan" },
+  { value: "none", label: "Static" },
 ];
-const EFFECTS_LIST = ["vignette", "glitch", "vhs", "grain", "bloom", "sepia", "invert", "color_shift", "pixelate"];
+const EFFECTS_LIST = [
+  "vignette", "glitch", "vhs", "grain", "bloom", "sepia", "invert", "color_shift", "pixelate",
+  "lens_flare", "light_leak", "bokeh", "chromatic_aberration", "film_burn", "speed_ramp", "mirror", "thermal", "neon_glow",
+];
+const TRANSITIONS = [
+  { value: "cut", label: "Cut" }, { value: "fade", label: "Fade" },
+  { value: "dissolve", label: "Dissolve" }, { value: "wipe-left", label: "Wipe Left" },
+  { value: "wipe-right", label: "Wipe Right" }, { value: "wipe-up", label: "Wipe Up" },
+  { value: "wipe-down", label: "Wipe Down" }, { value: "zoom-in", label: "Zoom In" },
+  { value: "zoom-out", label: "Zoom Out" }, { value: "blur", label: "Blur" },
+  { value: "glitch-cut", label: "Glitch" }, { value: "light-leak", label: "Light Leak" },
+  { value: "random", label: "Random" },
+];
 const EXPORT_PRESETS = [
   { id: "youtube", label: "YouTube", w: 1920, h: 1080, short: false },
   { id: "tiktok", label: "TikTok", w: 1080, h: 1920, short: true },
@@ -48,6 +64,10 @@ export function VideoPage() {
   const [animationStyle, setAnimationStyle] = useState("cinematic-zoom");
   const [selectedEffects, setSelectedEffects] = useState<string[]>([]);
   const [exportPreset, setExportPreset] = useState("youtube");
+  const [transition, setTransition] = useState("cut");
+  const [transitionDuration, setTransitionDuration] = useState(0.5);
+  const [subtitleAnimation, setSubtitleAnimation] = useState("static");
+  const [composition, setComposition] = useState("single");
 
   // Audio / Video upload
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -112,6 +132,9 @@ export function VideoPage() {
         fd.append("imageCount", String(imageCount));
         fd.append("animationStyle", animationStyle);
         if (selectedEffects.length > 0) fd.append("effects", selectedEffects.join(","));
+        if (transition !== "cut") { fd.append("transition", transition); fd.append("transitionDuration", String(transitionDuration)); }
+        if (subtitleAnimation !== "static") fd.append("subtitleAnimation", subtitleAnimation);
+        if (composition !== "single") fd.append("composition", composition);
         const res = await fetch("/api/video/dub", { method: "POST", body: fd });
         if (!res.ok) throw new Error(`API ${res.status}`);
         await loadJobs();
@@ -134,6 +157,9 @@ export function VideoPage() {
         fd.append("animationStyle", animationStyle);
         if (selectedEffects.length > 0) fd.append("effects", selectedEffects.join(","));
         if (selectedMusic) fd.append("backgroundMusic", selectedMusic.url);
+        if (transition !== "cut") { fd.append("transition", transition); fd.append("transitionDuration", String(transitionDuration)); }
+        if (subtitleAnimation !== "static") fd.append("subtitleAnimation", subtitleAnimation);
+        if (composition !== "single") fd.append("composition", composition);
         const res = await fetch("/api/video/generate", { method: "POST", body: fd });
         if (!res.ok) throw new Error(`API ${res.status}`);
         await loadJobs();
@@ -159,6 +185,10 @@ export function VideoPage() {
         animationStyle: scenes[selectedScene]?.animationStyle || animationStyle,
         effects: selectedEffects.length > 0 ? selectedEffects.join(",") : undefined,
         backgroundMusic: selectedMusic?.url || undefined,
+        transition: transition !== "cut" ? transition : undefined,
+        transitionDuration: transition !== "cut" ? transitionDuration : undefined,
+        subtitleAnimation: subtitleAnimation !== "static" ? subtitleAnimation : undefined,
+        composition: composition !== "single" ? composition : undefined,
       };
       const res = await fetch("/api/video/generate", {
         method: "POST",
@@ -373,6 +403,42 @@ export function VideoPage() {
                 <label className="text-[9px] text-slate-400 uppercase tracking-wider block mb-1">Animation</label>
                 <select value={animationStyle} onChange={(e) => setAnimationStyle(e.target.value)} className="w-full bg-slate-900/60 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white">
                   {ANIMATIONS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+              <div>
+                <label className="text-[9px] text-slate-400 uppercase tracking-wider block mb-1">Transition</label>
+                <select value={transition} onChange={(e) => setTransition(e.target.value)} className="w-full bg-slate-900/60 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white">
+                  {TRANSITIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              {transition !== "cut" && (
+                <div>
+                  <label className="text-[9px] text-slate-400 uppercase tracking-wider block mb-1">Transition Dur</label>
+                  <input type="range" min={0.3} max={1.5} step={0.1} value={transitionDuration}
+                    onChange={(e) => setTransitionDuration(Number(e.target.value))}
+                    className="w-full mt-1 accent-[#00f2fe]" />
+                  <p className="text-[8px] text-slate-500 text-center">{transitionDuration.toFixed(1)}s</p>
+                </div>
+              )}
+              <div>
+                <label className="text-[9px] text-slate-400 uppercase tracking-wider block mb-1">Text Animation</label>
+                <select value={subtitleAnimation} onChange={(e) => setSubtitleAnimation(e.target.value)} className="w-full bg-slate-900/60 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white">
+                  <option value="static">Static</option>
+                  <option value="typewriter">Typewriter</option>
+                  <option value="word-fade">Word Fade</option>
+                  <option value="bounce-in">Bounce In</option>
+                  <option value="highlight">Highlight</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] text-slate-400 uppercase tracking-wider block mb-1">Composition</label>
+                <select value={composition} onChange={(e) => setComposition(e.target.value)} className="w-full bg-slate-900/60 border border-slate-800 rounded-lg px-2 py-1.5 text-[10px] text-white">
+                  <option value="single">Single</option>
+                  <option value="picture-in-picture">Picture-in-Picture</option>
+                  <option value="split-screen">Split Screen</option>
+                  <option value="grid">2x2 Grid</option>
                 </select>
               </div>
             </div>

@@ -135,6 +135,7 @@ export function SocialPage() {
   }
 
   async function removeAccount(id: string) {
+    if (!confirm("Remove this social account?")) return;
     try {
       await fetch(`/api/social/accounts/${id}`, { method: "DELETE" });
       setAccounts(prev => prev.filter(a => a.id !== id));

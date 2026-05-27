@@ -309,6 +309,104 @@ def render_subtitle_text(
 # ---------------------------------------------------------------------------
 
 
+def _ffmpeg_overlay_batch(
+    video_path: str,
+    sub_files: List[Tuple[str, float, float]],
+    output_path: str,
+    tmp_dir: str,
+    margin: int,
+    q: dict,
+    filter_builder=None,
+) -> bool:
+    """
+    Overlay PNGs onto video. Handles Windows command line length limit
+    by processing in batches of 15 inputs when needed.
+
+    filter_builder: optional callable(sub_files, margin) -> List[str]
+                    returns filter_parts. If None, uses simple overlay.
+    """
+    ff = shutil.which("ffmpeg") or "ffmpeg"
+    MAX_INPUTS = 15
+
+    if len(sub_files) <= MAX_INPUTS:
+        return _ffmpeg_overlay_single(video_path, sub_files, output_path, ff, margin, q, filter_builder)
+
+    batches = [sub_files[i:i + MAX_INPUTS] for i in range(0, len(sub_files), MAX_INPUTS)]
+    print(f"  [batch] {len(sub_files)} overlays split into {len(batches)} batches of ≤{MAX_INPUTS}", file=sys.stderr)
+
+    current = video_path
+    for bi, batch in enumerate(batches):
+        is_last = (bi == len(batches) - 1)
+        out = output_path if is_last else os.path.join(tmp_dir, f"batch_{bi:03d}.mp4")
+        ok = _ffmpeg_overlay_single(current, batch, out, ff, margin, q, filter_builder)
+        if not ok:
+            print(f"  [batch] Batch {bi} failed", file=sys.stderr)
+            return False
+        if bi > 0 and current != video_path:
+            try: os.unlink(current)
+            except: pass
+        current = out
+
+    return os.path.isfile(output_path)
+
+
+def _ffmpeg_overlay_single(
+    video_path: str,
+    sub_files: List[Tuple[str, float, float]],
+    output_path: str,
+    ff: str,
+    margin: int,
+    q: dict,
+    filter_builder=None,
+) -> bool:
+    """Single-pass FFmpeg overlay for ≤15 inputs."""
+    cmd = [ff, "-y", "-i", video_path]
+    for png_path, _, _ in sub_files:
+        cmd += ["-i", png_path]
+
+    if filter_builder:
+        filter_parts = filter_builder(sub_files, margin)
+    else:
+        filter_parts = []
+        prev = "0:v"
+        n = len(sub_files)
+        for i, (_, start, end) in enumerate(sub_files):
+            src = f"{i + 1}:v"
+            out = f"v{i + 1}" if i < n - 1 else "vfinal"
+            filter_parts.append(
+                f"[{prev}][{src}]overlay="
+                f"x=(W-w)/2:y=H-h-{margin}:"
+                f"enable='between(t,{start:.3f},{end:.3f})'"
+                f"[{out}]"
+            )
+            prev = out
+
+    filter_script = os.path.join(os.path.dirname(output_path), f"filter_{os.path.basename(output_path)}.txt")
+    with open(filter_script, "w", encoding="utf-8") as f:
+        f.write(";".join(filter_parts))
+
+    cmd += [
+        "-filter_complex_script", filter_script,
+        "-map", "[vfinal]", "-map", "0:a?",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-crf", q["crf"], "-preset", q["preset"],
+        "-maxrate", q["maxrate"], "-bufsize", q["bufsize"],
+        "-c:a", "copy", output_path,
+    ]
+
+    r = subprocess.run(cmd, capture_output=True, timeout=900)
+    if r.returncode != 0:
+        err = r.stderr.decode(errors="replace")
+        for line in err.splitlines():
+            low = line.lower()
+            if "error" in low or "invalid" in low or "cannot" in low:
+                print(f"FFmpeg error: {line.strip()}", file=sys.stderr)
+                break
+        print(f"FFmpeg stderr (last 500 chars): {err[-500:]}", file=sys.stderr)
+        return False
+    return True
+
+
 def burn_with_png_overlay(
     video_path: str,
     subtitles: List[Tuple[float, float, str]],
@@ -353,55 +451,7 @@ def burn_with_png_overlay(
             print("ERROR: No subtitle images were rendered successfully", file=sys.stderr)
             return False
 
-        # Build FFmpeg command
-        ff = shutil.which("ffmpeg") or "ffmpeg"
-        cmd = [ff, "-y", "-i", video_path]
-
-        # Add each PNG as an input
-        for png_path, _, _ in sub_files:
-            cmd += ["-i", png_path]
-
-        # Build overlay filter chain
-        filter_parts: List[str] = []
-        prev = "0:v"
-        n = len(sub_files)
-        for i, (_, start, end) in enumerate(sub_files):
-            src = f"{i + 1}:v"
-            out = f"v{i + 1}" if i < n - 1 else "vfinal"
-            filter_parts.append(
-                f"[{prev}][{src}]overlay="
-                f"x=(W-w)/2:y=H-h-{margin}:"
-                f"enable='between(t,{start:.3f},{end:.3f})'"
-                f"[{out}]"
-            )
-            prev = out
-
-        cmd += [
-            "-filter_complex", ";".join(filter_parts),
-            "-map", "[vfinal]",
-            "-map", "0:a?",
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            "-crf", q["crf"],
-            "-preset", q["preset"],
-            "-maxrate", q["maxrate"],
-            "-bufsize", q["bufsize"],
-            "-c:a", "copy",
-            output_path,
-        ]
-
-        r = subprocess.run(cmd, capture_output=True, timeout=900)
-        if r.returncode != 0:
-            err = r.stderr.decode(errors="replace")
-            for line in err.splitlines():
-                low = line.lower()
-                if "error" in low or "invalid" in low or "cannot" in low:
-                    print(f"FFmpeg error: {line.strip()}", file=sys.stderr)
-                    break
-            print(f"FFmpeg stderr (last 500 chars): {err[-500:]}", file=sys.stderr)
-            return False
-
-        return True
+        return _ffmpeg_overlay_batch(video_path, sub_files, output_path, tmp_dir, margin, q)
 
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -543,6 +593,147 @@ def burn_on_frame(
 
 
 # ---------------------------------------------------------------------------
+# Animated subtitle overlays
+# ---------------------------------------------------------------------------
+
+
+def burn_with_animation(
+    video_path: str,
+    subtitles: List[Tuple[float, float, str]],
+    output_path: str,
+    font_path: str,
+    font_size: int = 48,
+    max_text_width: Optional[int] = None,
+    margin: int = 60,
+    quality: str = "high",
+    frame_width: int = 1920,
+    animation: str = "word-fade",
+) -> bool:
+    """
+    Render animated subtitle overlays using PIL + FFmpeg.
+
+    Supported animations:
+      - typewriter: text appears character by character
+      - word-fade: each word fades in sequentially
+      - bounce-in: words slide up from below
+      - highlight: words appear with a highlight background
+    """
+    if max_text_width is None:
+        max_text_width = int(frame_width * 0.85)
+
+    q_presets = {
+        "high":   {"crf": "18", "preset": "slow",   "maxrate": "8M", "bufsize": "16M"},
+        "medium": {"crf": "23", "preset": "medium", "maxrate": "4M", "bufsize": "8M"},
+        "low":    {"crf": "28", "preset": "fast",   "maxrate": "2M", "bufsize": "4M"},
+    }
+    q = q_presets.get(quality, q_presets["high"])
+
+    tmp_dir = tempfile.mkdtemp(prefix="nova_subs_anim_")
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+        dummy = Image.new("RGBA", (1, 1))
+        draw = ImageDraw.Draw(dummy)
+        spacing = max(4, font_size // 4)
+        outline = max(2, font_size // 18)
+        pad = max(8, font_size // 4)
+
+        sub_files: List[Tuple[str, float, float]] = []
+        idx = 0
+
+        for start, end, text in subtitles:
+            words = text.split()
+            if not words:
+                continue
+            dur = end - start
+            if dur <= 0:
+                continue
+
+            if animation == "typewriter":
+                # Word-by-word reveal (not char-by-char — too many PNGs)
+                word_dur = dur / max(len(words), 1)
+                cumulative = ""
+                for wi, word in enumerate(words):
+                    cumulative = " ".join(words[:wi + 1])
+                    img = render_subtitle_text(cumulative, font_path, font_size, max_text_width)
+                    if img is None:
+                        continue
+                    png_path = os.path.join(tmp_dir, f"sub_{idx:05d}.png")
+                    img.save(png_path, format="PNG")
+                    word_start = start + wi * word_dur
+                    sub_files.append((png_path, word_start, end))
+                    idx += 1
+
+            elif animation in ("word-fade", "bounce-in", "highlight"):
+                # Per-word overlays with staggered timing
+                word_dur = dur / max(len(words), 1)
+                for wi, word in enumerate(words):
+                    img = render_subtitle_text(word, font_path, font_size, max_text_width)
+                    if img is None:
+                        continue
+                    png_path = os.path.join(tmp_dir, f"sub_{idx:05d}.png")
+                    img.save(png_path, format="PNG")
+                    word_start = start + wi * word_dur
+                    sub_files.append((png_path, word_start, end))
+                    idx += 1
+
+        if not sub_files:
+            print("ERROR: No animated subtitle images rendered", file=sys.stderr)
+            return False
+
+        # Build filter builder for animation-specific overlays
+        def anim_filter_builder(files, mgn):
+            parts = []
+            prev_label = "0:v"
+            n = len(files)
+            for i, (_, st, en) in enumerate(files):
+                src = f"{i + 1}:v"
+                out_label = f"v{i + 1}" if i < n - 1 else "vfinal"
+                if animation == "typewriter":
+                    parts.append(
+                        f"[{prev_label}][{src}]overlay="
+                        f"x=(W-w)/2:y=H-h-{mgn}:"
+                        f"enable='between(t,{st:.3f},{en:.3f})'"
+                        f"[{out_label}]"
+                    )
+                elif animation == "word-fade":
+                    fd = min(0.3, (en - st) * 0.3)
+                    parts.append(
+                        f"[{prev_label}][{src}]overlay="
+                        f"x=(W-w)/2:y=H-h-{mgn}:"
+                        f"enable='between(t,{st:.3f},{en:.3f})':"
+                        f"alpha='if(between(t,{st:.3f},{st + fd:.3f}),"
+                        f"(t-{st:.3f})/{fd:.3f},1)'"
+                        f"[{out_label}]"
+                    )
+                elif animation == "bounce-in":
+                    fd = min(0.25, (en - st) * 0.25)
+                    parts.append(
+                        f"[{prev_label}][{src}]overlay="
+                        f"x=(W-w)/2:"
+                        f"y='if(between(t,{st:.3f},{st + fd:.3f}),"
+                        f"H-h-{mgn}+30*(1-(t-{st:.3f})/{fd:.3f}),H-h-{mgn})':"
+                        f"enable='between(t,{st:.3f},{en:.3f})':"
+                        f"alpha='if(between(t,{st:.3f},{st + fd:.3f}),"
+                        f"(t-{st:.3f})/{fd:.3f},1)'"
+                        f"[{out_label}]"
+                    )
+                else:
+                    parts.append(
+                        f"[{prev_label}][{src}]overlay="
+                        f"x=(W-w)/2:y=H-h-{mgn}:"
+                        f"enable='between(t,{st:.3f},{en:.3f})'"
+                        f"[{out_label}]"
+                    )
+                prev_label = out_label
+            return parts
+
+        return _ffmpeg_overlay_batch(video_path, sub_files, output_path, tmp_dir, margin, q, anim_filter_builder)
+
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -551,7 +742,8 @@ def main() -> None:
     if len(sys.argv) < 4:
         print(
             "Usage: python burn_subs.py <input_video> <srt_file> <output_video> "
-            "[--short] [--quality high|medium|low] [--font PATH] [--ffmpeg-filter]",
+            "[--short] [--quality high|medium|low] [--font PATH] [--ffmpeg-filter] "
+            "[--animation static|typewriter|word-fade|bounce-in|highlight]",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -573,6 +765,11 @@ def main() -> None:
         if arg.startswith("--font="):
             font_path_override = arg.split("=", 1)[1]
 
+    animation = "static"
+    for arg in sys.argv:
+        if arg.startswith("--animation="):
+            animation = arg.split("=", 1)[1]
+
     font_size = 52 if is_short else 48
     frame_width = 1080 if is_short else 1920
     margin = 80 if is_short else 60
@@ -589,11 +786,24 @@ def main() -> None:
         print("ERROR: No valid subtitle entries in SRT file", file=sys.stderr)
         sys.exit(1)
 
-    print(f"  Parsed {len(entries)} subtitle entries", file=sys.stderr)
+    print(f"  Parsed {len(entries)} subtitle entries (animation={animation})", file=sys.stderr)
 
     if use_ffmpeg_filter:
         # Use FFmpeg's native subtitle filter (simpler, less control)
         success = burn_with_ffmpeg_filter(input_video, srt_file, output_video, quality)
+    elif animation != "static":
+        # Use animated subtitle overlay
+        success = burn_with_animation(
+            video_path=input_video,
+            subtitles=entries,
+            output_path=output_video,
+            font_path=font_path,
+            font_size=font_size,
+            margin=margin,
+            quality=quality,
+            frame_width=frame_width,
+            animation=animation,
+        )
     else:
         # Use PIL-rendered PNGs + FFmpeg overlay (full control)
         success = burn_with_png_overlay(

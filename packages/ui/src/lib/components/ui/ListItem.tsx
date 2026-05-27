@@ -1,7 +1,7 @@
 import { type LiHTMLAttributes } from "react";
 
 interface ListItemProps extends LiHTMLAttributes<HTMLLIElement> {
-  icon?: string;
+  icon?: React.ReactNode;
   active?: boolean;
 }
 

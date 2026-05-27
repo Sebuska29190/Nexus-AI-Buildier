@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 
 interface SkillsPageProps {
   skills?: any[];
@@ -6,12 +6,8 @@ interface SkillsPageProps {
 }
 
 export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProps) {
-  const filter = "all";
-  const searchQuery = "";
-  const hubQuery = "";
-  const hubResults: any[] = [];
-  const hubLoading = false;
-  const hubMsg = "";
+  const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredSkills = useMemo(() => {
     let list = skills;
@@ -52,6 +48,34 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
           </svg>
           Refresh
         </button>
+      </div>
+
+      {/* Search & Filter */}
+      <div className="glass-panel rounded-xl p-4 mb-6 border border-[#00f2fe]/10">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search skills by name, description, or tag..."
+              className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00f2fe] transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-[#00f2fe] transition-all"
+          >
+            <option value="all">All</option>
+            <option value="auto-generated">AI Generated</option>
+            <option value="tool">Tools</option>
+            <option value="script">Scripts</option>
+          </select>
+        </div>
       </div>
 
       {filteredSkills.length === 0 ? (
