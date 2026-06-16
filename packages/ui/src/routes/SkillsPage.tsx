@@ -30,8 +30,8 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
   function paramBadgeColor(kind: string) {
     switch (kind) {
       case "required": return "bg-red-950/40 text-red-400 border-red-900/30";
-      case "optional": return "bg-slate-800 text-slate-400 border-slate-700";
-      default: return "bg-slate-800 text-slate-400 border-slate-700";
+      case "optional": return "bg-slate-800 text-[#94a3b8] border-slate-700";
+      default: return "bg-slate-800 text-[#94a3b8] border-slate-700";
     }
   }
 
@@ -40,9 +40,9 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-white">Agent Skills Library ({skills.length})</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Manage functional blocks, tool schemas, and executable script capabilities.</p>
+          <p className="text-xs text-[#94a3b8] mt-0.5">Manage functional blocks, tool schemas, and executable script capabilities.</p>
         </div>
-        <button className="btn-premium px-3 py-1.5 rounded text-xs flex items-center gap-1.5" onClick={onRefresh}>
+        <button className="btn-nova px-3 py-1.5 rounded text-xs flex items-center gap-1.5" onClick={onRefresh}>
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
           </svg>
@@ -51,16 +51,16 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
       </div>
 
       {/* Search & Filter */}
-      <div className="glass-panel rounded-xl p-4 mb-6 border border-[#00f2fe]/10">
+      <div className="glass-panel rounded-xl p-4 mb-6 border border-[#6366f1]/10">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <svg className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[#475569]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
             </svg>
             <input
               type="text"
               placeholder="Search skills by name, description, or tag..."
-              className="w-full bg-slate-950/60 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00f2fe] transition-all"
+              className="w-full bg-slate-950/60 border border-[rgba(255,255,255,0.06)] rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#6366f1] transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -68,7 +68,7 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-[#00f2fe] transition-all"
+            className="bg-slate-950/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-[#6366f1] transition-all"
           >
             <option value="all">All</option>
             <option value="auto-generated">AI Generated</option>
@@ -80,7 +80,7 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
 
       {filteredSkills.length === 0 ? (
         <div className="glass-panel rounded-xl p-8 flex flex-col items-center justify-center gap-2">
-          <p className="text-sm text-slate-400">No skills found</p>
+          <p className="text-sm text-[#94a3b8]">No skills found</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -100,12 +100,12 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
                 </div>
               </div>
               {skill.description && (
-                <p className="text-xs text-slate-400 mb-3 leading-relaxed">{skill.description}</p>
+                <p className="text-xs text-[#94a3b8] mb-3 leading-relaxed">{skill.description}</p>
               )}
 
               {skill.parameters?.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-[10px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Parameters</p>
+                  <p className="text-[10px] font-semibold text-[#475569] mb-1.5 uppercase tracking-wider">Parameters</p>
                   <div className="space-y-1">
                     {skill.parameters.map((param: any, i: number) => (
                       <div key={i}>
@@ -114,9 +114,9 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
                           {param.required && (
                             <span className={`text-[9px] px-1.5 py-0.5 rounded border ${paramBadgeColor("required")}`}>required</span>
                           )}
-                          {param.type && <span className="text-[9px] text-slate-500">{param.type}</span>}
+                          {param.type && <span className="text-[9px] text-[#475569]">{param.type}</span>}
                         </div>
-                        {param.description && <p className="text-[10px] text-slate-500 ml-1">{param.description}</p>}
+                        {param.description && <p className="text-[10px] text-[#475569] ml-1">{param.description}</p>}
                       </div>
                     ))}
                   </div>
@@ -124,7 +124,7 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
               )}
 
               {skill.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-auto pt-2 border-t border-slate-800">
+                <div className="flex flex-wrap gap-1 mt-auto pt-2 border-t border-[rgba(255,255,255,0.06)]">
                   {skill.tags.map((tag: string, i: number) => (
                     <span key={i} className="custom-badge text-[9px]">{tag?.name ?? tag}</span>
                   ))}

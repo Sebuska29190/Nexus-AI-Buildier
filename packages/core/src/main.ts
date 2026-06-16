@@ -47,6 +47,10 @@ import "./log/capture.ts"; // Log capture system (intercepts console.log/warn/er
 import "./multi-agent/tools_parallel.ts"; // Parallel sub-agent tool
 import "./skill/hub.ts"; // Skill Hub (agentskills.io integration)
 import "./plugin/community-plugins.ts"; // registers community plugin registry
+import "./git/tools.ts"; // registers 11 git tools
+import "./memory/knowledge-graph.ts"; // registers 6 knowledge graph tools
+import "./agent/goal-decomposition.ts"; // registers 4 goal decomposition tools
+import "./analytics/dashboard.ts"; // registers 4 analytics tools
 import deepseekPlugin from "../../provider-deepseek/src/index.ts";
 import anthropicProvider from "../../provider-anthropic/src/index.ts";
 import openaiProvider from "../../provider-openai/src/index.ts";

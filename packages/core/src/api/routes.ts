@@ -2127,5 +2127,213 @@ Return valid JSON only (no markdown, no code fences):
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
+
+
+  // ─── Playground ────────────────────────────────────────────────
+  const playgroundHistory: any[] = [];
+
+  app.post("/api/playground/run", async (c) => {
+    try {
+      const body = await c.req.json();
+      const { model, systemPrompt, userPrompt, temperature, maxTokens } = body;
+
+      const messages = [];
+      if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
+      messages.push({ role: "user", content: userPrompt });
+
+      // Use the existing chat mechanism
+      const startTime = Date.now();
+      const result = await runAgent({
+        message: userPrompt,
+        modelRef: model || "deepseek/deepseek-chat",
+        systemPrompt: systemPrompt || undefined,
+      });
+      const latency = (Date.now() - startTime) / 1000;
+
+      return c.json({ 
+        text: result.text,
+        latency,
+        tokens: result.usage?.total_tokens || 0,
+        cost: 0,
+      });
+    } catch (e: any) {
+      return c.json({ error: e.message }, 500);
+    }
+  });
+
+  app.get("/api/playground/history", (c) => {
+    return c.json({ runs: playgroundHistory.slice(0, 50) });
+  });
+
+  app.post("/api/playground/save", async (c) => {
+    try {
+      const body = await c.req.json();
+      const { name, systemPrompt, userPrompt, model } = body;
+      playgroundHistory.push({
+        id: Date.now(),
+        name,
+        systemPrompt,
+        userPrompt,
+        model,
+        savedAt: new Date().toISOString(),
+      });
+      return c.json({ ok: true });
+    } catch (e: any) {
+      return c.json({ error: e.message }, 500);
+    }
+  });
+
+  // ─── OAuth Endpoints ──────────────────────────────────────
+  app.get("/api/integrations/oauth/authorize/:service", async (c) => {
+    try {
+      const { oauthManager } = await import("../integrations/oauth");
+      const { url, codeVerifier } = oauthManager.getAuthorizeUrl(c.req.param("service"));
+      // Store codeVerifier in session for later exchange
+      return c.json({ url, codeVerifier });
+    } catch (e: any) { return c.json({ error: e.message }, 400); }
+  });
+
+  app.post("/api/integrations/oauth/callback", async (c) => {
+    try {
+      const { oauthManager } = await import("../integrations/oauth");
+      const body = await c.req.json();
+      const token = await oauthManager.exchangeCode(body.service, body.code, body.codeVerifier);
+      // Store token for the integration
+      if (body.integrationId) {
+        oauthManager.storeTokens(body.integrationId, body.service, token);
+      }
+      return c.json({ ok: true, tokenType: token.tokenType, scopes: token.scopes });
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.get("/api/integrations/oauth/config", (c) => {
+    const configs: Record<string, any> = {};
+    for (const [service, config] of Object.entries(require("../integrations/oauth").OAUTH_CONFIGS)) {
+      configs[service] = { authorizeUrl: config.authorizeUrl, scopes: config.scopes, usePKCE: config.usePKCE };
+    }
+    return c.json(configs);
+  });
+
+  // ─── Git Automation Endpoints ─────────────────────────────
+  app.post("/api/git/status", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.getStatus(body.cwd || process.cwd()));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/diff", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.diff(body.cwd || process.cwd(), body.target));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/log", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.log(body.cwd || process.cwd(), body.count || 20));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/branch", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.branch(body.cwd || process.cwd(), body.name));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/checkout", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json();
+      return c.json(await gitManager.checkout(body.cwd || process.cwd(), body.branch));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/commit", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json();
+      return c.json(await gitManager.commit(body.cwd || process.cwd(), body.message, body.files));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/push", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.push(body.cwd || process.cwd(), body.remote, body.branch));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/pull", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.pull(body.cwd || process.cwd(), body.remote, body.branch));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/stash", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.stash(body.cwd || process.cwd(), body.message));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/stash-pop", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json().catch(() => ({}));
+      return c.json(await gitManager.stashPop(body.cwd || process.cwd()));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  app.post("/api/git/blame", async (c) => {
+    try {
+      const { gitManager } = await import("../git/manager");
+      const body = await c.req.json();
+      return c.json(await gitManager.blame(body.cwd || process.cwd(), body.file));
+    } catch (e: any) { return c.json({ error: e.message }, 500); }
+  });
+
+  // ─── RAG Embedding Endpoints ──────────────────────────────
+  app.get("/api/rag/config", (c) => {
+    const { embeddingManager } = require("../rag/manager");
+    return c.json(embeddingManager.getConfig());
+  });
+
+  app.post("/api/rag/config", async (c) => {
+    const { embeddingManager } = require("../rag/manager");
+    const body = await c.req.json();
+    await embeddingManager.setConfig(body.provider, body.model, body.apiKey);
+    return c.json({ ok: true });
+  });
+
+  app.post("/api/rag/embed/:docId", async (c) => {
+    const { embeddingManager } = require("../rag/manager");
+    const count = await embeddingManager.embedDocument(c.req.param("docId"));
+    return c.json({ embedded: count });
+  });
+
+  app.post("/api/rag/embed-all", async (c) => {
+    const { embeddingManager } = require("../rag/manager");
+    const result = await embeddingManager.embedAllDocuments();
+    return c.json(result);
+  });
+
+  app.post("/api/rag/hybrid-search", async (c) => {
+    const { embeddingManager } = require("../rag/manager");
+    const body = await c.req.json();
+    const results = await embeddingManager.hybridSearch(body.query, body.limit || 10);
+    return c.json({ results });
+  });
+
   return app;
 }

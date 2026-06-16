@@ -4,6 +4,7 @@ import { Sidebar } from "./lib/components/Sidebar";
 import { StatusBar } from "./lib/components/StatusBar";
 import { ToastProvider, useToast } from "./lib/components/ui/Toast";
 import { ErrorBoundary } from "./lib/ErrorBoundary";
+import { MobileNav } from "./lib/components/MobileNav";
 
 // Pages
 import { ChatPage } from "./routes/ChatPage";
@@ -35,10 +36,13 @@ import { RagPage } from "./routes/RagPage";
 import { ChambersPage } from "./routes/ChambersPage";
 import { WorkflowsPage } from "./routes/WorkflowsPage";
 import { ToolsAnalyticsPage } from "./routes/ToolsAnalyticsPage";
+import { PromptPlaygroundPage } from "./routes/PromptPlaygroundPage";
+import { GitAutomationPage } from "./routes/GitAutomationPage";
 
 // Page component map
 const pages: Record<string, React.ComponentType<any>> = {
   chat: ChatPage,
+  playground: PromptPlaygroundPage,
   agents: AgentsPage,
   skills: SkillsPage,
   plugins: PluginsPage,
@@ -69,6 +73,7 @@ const pages: Record<string, React.ComponentType<any>> = {
   "chambers": ChambersPage,
   "workflows": WorkflowsPage,
   "tools-analytics": ToolsAnalyticsPage,
+  "git": GitAutomationPage,
 };
 
 function AppContent() {
@@ -124,12 +129,10 @@ function AppContent() {
   }
 
   useEffect(() => {
-    // Listen for custom navigation events from child pages
     const navHandler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (typeof detail === "string") setRoute(detail);
     };
-    // Listen for resume session events
     const resumeHandler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.sessionId) {
@@ -139,7 +142,6 @@ function AppContent() {
     };
     window.addEventListener("nova-navigate", navHandler);
     window.addEventListener("nova-resume-session", resumeHandler);
-    // Init lucide icons (inline SVG replaced this, but keep for legacy support)
     refresh();
     const int = setInterval(() => { try { refresh(); } catch {} }, 15000);
     return () => {
@@ -149,19 +151,18 @@ function AppContent() {
     };
   }, []);
 
-  // Render current page
   const PageComponent = pages[route];
 
   return (
     <>
       <div className="ambient-glow" />
-      <div className="h-dvh max-h-dvh flex bg-[#020408] text-nova-foreground overflow-hidden relative z-10">
+      <div className="h-dvh max-h-dvh flex bg-[#0a0a0f] text-[#f1f5f9] overflow-hidden relative z-10">
         <Sidebar route={route} onRoute={setRoute} version={version} sessions={sessions} />
 
         <div className="flex-1 flex flex-col min-w-0">
           <StatusBar
             connected={connected}
-            version={version || "0.6.1"}
+            version={version || "0.7.0"}
             selectedModel={selectedModel}
             models={models}
             workspaceName={workspaceName}
@@ -170,7 +171,7 @@ function AppContent() {
             onNewChat={handleNewChat}
           />
 
-          <main className="flex-1 overflow-y-auto relative p-6 z-10" id="main-content">
+          <main className="flex-1 overflow-y-auto relative p-6 z-10 animate-fade-in" id="main-content">
             <ErrorBoundary>
             {PageComponent ? (
               <PageComponent
@@ -185,20 +186,21 @@ function AppContent() {
                 onSessionKeyChange={(key: string) => setResumeSessionId(key)}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400 max-w-5xl mx-auto w-full">
-                <div className="w-12 h-12 rounded-xl bg-[rgba(0,242,254,0.06)] border border-[#00f2fe]/20 flex items-center justify-center">
-                  <svg data-lucide="sparkles" className="w-5 h-5 text-[#00f2fe]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-[#475569] max-w-5xl mx-auto w-full">
+                <div className="w-16 h-16 rounded-2xl bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.1)]">
+                  <svg className="w-7 h-7 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
                   </svg>
                 </div>
                 <h2 className="text-lg font-bold text-white">Coming Soon</h2>
-                <p className="text-xs text-slate-400">This section is under development</p>
+                <p className="text-xs text-[#475569]">This section is under development</p>
               </div>
             )}
             </ErrorBoundary>
           </main>
         </div>
       </div>
+      <MobileNav route={route} onRoute={setRoute} />
     </>
   );
 }

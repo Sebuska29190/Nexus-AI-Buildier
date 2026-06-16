@@ -27,11 +27,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const showToast = useCallback((msg: string, type: ToastType = "info") => {
     const id = nextId++;
     setToasts((prev) => [...prev, { id, message: msg, type, visible: false }]);
-    // Trigger animation
     setTimeout(() => {
       setToasts((prev) => prev.map((t) => t.id === id ? { ...t, visible: true } : t));
     }, 10);
-    // Auto remove
     setTimeout(() => {
       setToasts((prev) => prev.map((t) => t.id === id ? { ...t, visible: false } : t));
       setTimeout(() => {
@@ -43,37 +41,36 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast container */}
-      <div className="fixed top-4 right-4 z-200 flex flex-col gap-2">
+      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
         {toasts.map((toast) => {
           const typeStyles: Record<string, string> = {
-            success: "bg-[#22c55e]/15 text-[#22c55e] border-[#22c55e]/30",
-            error: "bg-[#ef4444]/15 text-[#ef4444] border-[#ef4444]/30",
-            info: "bg-[#2dd4bf]/15 text-[#2dd4bf] border-[#2dd4bf]/30",
-            warning: "bg-[#eab308]/15 text-[#eab308] border-[#eab308]/30",
+            success: "bg-[rgba(34,197,94,0.12)] text-[#22c55e] border border-[rgba(34,197,94,0.2)]",
+            error: "bg-[rgba(239,68,68,0.12)] text-[#ef4444] border border-[rgba(239,68,68,0.2)]",
+            info: "bg-[rgba(99,102,241,0.12)] text-[#818cf8] border border-[rgba(99,102,241,0.2)]",
+            warning: "bg-[rgba(245,158,11,0.12)] text-[#f59e0b] border border-[rgba(245,158,11,0.2)]",
           };
           const icons: Record<string, string> = {
-            success: "✅",
-            error: "❌",
-            info: "ℹ️",
-            warning: "⚠️",
+            success: "✓",
+            error: "✕",
+            info: "ℹ",
+            warning: "⚠",
           };
 
           return (
             <div
               key={toast.id}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm shadow-[0_8px_24px_rgba(0,0,0,0.3)] backdrop-blur-md border max-w-[400px] transition-transform duration-300 ease-out ${
-                toast.visible ? "translate-x-0" : "translate-x-[120%]"
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm backdrop-blur-xl max-w-[400px] transition-all duration-300 ease-out shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${
+                toast.visible ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0"
               } ${typeStyles[toast.type] || typeStyles.info}`}
             >
-              <span className="text-sm shrink-0">{icons[toast.type]}</span>
+              <span className="text-xs shrink-0 font-bold">{icons[toast.type]}</span>
               <span className="flex-1">{toast.message}</span>
               <button
                 onClick={() => {
                   setToasts((prev) => prev.map((t) => t.id === toast.id ? { ...t, visible: false } : t));
                   setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== toast.id)), 300);
                 }}
-                className="bg-none border-none text-inherit opacity-60 cursor-pointer text-xs p-0.5 shrink-0 hover:opacity-100"
+                className="bg-none border-none text-inherit opacity-50 cursor-pointer text-xs p-0.5 shrink-0 hover:opacity-100 transition-opacity"
               >
                 ✕
               </button>

@@ -33,10 +33,10 @@ export function AnalyticsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-white">Performance Analytics</h2>
-          <p className="text-xs text-slate-400 mt-1">Observe model token expenditures, query latencies, and execution success rates.</p>
+          <p className="text-xs text-[#94a3b8] mt-1">Observe model token expenditures, query latencies, and execution success rates.</p>
         </div>
         <select
-          className="bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-[#00f2fe]"
+          className="bg-slate-900/50 border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-[#6366f1]"
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
         >
@@ -48,61 +48,61 @@ export function AnalyticsPage() {
 
       {loading ? (
         <div className="glass-panel rounded-xl p-8 flex items-center justify-center">
-          <p className="text-sm text-slate-400">Loading analytics...</p>
+          <p className="text-sm text-[#94a3b8]">Loading analytics...</p>
         </div>
       ) : !stats ? (
         <div className="glass-panel rounded-xl p-8 flex flex-col items-center justify-center gap-2">
-          <p className="text-sm text-slate-400">No analytics data available</p>
-          <p className="text-xs text-slate-500">Start using agents to see performance metrics.</p>
+          <p className="text-sm text-[#94a3b8]">No analytics data available</p>
+          <p className="text-xs text-[#475569]">Start using agents to see performance metrics.</p>
         </div>
       ) : (
         <>
           {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="glass-panel p-5 rounded-xl">
-              <span className="text-xs text-slate-500">Total Sessions</span>
+              <span className="text-xs text-[#475569]">Total Sessions</span>
               <div className="text-2xl font-bold text-white mt-1">{stats.totalSessions ?? 0}</div>
-              <span className="text-[10px] text-slate-500">All time</span>
+              <span className="text-[10px] text-[#475569]">All time</span>
             </div>
             <div className="glass-panel p-5 rounded-xl">
-              <span className="text-xs text-slate-500">Total Agents</span>
+              <span className="text-xs text-[#475569]">Total Agents</span>
               <div className="text-2xl font-bold text-white mt-1">{stats.totalAgents ?? 0}</div>
-              <span className="text-[10px] text-slate-500">{stats.activeAgents ?? 0} active now</span>
+              <span className="text-[10px] text-[#475569]">{stats.activeAgents ?? 0} active now</span>
             </div>
             <div className="glass-panel p-5 rounded-xl">
-              <span className="text-xs text-slate-500">Skills Used</span>
+              <span className="text-xs text-[#475569]">Skills Used</span>
               <div className="text-2xl font-bold text-white mt-1">{stats.totalSkills ?? 0}</div>
-              <span className="text-[10px] text-slate-500">Across all agents</span>
+              <span className="text-[10px] text-[#475569]">Across all agents</span>
             </div>
             <div className="glass-panel p-5 rounded-xl">
-              <span className="text-xs text-slate-500">Active Agents</span>
+              <span className="text-xs text-[#475569]">Active Agents</span>
               <div className="text-2xl font-bold text-white mt-1">{stats.activeAgents ?? 0}</div>
-              <span className="text-[10px] text-slate-500">Currently running</span>
+              <span className="text-[10px] text-[#475569]">Currently running</span>
             </div>
           </div>
 
           {/* Success Rate & Latency */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="glass-panel p-5 rounded-xl">
-              <span className="text-xs text-slate-500">Success Run Rate</span>
+              <span className="text-xs text-[#475569]">Success Run Rate</span>
               <div className={`text-2xl font-bold ${statColor(stats.successRate ?? 0, 98.5)} mt-1`}>
                 {(stats.successRate ?? 0).toFixed(2)}%
               </div>
-              <span className="text-[10px] text-slate-500">Target: &gt; 98.5%</span>
+              <span className="text-[10px] text-[#475569]">Target: &gt; 98.5%</span>
             </div>
             <div className="glass-panel p-5 rounded-xl">
-              <span className="text-xs text-slate-500">Avg Response Latency</span>
+              <span className="text-xs text-[#475569]">Avg Response Latency</span>
               <div className="text-2xl font-bold text-white mt-1">
                 {stats.avgLatency ?? 0} ms
               </div>
-              <span className="text-[10px] text-slate-500 font-mono">Across all models</span>
+              <span className="text-[10px] text-[#475569] font-mono">Across all models</span>
             </div>
             <div className="glass-panel p-5 rounded-xl">
-              <span className="text-xs text-slate-500">Total Spend</span>
+              <span className="text-xs text-[#475569]">Total Spend</span>
               <div className="text-2xl font-bold text-white mt-1">
                 ${(stats.totalSpend ?? 0).toFixed(2)}
               </div>
-              <span className="text-[10px] text-slate-500">Estimated this period</span>
+              <span className="text-[10px] text-[#475569]">Estimated this period</span>
             </div>
           </div>
 
@@ -121,11 +121,11 @@ export function AnalyticsPage() {
                       <span className="text-xs text-slate-300 font-mono w-48 truncate">{item.model}</span>
                       <div className="flex-1 bg-slate-800/50 rounded-full h-2">
                         <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#00f2fe] to-[#4facfe]"
+                          className="h-2 rounded-full bg-gradient-to-r from-[#6366f1] to-[#4facfe]"
                           style={{ width: `${Math.min(100, (item.count / maxCount) * 100)}%` }}
                         />
                       </div>
-                      <span className="text-xs text-slate-400 font-mono w-16 text-right">{item.count}</span>
+                      <span className="text-xs text-[#94a3b8] font-mono w-16 text-right">{item.count}</span>
                     </div>
                   );
                 })}
@@ -140,8 +140,8 @@ export function AnalyticsPage() {
                 <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 Requests Over Time
               </h3>
-              <div className="h-48 flex items-center justify-center border border-dashed border-slate-800 rounded-lg">
-                <span className="text-xs text-slate-500">Chart coming soon</span>
+              <div className="h-48 flex items-center justify-center border border-dashed border-[rgba(255,255,255,0.06)] rounded-lg">
+                <span className="text-xs text-[#475569]">Chart coming soon</span>
               </div>
             </div>
             <div className="glass-panel rounded-xl p-5">
@@ -149,8 +149,8 @@ export function AnalyticsPage() {
                 <svg className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Latency Trend
               </h3>
-              <div className="h-48 flex items-center justify-center border border-dashed border-slate-800 rounded-lg">
-                <span className="text-xs text-slate-500">Chart coming soon</span>
+              <div className="h-48 flex items-center justify-center border border-dashed border-[rgba(255,255,255,0.06)] rounded-lg">
+                <span className="text-xs text-[#475569]">Chart coming soon</span>
               </div>
             </div>
           </div>
@@ -164,9 +164,9 @@ export function AnalyticsPage() {
               </h3>
               <div className="space-y-2">
                 {stats.recentActivity.map((activity: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-800/50 last:border-0">
+                  <div key={i} className="flex items-center justify-between py-1.5 border-b border-[rgba(255,255,255,0.06)]/50 last:border-0">
                     <span className="text-xs text-slate-300">{activity.action}</span>
-                    <span className="text-[10px] text-slate-500 font-mono">{activity.timestamp}</span>
+                    <span className="text-[10px] text-[#475569] font-mono">{activity.timestamp}</span>
                   </div>
                 ))}
               </div>

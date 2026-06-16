@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  nova:
+    build: .
+    container_name: nova-ai-builder
+    ports:
+      - "4123:4123"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./agents:/app/agents
+      - ./skills:/app/skills
+      - ./knowledge:/app/knowledge
+      - ./.env:/app/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=4123
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4123/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - nova-net
+
+networks:
+  nova-net:
+    driver: bridge
+
+volumes:
+  nova-data:
+    driver: local

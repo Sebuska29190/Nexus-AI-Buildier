@@ -20,18 +20,18 @@ export function StatusBar({
   };
 
   return (
-    <header className="h-14 border-b border-gray-800 flex items-center justify-between px-6 z-10 bg-[#0e1117]/70 backdrop-blur-md">
+    <header className="h-14 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between px-6 z-10 bg-[rgba(18,18,26,0.7)] backdrop-blur-xl">
       <div className="flex items-center gap-3">
-        <div className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-500 active-dot" : "bg-slate-600"}`} />
-        <span className="text-xs font-mono text-gray-400">
-          Agent Status: <strong className="text-white">{modelLabel(selectedModel)} {connected ? "(active)" : "(offline)"}</strong>
+        <div className={`w-2 h-2 rounded-full ${connected ? "bg-[#22c55e] active-dot" : "bg-[#475569]"}`} />
+        <span className="text-xs font-mono text-[#475569]">
+          Agent Status: <strong className="text-[#f1f5f9]">{modelLabel(selectedModel)} {connected ? "(active)" : "(offline)"}</strong>
         </span>
       </div>
 
       <div className="flex items-center gap-3">
         <select
           value={selectedModel}
-          className="bg-[#161b22] border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-teal-500/50 transition-all"
+          className="glass-input px-3 py-1.5 text-xs cursor-pointer"
           onChange={(e) => onModelChange(e.target.value)}
         >
           {models.length > 0 ? (
@@ -48,15 +48,15 @@ export function StatusBar({
 
         <button
           onClick={onWorkspacePick}
-          className="flex items-center gap-2 bg-[#161b22] hover:bg-[#1c2333] border border-gray-800 rounded-lg px-3.5 py-1.5 text-xs text-gray-300 transition-all"
+          className="btn-glass flex items-center gap-2 px-3.5 py-1.5 text-xs"
         >
-          <Folder size={14} className="text-teal-400" />
+          <Folder size={14} className="text-[#6366f1]" />
           <span>{workspaceName || "No folder selected"}</span>
         </button>
 
         <button
           onClick={onNewChat}
-          className="bg-[#161b22] hover:bg-gray-800 text-gray-300 border border-gray-800 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all"
+          className="btn-nova px-3.5 py-1.5 text-xs"
         >
           New Chat
         </button>

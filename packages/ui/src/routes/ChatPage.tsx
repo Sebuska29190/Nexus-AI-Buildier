@@ -448,16 +448,16 @@ export function ChatPage({
   const filteredCommands = SLASH_COMMANDS.filter(c => c.cmd.toLowerCase().includes(`/${suggestionFilter}`));
 
   return (
-    <div className="flex h-full bg-[#0a0c10] text-gray-200 overflow-hidden font-sans"
+    <div className="flex h-full bg-[#0a0a0f] text-gray-200 overflow-hidden font-sans"
       ref={dropRef}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}>
       {/* Drag overlay */}
       {dragOver && (
-        <div className="fixed inset-0 z-[100] bg-[#00f2fe]/5 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-          <div className="bg-[#0b0f19] border-2 border-dashed border-[#00f2fe]/50 rounded-2xl px-8 py-6 text-center shadow-2xl">
-            <p className="text-[#00f2fe] text-lg font-bold mb-1">Drop files here</p>
+        <div className="fixed inset-0 z-[100] bg-[#6366f1]/5 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+          <div className="bg-[#0b0f19] border-2 border-dashed border-[#6366f1]/50 rounded-2xl px-8 py-6 text-center shadow-2xl">
+            <p className="text-[#6366f1] text-lg font-bold mb-1">Drop files here</p>
             <p className="text-slate-400 text-xs">Images, documents, audio, video</p>
           </div>
         </div>
@@ -465,19 +465,19 @@ export function ChatPage({
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="border-b border-gray-800 p-4 flex items-center justify-between bg-[#0e1117]/80 backdrop-blur-md">
+        <div className="border-b border-[rgba(255,255,255,0.06)] p-4 flex items-center justify-between bg-[rgba(18,18,26,0.95)]/80 backdrop-blur-md">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+            <div className="w-8 h-8 rounded-lg bg-[#6366f1]/10 flex items-center justify-center text-[#818cf8]">
               <Bot size={20} />
             </div>
             <div>
               <h2 className="font-semibold text-sm text-white">{settings.agent}</h2>
-              <p className="text-[10px] text-teal-500">Aktywny proces</p>
+              <p className="text-[10px] text-[#6366f1]">Aktywny proces</p>
             </div>
           </div>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-teal-400"
+            className="p-2 hover:bg-[rgba(255,255,255,0.06)] rounded-lg transition-colors text-[#94a3b8] hover:text-[#818cf8]"
           >
             <Settings size={18} />
           </button>
@@ -488,21 +488,21 @@ export function ChatPage({
           {messages.length === 0 ? (
             /* Welcome screen */
             <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mb-6 shadow-lg shadow-teal-500/5">
-                <Sparkles size={32} className="text-teal-400" />
+              <div className="w-16 h-16 rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/20 flex items-center justify-center mb-6 shadow-lg shadow-teal-500/5">
+                <Sparkles size={32} className="text-[#818cf8]" />
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-white mb-2">How can we empower your build today?</h2>
-              <p className="text-sm text-gray-500 max-w-md mb-8">Type **/** for commands, or use @commands below.</p>
+              <p className="text-sm text-[#475569] max-w-md mb-8">Type **/** for commands, or use @commands below.</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-lg w-full mb-8">
                 {AT_COMMANDS.slice(0, 9).map((cmd) => (
                   <button key={cmd} onClick={() => { setInput(cmd + " "); inputRef.current?.focus(); }}
-                    className="custom-badge bg-[#161b22] border border-gray-800 hover:border-teal-500/30 hover:bg-[#1c2333] text-gray-400 hover:text-white transition-all text-left truncate">
-                    <span className="text-teal-500 mr-1 opacity-70">~</span>{cmd}
+                    className="custom-badge bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] hover:border-teal-500/30 hover:bg-[#1c2333] text-[#94a3b8] hover:text-white transition-all text-left truncate">
+                    <span className="text-[#6366f1] mr-1 opacity-70">~</span>{cmd}
                   </button>
                 ))}
               </div>
               <div className="flex flex-wrap gap-2 justify-center">
-                <span className="text-[10px] bg-teal-500/5 border border-teal-500/20 text-teal-400 px-2 py-1 rounded-full">
+                <span className="text-[10px] bg-teal-500/5 border border-[#6366f1]/20 text-[#818cf8] px-2 py-1 rounded-full">
                   <Command size={10} className="inline mr-1" />/help — lista komend
                 </span>
               </div>
@@ -512,14 +512,14 @@ export function ChatPage({
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-4 ${msg.role === "user" ? "justify-end" : ""}`}>
                   {msg.role !== "user" && (
-                    <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
-                      <Sparkles size={16} className="text-teal-400" />
+                    <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center shrink-0">
+                      <Sparkles size={16} className="text-[#818cf8]" />
                     </div>
                   )}
                   <div className={`max-w-[75%] p-4 rounded-2xl text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-teal-600 text-white"
-                      : "bg-gray-900 border border-gray-800"
+                      ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
+                      : "bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]"
                   }`}>
                     {msg.role === "assistant" ? (
                       <div className="prose-nova text-sm text-gray-200 leading-relaxed"
@@ -537,7 +537,7 @@ export function ChatPage({
                       </div>
                     )}
                     {msg.timestamp && msg.role === "assistant" && (
-                      <div className="text-[10px] text-gray-600 mt-2 font-mono">
+                      <div className="text-[10px] text-[#475569] mt-2 font-mono">
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </div>
                     )}
@@ -548,11 +548,11 @@ export function ChatPage({
               {/* Streaming message */}
               {streaming && streamContent && (
                 <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
-                    <Sparkles size={16} className="text-teal-400" />
+                  <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center shrink-0">
+                    <Sparkles size={16} className="text-[#818cf8]" />
                   </div>
-                  <div className="max-w-[75%] p-4 rounded-2xl bg-gray-900 border border-gray-800">
-                    <div className="text-sm text-gray-300 whitespace-pre-wrap">{streamContent}</div>
+                  <div className="max-w-[75%] p-4 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+                    <div className="text-sm text-[#cbd5e1] whitespace-pre-wrap">{streamContent}</div>
                     <span className="inline-block w-1.5 h-4 bg-teal-400 animate-pulse ml-0.5" />
                   </div>
                 </div>
@@ -561,11 +561,11 @@ export function ChatPage({
               {/* Loading indicator */}
               {loading && !streamContent && (
                 <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0">
-                    <Sparkles size={16} className="text-teal-400" />
+                  <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.06)] flex items-center justify-center shrink-0">
+                    <Sparkles size={16} className="text-[#818cf8]" />
                   </div>
-                  <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-2xl p-4 flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-sm text-[#475569]">
                       <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
                       Nova is thinking...
                     </div>
@@ -583,12 +583,12 @@ export function ChatPage({
 
         {/* File preview bar */}
         {files.length > 0 && (
-          <div className="px-4 py-2 bg-[#0e1117] border-t border-gray-800 flex flex-wrap gap-2">
+          <div className="px-4 py-2 bg-[rgba(18,18,26,0.95)] border-t border-[rgba(255,255,255,0.06)] flex flex-wrap gap-2">
             {files.map((file, i) => (
-              <div key={i} className="flex items-center gap-1.5 bg-[#161b22] border border-gray-800 rounded-lg px-2.5 py-1 text-xs text-gray-400">
+              <div key={i} className="flex items-center gap-1.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg px-2.5 py-1 text-xs text-[#94a3b8]">
                 <span>{getFileIcon(file.name)}</span>
                 <span className="max-w-[120px] truncate">{file.name}</span>
-                <button onClick={() => removeFile(i)} className="text-gray-600 hover:text-red-400 ml-1">
+                <button onClick={() => removeFile(i)} className="text-[#475569] hover:text-red-400 ml-1">
                   <X size={12} />
                 </button>
               </div>
@@ -597,12 +597,12 @@ export function ChatPage({
         )}
 
         {/* Input bar */}
-        <div className="p-4 bg-[#0a0c10]">
+        <div className="p-4 bg-[#0a0a0f]">
           <div className="max-w-4xl mx-auto relative">
             {/* Slash command autocomplete */}
             {showSuggestions && filteredCommands.length > 0 && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#161b22] border border-gray-800 rounded-xl shadow-2xl overflow-hidden z-50">
-                <div className="px-3 py-2 text-[10px] text-gray-500 border-b border-gray-800 font-medium uppercase tracking-wider">
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-xl shadow-2xl overflow-hidden z-50">
+                <div className="px-3 py-2 text-[10px] text-[#475569] border-b border-[rgba(255,255,255,0.06)] font-medium uppercase tracking-wider">
                   Komendy ({filteredCommands.length})
                 </div>
                 {filteredCommands.map((c, i) => {
@@ -612,18 +612,18 @@ export function ChatPage({
                       key={c.cmd}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-left text-xs transition-all ${
                         i === selectedSuggestion
-                          ? "bg-teal-500/10 text-white border-l-2 border-teal-500"
-                          : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
+                          ? "bg-[#6366f1]/10 text-white border-l-2 border-teal-500"
+                          : "text-[#94a3b8] hover:bg-[rgba(255,255,255,0.06)]/50 hover:text-white"
                       }`}
                       onMouseDown={(e) => { e.preventDefault(); setInput(c.cmd.split(" ")[0] + " "); setShowSuggestions(false); }}
                     >
-                      <Icon size={14} className={i === selectedSuggestion ? "text-teal-400" : "text-gray-500"} />
+                      <Icon size={14} className={i === selectedSuggestion ? "text-[#818cf8]" : "text-[#475569]"} />
                       <div>
-                        <span className="font-mono text-teal-400">{c.cmd.split(" ")[0]}</span>
+                        <span className="font-mono text-[#818cf8]">{c.cmd.split(" ")[0]}</span>
                         {c.cmd.includes(" ") && (
-                          <span className="text-gray-500 ml-1">{c.cmd.slice(c.cmd.indexOf(" "))}</span>
+                          <span className="text-[#475569] ml-1">{c.cmd.slice(c.cmd.indexOf(" "))}</span>
                         )}
-                        <div className="text-[10px] text-gray-500">{c.desc}</div>
+                        <div className="text-[10px] text-[#475569]">{c.desc}</div>
                       </div>
                     </button>
                   );
@@ -631,7 +631,7 @@ export function ChatPage({
               </div>
             )}
 
-            <div className="bg-[#161b22] border border-gray-800 rounded-2xl shadow-xl flex items-center p-2">
+            <div className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-2xl shadow-xl flex items-center p-2">
               <input type="file" ref={fileInputRef} onChange={handleFileSelect} multiple className="hidden" />
               {/* Voice button */}
               <button onClick={() => {
@@ -651,10 +651,10 @@ export function ChatPage({
                   voiceRef.current.toggle();
                   setVoiceActive(voiceRef.current.getState() === "listening");
                 }
-              }} className={`p-2 transition-colors ${voiceActive ? "text-red-400 animate-pulse" : "text-gray-400 hover:text-teal-400"}`}>
+              }} className={`p-2 transition-colors ${voiceActive ? "text-red-400 animate-pulse" : "text-[#94a3b8] hover:text-[#818cf8]"}`}>
                 <Mic size={20} />
               </button>
-              <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-teal-400 transition-colors">
+              <button onClick={() => fileInputRef.current?.click()} className="p-2 text-[#94a3b8] hover:text-[#818cf8] transition-colors">
                 <Paperclip size={20} />
               </button>
               <input
@@ -670,7 +670,7 @@ export function ChatPage({
               <button
                 onClick={send}
                 disabled={loading || !input.trim()}
-                className="bg-teal-600 p-2.5 rounded-xl text-white hover:bg-teal-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] p-2.5 rounded-xl text-white hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Send size={18} />
               </button>
@@ -681,21 +681,21 @@ export function ChatPage({
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="w-80 border-l border-gray-800 bg-[#0e1117] p-6 shadow-2xl overflow-y-auto">
+        <div className="w-80 border-l border-[rgba(255,255,255,0.06)] bg-[rgba(18,18,26,0.95)] p-6 shadow-2xl overflow-y-auto">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-semibold flex items-center gap-2 text-white">
-              <Sliders size={18} className="text-teal-400" /> Ustawienia
+              <Sliders size={18} className="text-[#818cf8]" /> Ustawienia
             </h3>
-            <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white transition-colors">
+            <button onClick={() => setShowSettings(false)} className="text-[#94a3b8] hover:text-white transition-colors">
               <X size={18} />
             </button>
           </div>
 
           <div className="space-y-6">
             <div>
-              <label className="block text-xs text-gray-500 mb-2">Agent & Model</label>
+              <label className="block text-xs text-[#475569] mb-2">Agent & Model</label>
               <select
-                className="w-full bg-[#161b22] border border-gray-800 rounded-lg p-2 text-sm text-gray-300 outline-none focus:border-teal-500"
+                className="w-full bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg p-2 text-sm text-[#cbd5e1] outline-none focus:border-teal-500"
                 value={settings.agent}
                 onChange={(e) => setSettings({ ...settings, agent: e.target.value })}
               >
@@ -714,12 +714,12 @@ export function ChatPage({
             {/* Available agents quick-select */}
             {agents && agents.length > 0 && (
               <div>
-                <label className="block text-xs text-gray-500 mb-2">Wywołaj agenta</label>
+                <label className="block text-xs text-[#475569] mb-2">Wywołaj agenta</label>
                 <div className="flex flex-wrap gap-1.5">
                   {agents.slice(0, 8).map((a: any) => (
                     <button
                       key={a.id}
-                      className="bg-[#161b22] border border-gray-800 hover:border-teal-500/30 rounded-lg px-2.5 py-1.5 text-xs text-gray-400 hover:text-white transition-all"
+                      className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] hover:border-teal-500/30 rounded-lg px-2.5 py-1.5 text-xs text-[#94a3b8] hover:text-white transition-all"
                       onClick={() => { setInput(`/agent ${a.name} `); inputRef.current?.focus(); }}
                     >
                       {a.emoji || "🤖"} {a.name}
@@ -731,24 +731,24 @@ export function ChatPage({
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Auto Approve</span>
+                <span className="text-sm text-[#94a3b8]">Auto Approve</span>
                 <input type="checkbox" checked={settings.autoApprove}
                   onChange={() => setSettings({ ...settings, autoApprove: !settings.autoApprove })}
                   className="accent-teal-500 w-4 h-4" />
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Auto Allowance</span>
+                <span className="text-sm text-[#94a3b8]">Auto Allowance</span>
                 <input type="checkbox" checked={settings.autoAllowance}
                   onChange={() => setSettings({ ...settings, autoAllowance: !settings.autoAllowance })}
                   className="accent-teal-500 w-4 h-4" />
               </div>
             </div>
 
-            <div className="border-t border-gray-800 pt-4">
-              <h4 className="text-xs text-gray-500 mb-3 uppercase tracking-wider">Aktywne skille</h4>
+            <div className="border-t border-[rgba(255,255,255,0.06)] pt-4">
+              <h4 className="text-xs text-[#475569] mb-3 uppercase tracking-wider">Aktywne skille</h4>
               <div className="flex flex-wrap gap-1.5">
                 {skills.filter((s: any) => s.enabled !== false).slice(0, 8).map((skill: any) => (
-                  <span key={skill.name || skill.id} className="custom-badge bg-teal-500/5 border border-teal-500/20 text-teal-400 text-[10px]">
+                  <span key={skill.name || skill.id} className="custom-badge bg-teal-500/5 border border-[#6366f1]/20 text-[#818cf8] text-[10px]">
                     <Puzzle size={10} className="mr-1 inline" />
                     {skill.name || skill.id}
                   </span>
@@ -757,23 +757,23 @@ export function ChatPage({
             </div>
 
             {/* Workspace selector */}
-            <div className="border-t border-gray-800 pt-4">
-              <h4 className="text-xs text-gray-500 mb-3 uppercase tracking-wider">Workspace</h4>
+            <div className="border-t border-[rgba(255,255,255,0.06)] pt-4">
+              <h4 className="text-xs text-[#475569] mb-3 uppercase tracking-wider">Workspace</h4>
               <div className="flex gap-2">
                 <input value={workspacePath} onChange={(e) => setWorkspacePath(e.target.value)}
                   placeholder="e.g. C:\Projects\my-app"
-                  className="flex-1 bg-[#161b22] border border-gray-800 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-teal-500 font-mono" />
+                  className="flex-1 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-teal-500 font-mono" />
                 <button onClick={async () => {
                   try {
                     const res = await fetch("/api/workspace/browse", { method: "POST" });
                     if (res.ok) { const data = await res.json(); if (data?.path) { setWorkspacePath(data.path); } }
                   } catch { /* ignore */ }
                 }}
-                  className="bg-[#161b22] hover:bg-gray-800 text-gray-400 border border-gray-800 px-2.5 py-1.5 rounded-lg text-xs">
+                  className="bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] text-[#94a3b8] border border-[rgba(255,255,255,0.06)] px-2.5 py-1.5 rounded-lg text-xs">
                   Browse...
                 </button>
               </div>
-              {workspacePath && <p className="text-[10px] text-teal-500 mt-1.5 flex items-center gap-1">✓ Workspace: {workspacePath}</p>}
+              {workspacePath && <p className="text-[10px] text-[#6366f1] mt-1.5 flex items-center gap-1">✓ Workspace: {workspacePath}</p>}
               {workspacePath && (
                 <button onClick={async () => {
                   try {
@@ -783,13 +783,13 @@ export function ChatPage({
                       body: JSON.stringify({ path: workspacePath }),
                     });
                   } catch { /* ignore */ }
-                }} className="text-[10px] text-teal-400 hover:text-teal-300 mt-1">
+                }} className="text-[10px] text-[#818cf8] hover:text-teal-300 mt-1">
                   Set as active workspace
                 </button>
               )}
             </div>
 
-            <button className="w-full bg-gray-800 hover:bg-gray-700 p-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 text-gray-300 transition-colors">
+            <button className="w-full bg-[rgba(255,255,255,0.06)] hover:bg-gray-700 p-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 text-[#cbd5e1] transition-colors">
               <List size={14} /> /help — lista komend
             </button>
           </div>

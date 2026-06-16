@@ -468,3 +468,240 @@ registerTool({
     return await ragManager.query(args.question);
   },
 });
+
+// ─── Embedding Support (Hybrid Search: FTS5 + Semantic) ──────────
+
+db.run(`CREATE TABLE IF NOT EXISTS rag_config (
+  key TEXT PRIMARY KEY,
+  value TEXT
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS rag_embeddings (
+  chunk_id TEXT PRIMARY KEY,
+  embedding BLOB,
+  FOREIGN KEY (chunk_id) REFERENCES rag_chunks(id)
+)`);
+
+function cosineSimilarity(a: Float32Array, b: Float32Array): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-10);
+}
+
+function float32ToBuffer(arr: Float32Array): Buffer {
+  return Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength);
+}
+
+function bufferToFloat32(buf: Buffer): Float32Array {
+  return new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
+}
+
+class EmbeddingManager {
+  private config: { provider: string; model: string; apiKey: string; dimensions: number } | null = null;
+
+  async loadConfig(): Promise<void> {
+    const row = db.query("SELECT value FROM rag_config WHERE key = 'embedding_provider'").get() as any;
+    const modelRow = db.query("SELECT value FROM rag_config WHERE key = 'embedding_model'").get() as any;
+    const keyRow = db.query("SELECT value FROM rag_config WHERE key = 'embedding_api_key'").get() as any;
+    this.config = {
+      provider: row?.value || "none",
+      model: modelRow?.value || "text-embedding-3-small",
+      apiKey: keyRow?.value || process.env.OPENAI_API_KEY || "",
+      dimensions: 1536,
+    };
+  }
+
+  async setConfig(provider: string, model?: string, apiKey?: string): Promise<void> {
+    const upsert = db.prepare("INSERT OR REPLACE INTO rag_config (key, value) VALUES (?, ?)");
+    upsert.run("embedding_provider", provider);
+    if (model) upsert.run("embedding_model", model);
+    if (apiKey) upsert.run("embedding_api_key", apiKey);
+    this.config = null; // force reload
+  }
+
+  getConfig(): { provider: string; model: string; hasApiKey: boolean; dimensions: number } {
+    return {
+      provider: this.config?.provider || "none",
+      model: this.config?.model || "text-embedding-3-small",
+      hasApiKey: !!(this.config?.apiKey),
+      dimensions: this.config?.dimensions || 1536,
+    };
+  }
+
+  async generateEmbedding(text: string): Promise<Float32Array | null> {
+    if (!this.config) await this.loadConfig();
+    if (!this.config || this.config.provider === "none" || !this.config.apiKey) return null;
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${this.config.apiKey}` },
+        body: JSON.stringify({ model: this.config.model, input: text.slice(0, 8000) }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const embedding = data.data?.[0]?.embedding;
+      if (!embedding) return null;
+      return new Float32Array(embedding);
+    } catch {
+      return null;
+    }
+  }
+
+  async embedDocument(docId: string): Promise<number> {
+    const chunks = db.query("SELECT id, content FROM rag_chunks WHERE doc_id = ?").all(docId) as any[];
+    const insert = db.prepare("INSERT OR REPLACE INTO rag_embeddings (chunk_id, embedding) VALUES (?, ?)");
+    let embedded = 0;
+
+    for (const chunk of chunks) {
+      const existing = db.query("SELECT chunk_id FROM rag_embeddings WHERE chunk_id = ?").get(chunk.id);
+      if (existing) continue;
+
+      const embedding = await this.generateEmbedding(chunk.content);
+      if (embedding) {
+        insert.run(chunk.id, float32ToBuffer(embedding));
+        embedded++;
+      }
+    }
+    return embedded;
+  }
+
+  async embedAllDocuments(): Promise<{ total: number; embedded: number }> {
+    const docs = db.query("SELECT id FROM rag_documents WHERE status = 'ready'").all() as any[];
+    let total = 0, embedded = 0;
+    for (const doc of docs) {
+      const count = await this.embedDocument(doc.id);
+      total += count;
+      embedded += count;
+    }
+    return { total: docs.length, embedded };
+  }
+
+  async semanticSearch(query: string, limit: number = 10): Promise<Array<{ content: string; docId: string; filename: string; score: number }>> {
+    const queryEmbedding = await this.generateEmbedding(query);
+    if (!queryEmbedding) return [];
+
+    const rows = db.query(`
+      SELECT e.chunk_id, e.embedding, c.content, c.doc_id, d.filename
+      FROM rag_embeddings e
+      JOIN rag_chunks c ON e.chunk_id = c.id
+      JOIN rag_documents d ON c.doc_id = d.id
+      WHERE d.status = 'ready'
+    `).all() as any[];
+
+    const scored = rows.map((r) => {
+      const emb = bufferToFloat32(r.embedding);
+      return {
+        content: (r.content || "").slice(0, 500),
+        docId: r.doc_id,
+        filename: r.filename,
+        score: cosineSimilarity(queryEmbedding, emb),
+      };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, limit);
+  }
+
+  async hybridSearch(query: string, limit: number = 10): Promise<Array<{ content: string; docId: string; filename: string; score: number }>> {
+    const [ftsResults, semanticResults] = await Promise.all([
+      ragManager.search(query, limit * 2),
+      this.semanticSearch(query, limit * 2),
+    ]);
+
+    // Reciprocal Rank Fusion (RRF)
+    const k = 60;
+    const scores = new Map<string, { content: string; docId: string; filename: string; score: number }>();
+
+    ftsResults.forEach((r, i) => {
+      const key = r.docId + "_" + r.content.slice(0, 50);
+      const existing = scores.get(key);
+      const rrfScore = 1 / (k + i + 1);
+      if (existing) existing.score += rrfScore;
+      else scores.set(key, { ...r, score: rrfScore });
+    });
+
+    semanticResults.forEach((r, i) => {
+      const key = r.docId + "_" + r.content.slice(0, 50);
+      const existing = scores.get(key);
+      const rrfScore = 1 / (k + i + 1);
+      if (existing) existing.score += rrfScore;
+      else scores.set(key, { ...r, score: rrfScore });
+    });
+
+    return [...scores.values()].sort((a, b) => b.score - a.score).slice(0, limit);
+  }
+}
+
+export const embeddingManager = new EmbeddingManager();
+
+// ─── Embedding Tools ──────────────────────────────────────────
+
+registerTool({
+  name: "rag_embed",
+  description: "Generate embeddings for a document (requires OpenAI API key)",
+  parameters: {
+    type: "object",
+    properties: {
+      docId: { type: "string", description: "Document ID to embed" },
+    },
+    required: ["docId"],
+  },
+  async execute(args: { docId: string }) {
+    const count = await embeddingManager.embedDocument(args.docId);
+    return `Embedded ${count} chunks for document ${args.docId}`;
+  },
+});
+
+registerTool({
+  name: "rag_embed_all",
+  description: "Generate embeddings for all documents",
+  parameters: { type: "object", properties: {} },
+  async execute() {
+    const result = await embeddingManager.embedAllDocuments();
+    return `Embedded ${result.embedded} chunks across ${result.total} documents`;
+  },
+});
+
+registerTool({
+  name: "rag_hybrid_search",
+  description: "Search using both keyword (FTS5) and semantic (embedding) matching with RRF fusion",
+  parameters: {
+    type: "object",
+    properties: {
+      query: { type: "string", description: "Search query" },
+      limit: { type: "number", description: "Max results" },
+    },
+    required: ["query"],
+  },
+  async execute(args: { query: string; limit?: number }) {
+    const results = await embeddingManager.hybridSearch(args.query, args.limit || 5);
+    if (results.length === 0) return "No results found.";
+    return results.map((r, i) => `**${i + 1}. [${r.filename}]** (score: ${r.score.toFixed(3)})\n${r.content}`).join("\n\n---\n\n");
+  },
+});
+
+registerTool({
+  name: "rag_embedding_config",
+  description: "Configure embedding provider (openai or none)",
+  parameters: {
+    type: "object",
+    properties: {
+      provider: { type: "string", description: "Provider: 'openai' or 'none'" },
+      model: { type: "string", description: "Embedding model" },
+      apiKey: { type: "string", description: "API key" },
+    },
+    required: ["provider"],
+  },
+  async execute(args: { provider: string; model?: string; apiKey?: string }) {
+    await embeddingManager.setConfig(args.provider, args.model, args.apiKey);
+    return `Embedding provider set to: ${args.provider}`;
+  },
+});
+
+console.log("[rag] Embedding support initialized (hybrid search available)");
