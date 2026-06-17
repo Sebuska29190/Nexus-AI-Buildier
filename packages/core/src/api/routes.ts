@@ -1775,7 +1775,17 @@ Return valid JSON only (no markdown, no code fences):
 
   // ─── RAG Pipeline ────────────────────────────────────────────
   app.get("/api/rag/documents", async (c) => {
-    try { const { ragManager } = await import("../rag/manager.ts"); return c.json({ documents: ragManager.listDocuments() }); }
+    try {
+      const { ragManager } = await import("../rag/manager.ts");
+      const limit = parseInt(c.req.query("limit") || "100");
+      const offset = parseInt(c.req.query("offset") || "0");
+      const search = c.req.query("search") || "";
+      let docs = ragManager.listDocuments();
+      if (search) docs = docs.filter((d: any) => d.filename?.toLowerCase().includes(search.toLowerCase()));
+      const total = docs.length;
+      const paginated = docs.slice(offset, offset + limit);
+      return c.json({ documents: paginated, total, offset, limit });
+    }
     catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
   });
 
@@ -1788,7 +1798,9 @@ Return valid JSON only (no markdown, no code fences):
         const file = fd.file as File;
         if (!file) return c.json({ error: "file required" }, 400);
         const buffer = Buffer.from(await file.arrayBuffer());
+        console.log(`[rag] Uploading: ${file.name} (${buffer.length} bytes)`);
         const doc = await ragManager.uploadDocument(file.name, buffer);
+        console.log(`[rag] Result: ${file.name} → status=${doc.status}`);
         return c.json({ document: doc }, 201);
       }
       const body = await c.req.json<{ filename: string; content: string }>();

@@ -106,8 +106,8 @@ export function IntegrationsPage() {
     <div className="max-w-6xl mx-auto w-full">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#00f2fe]/20 to-[#4facfe]/20 border border-[#00f2fe]/30 flex items-center justify-center">
-            <svg className="w-4 h-4 text-[#00f2fe]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366f1]/20 to-[#4facfe]/20 border border-[#6366f1]/30 flex items-center justify-center">
+            <svg className="w-4 h-4 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Integrations Hub</h2>
@@ -131,7 +131,7 @@ export function IntegrationsPage() {
         <div className="flex gap-1 flex-wrap">
           {CATEGORIES.map((c) => (
             <button key={c} onClick={() => setCategory(c)}
-              className={`text-[10px] px-2 py-1 rounded-lg border transition-all ${category === c ? "border-[#00f2fe] bg-[#00f2fe]/10 text-[#00f2fe]" : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600"}`}>
+              className={`text-[10px] px-2 py-1 rounded-lg border transition-all ${category === c ? "border-[#6366f1] bg-[#6366f1]/10 text-[#6366f1]" : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600"}`}>
               {c}
             </button>
           ))}
@@ -189,7 +189,7 @@ export function IntegrationsPage() {
                   <span className="text-[8px] text-emerald-500">✓</span>
                 ) : (
                   <button onClick={() => { setShowConnect(svc.id); setConnectName(""); setConnectConfig({}); }}
-                    className="text-[8px] text-[#00f2fe] hover:underline">Connect</button>
+                    className="text-[8px] text-[#6366f1] hover:underline">Connect</button>
                 )}
               </div>
             </div>

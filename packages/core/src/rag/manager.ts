@@ -47,6 +47,21 @@ export interface RagDocument {
 }
 
 class RagManager {
+  // Cache for dedup check — loaded once, refreshed periodically
+  private existingFilenames: Set<string> | null = null;
+  private lastCacheRefresh = 0;
+
+  private async getExistingFilenames(): Promise<Set<string>> {
+    const now = Date.now();
+    if (this.existingFilenames && now - this.lastCacheRefresh < 60000) {
+      return this.existingFilenames;
+    }
+    const rows = db.query("SELECT filename FROM rag_documents").all() as any[];
+    this.existingFilenames = new Set(rows.map(r => r.filename));
+    this.lastCacheRefresh = now;
+    return this.existingFilenames;
+  }
+
   async uploadDocument(filename: string, content: Buffer | string): Promise<RagDocument> {
     const id = randomUUID().slice(0, 12);
     const now = new Date().toISOString();
@@ -75,6 +90,16 @@ class RagManager {
       try { unlinkSync(filePath); } catch {}
       throw new Error(`File appears to be binary (${nullBytes} null bytes in first 100). Upload a plain text file (.txt, .md, .csv, .json).`);
     }
+    // Deduplication: skip if filename already exists (uses cached set)
+    const existingNames = await this.getExistingFilenames();
+    if (existingNames.has(filename)) {
+      try { unlinkSync(filePath); } catch {}
+      return { id: "exists", filename, title: filename.replace(ext, ""),
+        type: ext.slice(1) || "txt", size, chunkCount: 0,
+        status: "exists", createdAt: now,
+      } as any;
+    }
+
     const doc: RagDocument = {
       id, filename, title: filename.replace(ext, ""),
       type: ext.slice(1) || "txt", size, chunkCount: 0,
@@ -88,6 +113,7 @@ class RagManager {
     try {
       await this.processDocument(id, filePath, ext);
       db.run("UPDATE rag_documents SET status = 'ready' WHERE id = ?", [id]);
+      this.existingFilenames?.add(filename); // Update cache
       const updated = this.getDocument(id);
       return updated || doc;
     } catch (e) {
@@ -322,7 +348,7 @@ except Exception as e:
     return rows.map((r: any) => r.content).join("\n\n---\n\n");
   }
 
-  async search(query: string, limit = 5): Promise<Array<{ content: string; docId: string; filename: string; score: number }>> {
+  async search(query: string, limit = 20): Promise<Array<{ content: string; docId: string; filename: string; score: number }>> {
     const docCount = db.query("SELECT COUNT(*) as c FROM rag_documents WHERE status = 'ready'").get() as any;
     if (!docCount || docCount.c === 0) return [];
 
@@ -349,7 +375,7 @@ except Exception as e:
           if (seen.has(key)) continue;
           seen.add(key);
           results.push({
-            content: (r.content || "").replace(/\u0000/g, "").slice(0, 500) || "(empty)",
+            content: (r.content || "").replace(/\u0000/g, "").slice(0, 1000) || "(empty)",
             docId: r.doc_id,
             filename: r.filename,
             score: 1,
@@ -367,7 +393,7 @@ except Exception as e:
             if (seen.has(key)) continue;
             seen.add(key);
             results.push({
-              content: (r.content || "").replace(/\u0000/g, "").slice(0, 500) || "(empty)",
+              content: (r.content || "").replace(/\u0000/g, "").slice(0, 1000) || "(empty)",
               docId: r.doc_id,
               filename: r.filename,
               score: 0.5,
@@ -381,7 +407,7 @@ except Exception as e:
   }
 
   async query(question: string): Promise<string> {
-    const results = await this.search(question, 10);
+    const results = await this.search(question, 50);
     if (results.length === 0) return "No relevant documents found for your question.";
 
     const context = results.map((r) => `[${r.filename}] ${r.content}`).join("\n\n---\n\n");
@@ -399,12 +425,12 @@ except Exception as e:
           body: JSON.stringify({
             model,
             messages: [
-              { role: "system", content: "Answer the user's question based ONLY on the provided document context. If the context doesn't contain relevant information, say so. Be concise." },
+              { role: "system", content: "You are a legal document analyst. Answer the user's question based on the provided document context. Reference specific document names when possible. Be thorough and detailed in your analysis. If multiple documents are relevant, synthesize information from all of them." },
               { role: "user", content: `Context:\n\n${context}\n\nQuestion: ${question}` },
             ],
-            max_tokens: 500,
+            max_tokens: 2000,
           }),
-          signal: AbortSignal.timeout(30000),
+          signal: AbortSignal.timeout(60000),
         });
         if (response.ok) {
           const data = await response.json();
@@ -444,27 +470,35 @@ registerTool({
 
 registerTool({
   name: "rag_list",
-  description: "List all documents in RAG knowledge base",
-  parameters: { type: "object", properties: {}, additionalProperties: false },
-  async execute() {
-    const docs = ragManager.listDocuments();
-    if (docs.length === 0) return "No documents in RAG knowledge base.";
-    return docs.map((d) => `  ${d.status === "ready" ? "✅" : "⏳"} ${d.filename} (${(d.size / 1024).toFixed(1)}KB, ${d.chunkCount} chunks)`).join("\n");
+  description: "List documents in RAG knowledge base. Use search parameter to filter.",
+  parameters: { type: "object", properties: {
+    search: { type: "string", description: "Filter by filename" },
+    limit: { type: "number", description: "Max documents to return (default 20)" },
+  }, additionalProperties: false },
+  async execute(args: { search?: string; limit?: number }) {
+    let docs = ragManager.listDocuments();
+    if (args.search) docs = docs.filter((d: any) => d.filename?.toLowerCase().includes(args.search.toLowerCase()));
+    const limit = args.limit || 20;
+    const limited = docs.slice(0, limit);
+    if (limited.length === 0) return "No documents found.";
+    const summary = docs.length > limit ? `Showing ${limit} of ${docs.length} total` : `${docs.length} documents`;
+    return `${summary}\n\n` + limited.map((d: any) => `  ${d.status === "ready" ? "✅" : "⏳"} ${d.filename} (${(d.size / 1024).toFixed(1)}KB, ${d.chunkCount} chunks)`).join("\n");
   },
 });
 
 registerTool({
   name: "rag_query",
-  description: "Ask a question about your uploaded documents",
+  description: "Ask a question about your uploaded documents. Returns detailed answers with document references.",
   parameters: {
     type: "object",
     properties: {
-      question: { type: "string", description: "Your question" },
+      question: { type: "string", description: "Your question about the documents" },
+      limit: { type: "number", description: "Number of document chunks to search (default 50)" },
     },
     required: ["question"],
     additionalProperties: false,
   },
-  async execute(args: { question: string }) {
+  async execute(args: { question: string; limit?: number }) {
     return await ragManager.query(args.question);
   },
 });
