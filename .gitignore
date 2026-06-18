@@ -41,6 +41,7 @@ startup*.log
 *.bak
 tmp_*
 tmp_test_*
+tools/*.log
 
 # ─── Binary Tools ───────────────────────────────────────────
 bin/
@@ -49,11 +50,23 @@ bin/
 .nova/
 .hermes/
 .cheetahclaws/
+.openclaw/
+.serena/
 HEARTBEAT.md
 IDENTITY.md
 USER.md
 BOOTSTRAP.md
 MEMORY.md
+INDEX.md
+PROJECT_ANALYSIS.md
+subscriptions.json
+tasks.json
+
+# ─── Personal Files (PDFs, scripts, temp) ────────────────────
+*.pdf
+extract_*.py
+test_big.txt
+test_upload.txt
 
 # ─── Evolution & Plans (personal) ───────────────────────────
 plans/

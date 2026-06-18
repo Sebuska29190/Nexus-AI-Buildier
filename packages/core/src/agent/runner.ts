@@ -195,7 +195,7 @@ export async function runAgent(params: RunParams): Promise<RunResult> {
           learningLoop.apply(params.agentId);
           
           result = { ...result, text: `⚠️ REPORT REJECTED BY VALIDATOR\n${validation.reason}\n\n---\n${result.text.slice(0, 2000)}` };
-          emitEvent({ type: "event", kind: "message", sessionId: params.sessionId, runId: params.runId, data: { text: `Validator: ${validation.reason}` } });
+          emitEvent({ type: "event", kind: "message", sessionId: params.sessionId, runId: params.runId, data: { text: `Validator: ${validation.reason.slice(0, 500)}` } });
         } else {
           qualityScorer.recordPass(params.agentId, validation.evidenceRate, validation.claims.length);
         }
@@ -521,10 +521,6 @@ async function toolLoop(params: RunParams, ctx: {
     modelRef: params.modelRef,
     usage: { input: inputTokens, output: outputTokens },
   };
-}ety Middleware initialization ──────────────────────────
-  const taskId = params.sessionId;
-  const agentId = params.agentId || "default";
-  toolBreaker.initTask(taskId);
 
   const seenTools = new Set<string>();
   const fileMutations: { action: string; path: string; detail: string }[] = [];

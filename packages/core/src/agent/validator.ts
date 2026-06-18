@@ -3,7 +3,11 @@
  * 
  * Every agent report must include evidence for each claim.
  * Reports without sufficient evidence are REJECTED and the agent gets a strike.
+ * 
+ * Phase 2: Ground-truth verification catches false-negative claims
+ * where agents claim "X is never called" but X actually IS called.
  */
+import { groundTruthVerify, groundTruthSummary } from "./ground-truth.ts";
 
 export interface EvidenceClaim {
   claim: string;
@@ -89,7 +93,7 @@ export function validateReport(text: string): ValidatedReport {
   const claims = extractClaims(text);
   const totalClaims = countTotalClaims(text);
   const verifiedClaims = claims.filter(c => c.verified).length;
-  const evidenceRate = totalClaims > 0 ? verifiedClaims / Math.min(totalClaims, 10) : 0;
+  let evidenceRate = totalClaims > 0 ? verifiedClaims / Math.min(totalClaims, 10) : 0;
 
   let passed = false;
   let reason = "";
@@ -104,6 +108,31 @@ export function validateReport(text: string): ValidatedReport {
   } else {
     passed = true;
     reason = `PASSED: ${Math.round(evidenceRate * 100)}% of claims verified with evidence.`;
+  }
+
+  // ─── Phase 2: Ground-Truth Verification ───────────────────────
+  // Catch false-negative claims where agents say "X is missing" but X exists
+  const groundTruth = groundTruthVerify(text);
+  const gtSummary = groundTruthSummary(groundTruth);
+
+  if (groundTruth.verdict === "INACCURATE") {
+    // Agent's claims are factually wrong — override to REJECT
+    const adjustedRate = Math.min(evidenceRate, groundTruth.accuracy);
+    return {
+      original: text,
+      claims,
+      totalClaims,
+      verifiedClaims: Math.max(verifiedClaims - groundTruth.falseNegatives, 0),
+      evidenceRate: adjustedRate,
+      passed: false,
+      reason: `REJECTED: Ground-truth verification FAILED (${Math.round(groundTruth.accuracy * 100)}% accuracy). ${groundTruth.falseNegatives} false-negative claim(s) detected — agent claims code is missing/dead when it actually exists.${gtSummary}`,
+    };
+  }
+
+  if (groundTruth.verdict === "MIXED") {
+    // Some claims are wrong — lower the evidence rate
+    evidenceRate = evidenceRate * groundTruth.accuracy;
+    reason += gtSummary;
   }
 
   return { original: text, claims, totalClaims, verifiedClaims, evidenceRate, passed, reason };
