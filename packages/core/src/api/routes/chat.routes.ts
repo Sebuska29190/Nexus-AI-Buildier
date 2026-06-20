@@ -6,6 +6,7 @@ import { agentStore } from "../../agent/store.ts";
 import { runAgent } from "../../agent/runner.ts";
 import { onEvent } from "../../event-bus/index.ts";
 import { workspaceManager } from "../../workspace/manager.ts";
+import { resolveApproval } from "../../agent/approval.ts";
 
 export function register(app: Hono): void {
   // Chat completions (OpenAI-compat)
@@ -109,5 +110,22 @@ export function register(app: Hono): void {
     if (body.agentId) agentStore.update(body.agentId, { status: "ready" as any });
 
     return c.json(result);
+  });
+
+  // Tool approval endpoints
+  app.post("/api/tool/:toolCallId/approve", async (c) => {
+    const { toolCallId } = c.req.param();
+    const body = await c.req.json<{ alwaysAllow?: boolean; sessionId?: string }>().catch(() => ({}));
+    const resolved = resolveApproval(toolCallId, true, !!body.alwaysAllow, body.sessionId);
+    if (!resolved) return c.json({ error: `No pending approval for ${toolCallId}` }, 404);
+    return c.json({ status: "approved", toolCallId });
+  });
+
+  app.post("/api/tool/:toolCallId/reject", async (c) => {
+    const { toolCallId } = c.req.param();
+    const body = await c.req.json<{ sessionId?: string }>().catch(() => ({}));
+    const resolved = resolveApproval(toolCallId, false, false, body.sessionId);
+    if (!resolved) return c.json({ error: `No pending approval for ${toolCallId}` }, 404);
+    return c.json({ status: "rejected", toolCallId });
   });
 }

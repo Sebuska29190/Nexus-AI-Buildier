@@ -108,6 +108,7 @@ function loadCachedSkills(): any[] {
 export async function runAgent(params: RunParams): Promise<RunResult> {
   const session = sessionManager.getSession(params.sessionId);
   const messages: AgentMessage[] = [];
+  const messageIsTask = isTaskMessage(params.message);
 
   // Build system prompt with global rules + skills reference
   const basePrompt = params.systemPrompt ?? session?.systemPrompt ?? "";
@@ -143,7 +144,6 @@ export async function runAgent(params: RunParams): Promise<RunResult> {
 
   // ═══ EXECUTION PROTOCOL — mandatory agent behavior ═══
   // Only inject for TASK messages. Simple chat/greetings get instant replies.
-  const messageIsTask = isTaskMessage(params.message);
   if (params.agentId && params.tools !== false && messageIsTask) {
     messages.push({
       role: "system",

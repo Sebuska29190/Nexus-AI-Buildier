@@ -189,7 +189,18 @@ export function getAllProviderConfigs(): Array<{
   baseUrl?: string;
 }> {
   const store = loadRaw();
-  const result: Array<any> = [];
+  const result: Array<{
+    providerId: string;
+    name: string;
+    configured: boolean;
+    enabled: boolean;
+    hasApiKey: boolean;
+    keySource: "env" | "saved" | "none";
+    modelCount: number;
+    maxTokens?: number;
+    thinkingLevel?: string;
+    baseUrl?: string;
+  }> = [];
 
   for (const [id, provider] of registry.providers) {
     const saved = store.providers[id];

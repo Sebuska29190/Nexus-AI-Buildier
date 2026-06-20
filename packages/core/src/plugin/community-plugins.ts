@@ -913,11 +913,8 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         const buffer = Buffer.from(await response.arrayBuffer());
-        // Import AdmZip or extract manually
-        const { execSync: exec } = await import("node:child_process");
         // Save zip temporarily
         const zipPath = targetDir + ".zip";
-        const { writeFileSync, mkdirSync } = await import("node:fs");
         writeFileSync(zipPath, buffer);
         mkdirSync(targetDir, { recursive: true });
         // Extract using powershell Expand-Archive (Windows) or node-tar / unzip (Unix)
@@ -979,8 +976,6 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
         // Remove any .agents directories left behind (Windows path issue)
         try { execSync(`powershell -Command "Get-ChildItem '${targetDir}' -Recurse -Directory -Filter '.agents' | Remove-Item -Recurse -Force 2>0"`, { timeout: 10000, shell: true }); } catch {}
         // Move contents up one level (GitHub archive nests in a subfolder)
-        const { readdirSync } = await import("node:fs");
-        const { join } = await import("node:path");
         const items = readdirSync(targetDir);
         if (items.length === 1) {
           const nestedDir = join(targetDir, items[0]);

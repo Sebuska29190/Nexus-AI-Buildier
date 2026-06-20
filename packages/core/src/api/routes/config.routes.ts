@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { safeMessage } from "../../errors.ts";
 import { join, dirname } from "node:path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { getAllProviderConfigs } from "../../config/provider-config.ts";
+
 import { workspaceManager } from "../../workspace/manager.ts";
 
 export function register(app: Hono): void {
@@ -112,7 +112,6 @@ export function register(app: Hono): void {
 
   app.get("/api/config/export", (c) => {
     try {
-      const providers = getAllProviderConfigs();
       const rules = existsSync(RULES_PATH) ? readFileSync(RULES_PATH, "utf-8") : "";
       const defaults = existsSync(join(CFG_DIR, "defaults.json"))
         ? JSON.parse(readFileSync(join(CFG_DIR, "defaults.json"), "utf-8"))
@@ -123,14 +122,7 @@ export function register(app: Hono): void {
       return c.json({
         exportVersion: "1.0",
         exportedAt: new Date().toISOString(),
-        providers: providers.map((p: any) => ({
-          id: p.id,
-          providerId: p.providerId,
-          name: p.name,
-          enabled: p.enabled,
-          model: p.model,
-          baseUrl: p.baseUrl,
-        })),
+        providers: [],
         rules,
         defaults,
         appearance,
@@ -194,20 +186,7 @@ export function register(app: Hono): void {
     }
   });
 
-  // --- MCP Management -----------------------------------------------------------
-  app.get("/api/mcp/servers", async (c) => {
-    try {
-      const { listServers } = await import("../../mcp/client.ts");
-      return c.json({ servers: listServers() });
-    } catch { return c.json({ servers: [] }); }
-  });
-
-  app.post("/api/mcp/restart", async (c) => {
-    try {
-      const mcp = await import("../../mcp/client.ts");
-      await mcp.stopAll();
-      await mcp.initMCPServers();
-      return c.json({ status: "restarted", servers: mcp.listServers() });
-    } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 500); }
-  });
+  // --- MCP Management stubbed — mcp/client.ts was removed -----------
+  app.get("/api/mcp/servers", (c) => c.json({ servers: [] }));
+  app.post("/api/mcp/restart", (c) => c.json({ error: "MCP not available" }, 501));
 }

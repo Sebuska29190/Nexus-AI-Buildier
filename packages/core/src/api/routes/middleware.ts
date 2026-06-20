@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import { verifyToken } from "../../auth/jwt.ts";
+
+// Auth middleware — auth/jwt.ts was removed; verifyToken stubbed
+function verifyToken(token: string): unknown | null {
+  // Stub: auth not configured
+  return null;
+}
 
 // Auth middleware — bypass for /health, /api/auth, /v1, and /api/sessions
 const PUBLIC_PATHS = ["/health", "/api/auth", "/", "/assets"];

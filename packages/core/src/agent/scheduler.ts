@@ -1,7 +1,6 @@
 import { runAgent } from "./runner.ts";
 import { agentStore, type AgentConfig } from "./store.ts";
 import { sessionManager } from "../session/manager.ts";
-import { memoryStore } from "../memory/store.ts";
 import { randomUUID } from "node:crypto";
 import { safeMessage } from "../errors.ts";
 
@@ -10,7 +9,7 @@ interface BackgroundJob {
   runId: string;
   sessionId: string;
   startedAt: string;
-  status: "running" | "completed" | "error";
+  status: "running" | "completed" | "error" | "aborted";
   abortController: AbortController;
   promise: Promise<void>;
 }
@@ -110,31 +109,7 @@ class AgentScheduler {
         // Reset agent status
         agentStore.update(agentId, { status: "ready" });
 
-        // Save report to memory store
-        const reportContent = [
-          `## Background Agent Report: ${agent.name}`,
-          ``,
-          `**Agent:** ${agent.name} (${agentId})`,
-          `**Run ID:** ${runId}`,
-          `**Started:** ${startedAt}`,
-          `**Completed:** ${new Date().toISOString()}`,
-          `**Model:** ${agent.modelRef}`,
-          ``,
-          `### Result`,
-          ``,
-          result.text,
-          ``,
-          `### Session`,
-          ``,
-          `Session ID: ${sessionId}`,
-        ].join("\n");
-        memoryStore.save(
-          `agent-report-${agentId}-${runId}`,
-          reportContent,
-          ["agent-report", agentId],
-          "project",
-          "medium",
-        );
+        // Report saved to agent memory below (memoryStore removed)
 
         // ? Zapisz do MEMORY.md agenta (append � nie nadpisuj)
         const memoryEntry = [
@@ -182,14 +157,7 @@ class AgentScheduler {
 
         agentStore.update(agentId, { status: "error" });
 
-        // Save error report
-        memoryStore.save(
-          `agent-error-${agentId}-${runId}`,
-          `## Background Agent Error: ${agent.name}\n\n**Error:** ${safeMessage(e)}\n**Time:** ${new Date().toISOString()}`,
-          ["agent-error", agentId],
-          "project",
-          "high",
-        );
+        // Error report saved to agent memory below (memoryStore removed)
 
         // Emisja eventu job_done z bledem
         const { emitEvent } = await import("../event-bus/index.ts");

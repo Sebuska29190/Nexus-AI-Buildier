@@ -8,8 +8,6 @@
 import { runAgent } from "./runner.ts";
 import { sessionManager } from "../session/manager.ts";
 import { agentStore } from "./store.ts";
-import { knowledgeBase } from "../knowledge/store.ts";
-import { runTerminal } from "../gateway/routes-terminal.ts";
 
 export const AUTO_BUG_FIXER_PROMPT = `# Auto Bug Fixer
 
@@ -91,15 +89,8 @@ export async function runAutoBugFixer(repoDir: string, testCmd: string = "bun te
     tools: true,
   });
 
-  // Save to knowledge base
-  const transcript = sessionManager.getTranscript(session.id);
-  knowledgeBase.save({
-    title: `Bug Fix Run: ${repoDir}`,
-    content: transcript.map((m) => `## ${m.role}\n\n${m.content}`).join("\n\n---\n\n"),
-    category: "bug-fix",
-    tags: ["auto-bug-fixer", "bug-fix", repoDir],
-    source: "auto_bug_fixer",
-  });
+  // Knowledge base removed — transcript saved via session only
+  void sessionManager.getTranscript(session.id);
 
   return result.text;
 }

@@ -1,7 +1,4 @@
 ﻿import type { ToolPlugin, ToolContext } from "@nova/sdk";
-// Bluesky and social tools removed in Nexus AI v2.0
-// import { bskyTools } from "../bsky/tools.ts";
-// import { socialTools } from "../social/tools.ts";
 
 const tools = new Map<string, ToolPlugin>();
 
@@ -31,9 +28,11 @@ export function listTools(): ToolPlugin[] {
   return [...tools.values()];
 }
 
-// Built-in: web fetch
+// ─── Web Tools ──────────────────────────────────────────────────────────────
+
 registerTool({
-  name: "web_fetch", description: "Fetch a URL and return text content",
+  name: "web_fetch",
+  description: "Fetch a URL and return text content",
   parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"], additionalProperties: false },
   async execute(args, ctx) {
     const { url } = args as { url: string };
@@ -42,9 +41,9 @@ registerTool({
   },
 });
 
-// Built-in: web search via DuckDuckGo
 registerTool({
-  name: "web_search", description: "Search the web via DuckDuckGo",
+  name: "web_search",
+  description: "Search the web via DuckDuckGo",
   parameters: { type: "object", properties: { query: { type: "string", description: "Search query" } }, required: ["query"], additionalProperties: false },
   async execute(args) {
     const { query } = args as { query: string };
@@ -54,7 +53,6 @@ registerTool({
       headers: { "User-Agent": "Nova/1.0" },
     });
     const html = await res.text();
-    // Extract result snippets
     const results: string[] = [];
     const regex = /<a[^>]*class="result-link"[^>]*>([^<]+)<\/a>\s*<span[^>]*class="result-snippet"[^>]*>([^<]+)<\/span>/gi;
     let m;
@@ -66,138 +64,24 @@ registerTool({
   },
 });
 
-// Built-in: time
+// ─── Time Tool ──────────────────────────────────────────────────────────────
+
 registerTool({
-  name: "get_current_time", description: "Get current date and time",
+  name: "get_current_time",
+  description: "Get current date and time",
   parameters: { type: "object", properties: {}, additionalProperties: false },
   async execute() { return new Date().toISOString(); },
 });
 
-// Built-in: calculator — safe math parser (no eval / new Function)
-registerTool({
-  name: "calculate", description: "Evaluate a mathematical expression",
-  parameters: { type: "object", properties: { expression: { type: "string", description: "Math expression to evaluate" } }, required: ["expression"], additionalProperties: false },
-  async execute(args) {
-    const { expression } = args as { expression: string };
-    try {
-      const result = safeEvalMath(expression);
-      return String(result);
-    } catch { return `Error evaluating: ${expression}`; }
-  },
-});
+// ─── Workspace Tools ────────────────────────────────────────────────────────
 
-/**
- * Safe math expression evaluator — only allows numbers, operators, parentheses, and whitespace.
- * No eval(), no new Function(), no code execution.
- * Supports: + - * / ( ) . % and basic math constants (pi, e).
- */
-function safeEvalMath(expr: string): number {
-  // Strip whitespace and normalize
-  const sanitized = expr.trim().toLowerCase();
-
-  // Only allow: digits, decimal points, operators, parentheses, spaces, %,
-  // and the words "pi" and "e"
-  const allowed = /^[\d.+\-*\/()%\s pie]+$/;
-  if (!allowed.test(sanitized)) {
-    throw new Error("Expression contains disallowed characters");
-  }
-
-  // Block function calls, brackets, dots (except decimal), quotes, template literals
-  const dangerous = /[a-z]{2,}/g;
-  const words = sanitized.match(dangerous) || [];
-  for (const w of words) {
-    if (w !== "pi" && w !== "e") {
-      throw new Error(`Unknown identifier: "${w}"`);
-    }
-  }
-
-  // Replace constants
-  let expr2 = sanitized
-    .replace(/\bpi\b/g, String(Math.PI))
-    .replace(/\be\b/g, String(Math.E));
-
-  // Simple recursive descent parser — only arithmetic
-  // Use a small Shunting-yard to avoid eval entirely
-  const tokens = tokenize(expr2);
-  const result = parseExpression(tokens);
-  return result;
-}
-
-type Token = { type: "num"; value: number } | { type: "op"; value: string } | { type: "paren"; value: "(" | ")" };
-
-function tokenize(s: string): Token[] {
-  const tokens: Token[] = [];
-  let i = 0;
-  while (i < s.length) {
-    const c = s[i];
-    if (/\s/.test(c)) { i++; continue; }
-    if (/[0-9.]/.test(c)) {
-      let num = "";
-      while (i < s.length && /[0-9.]/.test(s[i])) { num += s[i]; i++; }
-      tokens.push({ type: "num", value: parseFloat(num) });
-      continue;
-    }
-    if ("+-*/%".includes(c)) {
-      tokens.push({ type: "op", value: c });
-      i++;
-      continue;
-    }
-    if (c === "(" || c === ")") {
-      tokens.push({ type: "paren", value: c });
-      i++;
-      continue;
-    }
-    throw new Error(`Unexpected character: "${c}"`);
-  }
-  return tokens;
-}
-
-function parseExpression(tokens: Token[], minPrec = 0): number {
-  let left = parsePrimary(tokens);
-  while (tokens.length > 0) {
-    const tok = tokens[0];
-    if (tok.type !== "op") break;
-    const prec = opPrecedence(tok.value);
-    if (prec < minPrec) break;
-    tokens.shift();
-    const right = parseExpression(tokens, prec + 1);
-    switch (tok.value) {
-      case "+": left += right; break;
-      case "-": left -= right; break;
-      case "*": left *= right; break;
-      case "/":
-        if (right === 0) throw new Error("Division by zero");
-        left /= right; break;
-      case "%": left %= right; break;
-    }
-  }
-  return left;
-}
-
-function parsePrimary(tokens: Token[]): number {
-  const tok = tokens.shift();
-  if (!tok) throw new Error("Unexpected end of expression");
-  if (tok.type === "num") return tok.value;
-  if (tok.type === "paren" && tok.value === "(") {
-    const val = parseExpression(tokens, 0);
-    const close = tokens.shift();
-    if (!close || close.type !== "paren" || close.value !== ")") throw new Error("Missing closing parenthesis");
-    return val;
-  }
-  throw new Error(`Unexpected token: ${JSON.stringify(tok)}`);
-}
-
-function opPrecedence(op: string): number {
-  switch (op) { case "+": case "-": return 1; case "*": case "/": case "%": return 2; default: return 0; }
-}
-
-// ─── Workspace File Tools ────────────────────────────────────
 import { workspaceManager } from "../workspace/manager.ts";
+import { execSync } from "node:child_process";
 
 /** Guard: check workspace and return root path or error message */
 function workspaceGuard(): { ok: false; msg: string } | { ok: true; root: string } {
   if (!workspaceManager.isActive()) {
-    return { ok: false, msg: "❌ No workspace folder is set. Open the 📁 Workspace panel in the chat UI and set a folder, or ask the user to set one." };
+    return { ok: false, msg: "❌ No workspace folder is set. Open the Workspace panel in the chat UI and set a folder." };
   }
   return { ok: true, root: workspaceManager.getRoot() };
 }
@@ -208,9 +92,7 @@ registerTool({
   parameters: { type: "object", properties: { path: { type: "string", description: "Absolute path to the workspace root folder" } }, required: ["path"], additionalProperties: false },
   async execute(args) {
     const { path } = args as { path: string };
-    // ─── Security validation ──────────────────────────────────
     const normalized = path.replace(/\\/g, "/").replace(/\/+$/, "");
-    // Block dangerous system paths
     const BLOCKED = ["/windows", "/windows/system32", "/etc", "/root", "/boot", "/sys", "/proc", "/dev", "/bin", "/sbin", "/usr/lib", "/var/run"];
     const lower = normalized.toLowerCase();
     for (const blocked of BLOCKED) {
@@ -218,7 +100,6 @@ registerTool({
         return `❌ Security: Cannot set workspace to system path "${path}". Choose a project or home directory.`;
       }
     }
-    // Block path traversal
     if (normalized.includes("/../") || normalized.includes("/./") || normalized.endsWith("/..")) {
       return `❌ Security: Path traversal detected in "${path}"`;
     }
@@ -234,7 +115,7 @@ registerTool({
   async execute() {
     const state = workspaceManager.getState();
     const active = state && state.active;
-    if (!active) return "❌ No workspace folder is set. Open the 📁 Workspace panel in the chat UI and set a folder.";
+    if (!active) return "❌ No workspace folder is set. Open the Workspace panel in the chat UI and set a folder.";
     const folders = state.folders.length > 1
       ? "\n- Folders: " + state.folders.length + "\n" + state.folders.map(f => `  - \`${f}\``).join("\n")
       : "";
@@ -399,7 +280,6 @@ registerTool({
     if (!guard.ok) return guard.msg;
     const { command, timeout = 30 } = args as { command: string; timeout?: number };
 
-    // ── Safety guard: block dangerous / destructive commands ──────
     const danger = checkDangerousCommand(command);
     if (danger) return `❌ Blocked: ${danger}`;
 
@@ -415,7 +295,6 @@ registerTool({
       });
       const result = (output || "").trim();
       if (!result) return `✅ Command completed (no output)`;
-      // Truncate to avoid tool response bloat
       return result.length > 5000 ? result.slice(0, 5000) + `\n\n... (${result.length - 5000} more chars)` : result;
     } catch (e: unknown) {
       const err = e as any;
@@ -425,144 +304,8 @@ registerTool({
   },
 });
 
-// ─── Multi-Folder Management ──────────────────────────────────
+// ─── Checkpoint Tools ───────────────────────────────────────────────────────
 
-registerTool({
-  name: "workspace_add_folder",
-  description: "Add a folder to the workspace (multi-folder support). Resolves and adds the path.",
-  parameters: {
-    type: "object",
-    properties: {
-      path: { type: "string", description: "Absolute or relative path to the folder to add" },
-    },
-    required: ["path"],
-    additionalProperties: false,
-  },
-  async execute(args) {
-    const guard = workspaceGuard();
-    if (!guard.ok) return guard.msg;
-    const { path } = args as { path: string };
-    const ok = workspaceManager.addFolder(path);
-    if (!ok) return `❌ Failed to add folder: "${path}" (already exists or invalid).`;
-    return `✅ Added folder: \`${path}\``;
-  },
-});
-
-registerTool({
-  name: "workspace_remove_folder",
-  description: "Remove a folder from the workspace (cannot remove the primary rootDir).",
-  parameters: {
-    type: "object",
-    properties: {
-      path: { type: "string", description: "Path of the folder to remove" },
-    },
-    required: ["path"],
-    additionalProperties: false,
-  },
-  async execute(args) {
-    const guard = workspaceGuard();
-    if (!guard.ok) return guard.msg;
-    const { path } = args as { path: string };
-    const ok = workspaceManager.removeFolder(path);
-    if (!ok) return `❌ Failed to remove folder: "${path}" (primary rootDir cannot be removed, or not found).`;
-    return `✅ Removed folder: \`${path}\``;
-  },
-});
-
-registerTool({
-  name: "workspace_list_folders",
-  description: "List all folders in the current workspace.",
-  parameters: { type: "object", properties: {}, additionalProperties: false },
-  async execute() {
-    const guard = workspaceGuard();
-    if (!guard.ok) return guard.msg;
-    const folders = workspaceManager.getFolders();
-    if (folders.length === 0) return "No folders in workspace.";
-    return folders.map((f, i) => `${i === 0 ? "📁" : "📂"} ${i === 0 ? "(primary) " : ""}\`${f}\``).join("\n");
-  },
-});
-
-// ─── Sub-Agent Tool ──────────────────────────────────────────────
-registerTool({
-  name: "spawn_sub_agent",
-  description: "Spawn a sub-agent to handle a specialized subtask. The sub-agent runs with its own session and returns a text result. Use for parallel work: research, analysis, validation, etc.",
-  parameters: {
-    type: "object",
-    properties: {
-      name: { type: "string", description: "A descriptive name for this sub-agent task (e.g. 'code-reviewer', 'bug-hunter')" },
-      systemPrompt: { type: "string", description: "System prompt/instructions for the sub-agent" },
-      message: { type: "string", description: "The task/message to send to the sub-agent" },
-      modelRef: { type: "string", description: "Optional model reference (defaults to deepseek/deepseek-chat)" },
-    },
-    required: ["name", "systemPrompt", "message"],
-    additionalProperties: false,
-  },
-  async execute(args: { name: string; systemPrompt: string; message: string; modelRef?: string }) {
-    const { spawnSubAgent } = await import("../multi-agent/subagent.ts");
-    const result = await spawnSubAgent(
-      { id: `sub-${args.name}-${Date.now()}`, name: args.name, systemPrompt: args.systemPrompt, modelRef: args.modelRef || "deepseek/deepseek-chat" },
-      args.message,
-    );
-    return result || "(no response from sub-agent)";
-  },
-});
-
-// Video editor and shopping tools removed in Nexus AI v2.0
-// Computer Use tools removed in Nexus AI v2.0 (computer-use.ts deleted)
-
-// ─── Agent Handoff Tool ────────────────────────────────────────
-registerTool({
-  name: "handoff_to_agent",
-  description: "Delegate a task to another named agent. The target agent runs with its own system prompt, skills, and session. Use when a different specialist should handle the work (e.g. handoff to 'code-reviewer', 'bug-hunter', 'security-auditor').",
-  parameters: {
-    type: "object",
-    properties: {
-      agentId: { type: "string", description: "ID of the target agent (e.g. 'code-reviewer', 'bug-hunter')" },
-      message: { type: "string", description: "Task message to send to the target agent" },
-      context: { type: "string", description: "Optional context from your current work to help the target agent" },
-    },
-    required: ["agentId", "message"],
-    additionalProperties: false,
-  },
-  async execute(args, ctx) {
-    const { agentId, message, context } = args as { agentId: string; message: string; context?: string };
-    const { agentStore } = await import("../agent/store.ts");
-    const { spawnSubAgent } = await import("../multi-agent/subagent.ts");
-
-    const agent = agentStore.get(agentId);
-    if (!agent) {
-      const available = agentStore.list().map(a => a.id).join(", ");
-      return `❌ Agent "${agentId}" not found. Available agents: ${available || "(none)"}`;
-    }
-
-    const fullMessage = context
-      ? `## Context from previous agent\n${context}\n\n## Task\n${message}`
-      : message;
-
-    const systemPrompt = agent.systemPrompt || `You are ${agent.name}. ${agent.description || ""}`;
-
-    const result = await spawnSubAgent(
-      { id: `${agentId}-${Date.now()}`, name: agent.name, systemPrompt, modelRef: agent.modelRef },
-      fullMessage,
-    );
-
-    return `### Handoff to ${agent.name} (${agentId})\n\n${result}`;
-  },
-});
-
-// ─── Kanban Orchestrator Tool ──────────────────────────────────
-registerTool({
-  name: "orchestrate",
-  description: "Break down a complex task and delegate to specialized agents in parallel. Use when a task has multiple independent parts.",
-  parameters: { type: "object", properties: { task: { type: "string", description: "The complex task to break down and execute" }, modelRef: { type: "string", default: "deepseek/deepseek-chat" } }, required: ["task"], additionalProperties: false },
-  async execute(args: any) {
-    const { orchestrate } = await import("../kanban-orchestrator.ts");
-    const result = await orchestrate(args.task, args.modelRef);
-    return result.summary;
-  },
-});
-
-// ─── Checkpoint Tools ─────────────────────────────────────────
 registerTool({
   name: "create_checkpoint",
   description: "Create a file backup snapshot before making changes. Restore with restore_checkpoint. Use before risky file operations.",
@@ -589,20 +332,3 @@ registerTool({
     return `✅ Restored ${count} file(s) from checkpoint ${args.id} (${snap.description})`;
   },
 });
-
-registerTool({
-  name: "list_checkpoints",
-  description: "List all available file checkpoints/snapshots.",
-  parameters: { type: "object", properties: {}, additionalProperties: false },
-  async execute() {
-    const { listSnapshots } = await import("../checkpoint/store.ts");
-    const snapshots = listSnapshots();
-    if (snapshots.length === 0) return "No checkpoints available.";
-    return snapshots.map(s => `- ${s.id}: ${s.description} (${s.files.length} files, ${new Date(s.createdAt).toLocaleString()})`).join("\n");
-  },
-});
-
-// Bluesky and social tools removed in Nexus AI v2.0
-// for (const key of Object.keys(bskyTools)) { registerTool(bskyTools[key]); }
-// for (const key of Object.keys(socialTools)) { registerTool(socialTools[key]); }
-

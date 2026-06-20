@@ -63,7 +63,6 @@ class LearningLoop {
   /** Analyze what went wrong in the failed reports */
   private analyzeFailurePattern(agentId: string): {
     pattern: string;
-    severity: string;
     suggestion: string;
   } {
     // Common failure patterns
@@ -101,7 +100,6 @@ class LearningLoop {
     // Default: general anti-hallucination
     return {
       pattern: "General accuracy issues",
-      severity: "high",
       suggestion: "CRITICAL REMINDER: Every claim in your report must be backed by actual tool output. Read files, run commands, verify everything. If unsure, say 'I don't have enough evidence for this claim.' Never fabricate."
     };
   }
