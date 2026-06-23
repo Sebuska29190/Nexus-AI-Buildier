@@ -331,28 +331,19 @@ describe("ToolCircuitBreaker", () => {
 
   it("should prevent 'Agent Wars' infinite loop scenario", () => {
     // Symulacja: Agent A wywołuje Agent B, który wywołuje Agent A...
-    // (Case study z arXiv 2503.12345)
+    // Depth tracking catches nesting, while maxToolCalls catches sequential loops.
     const taskId = "agent-wars";
     breaker.initTask(taskId);
-    
-    // Symulujemy wzajemne wywoływanie agentów
-    breaker.beforeCall(makeCtx({ taskId, toolName: "agent_A", paramsHash: uniqueHash(), iteration: 0 }));
-    breaker.afterCall({ taskId, toolName: "agent_A" });
-    
-    breaker.beforeCall(makeCtx({ taskId, toolName: "agent_B", paramsHash: uniqueHash(), iteration: 1 }));
-    breaker.afterCall({ taskId, toolName: "agent_B" });
-    
-    // Agent B wywołuje Agent A z powrotem
-    breaker.beforeCall(makeCtx({ taskId, toolName: "agent_A", paramsHash: uniqueHash(), iteration: 2 }));
-    breaker.afterCall({ taskId, toolName: "agent_A" });
-    
-    // Agent A wywołuje Agent B — depth = 2, jeszcze OK
-    breaker.beforeCall(makeCtx({ taskId, toolName: "agent_B", paramsHash: uniqueHash(), iteration: 3 }));
-    breaker.afterCall({ taskId, toolName: "agent_B" });
-    
-    // Agent B wywołuje Agent A — depth = 3 > 2 (limit) → DepthLimitError
-    expect(() => breaker.beforeCall(makeCtx({ taskId, toolName: "agent_A", paramsHash: uniqueHash(), iteration: 4 })))
-      .toThrow(DepthLimitError);
+
+    // Symulujemy 5 wywołań (limit = 5)
+    for (let i = 0; i < 5; i++) {
+      breaker.beforeCall(makeCtx({ taskId, toolName: i % 2 === 0 ? "agent_A" : "agent_B", paramsHash: uniqueHash(), iteration: i }));
+      breaker.afterCall({ taskId, toolName: i % 2 === 0 ? "agent_A" : "agent_B" });
+    }
+
+    // 6th call → CircuitBreakerError (maxToolCallsPerTask exceeded)
+    expect(() => breaker.beforeCall(makeCtx({ taskId, toolName: "agent_A", paramsHash: uniqueHash(), iteration: 5 })))
+      .toThrow(CircuitBreakerError);
   });
 
   it("should prevent 'Budget Drain' recursive tool calling", () => {

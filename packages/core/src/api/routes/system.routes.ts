@@ -8,21 +8,10 @@ export function register(app: Hono): void {
   // Health check
   app.get("/health", (c) => c.json({
     status: "ok",
-    version: "3.0.0",
+    version: "4.0.0",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   }));
-
-  // Monitor routes removed — monitor/scheduler.ts was deleted
-
-  // Terminal runner stubbed — gateway/routes-terminal.ts was deleted
-  app.post("/api/terminal", (c) => c.json({ error: "Terminal not available" }, 501));
-
-  // Knowledge base stubbed — knowledge/store.ts was deleted
-  app.get("/api/knowledge/stats", (c) => c.json({ stats: { total: 0, categories: [] } }));
-  app.get("/api/knowledge/:category", (c) => c.json({ entries: [] }));
-  app.get("/api/knowledge/search/:query", (c) => c.json({ results: [] }));
-  app.post("/api/knowledge", (c) => c.json({ error: "Knowledge base not available" }, 501));
 
   // Auto Bug Fixer
   app.post("/api/agent/auto-bug-fixer", async (c) => {
@@ -87,12 +76,4 @@ export function register(app: Hono): void {
     return c.json({ status: "deleted" });
   });
 
-  // --- Kernel stubbed — kernel/index.ts was removed ----------------------------
-  app.get("/api/kernel/status", (c) => c.json({ initialized: false }));
-  app.get("/api/kernel/agentfs/:agentId", (c) => c.json({ files: [] }));
-  app.get("/api/kernel/agentfs/:agentId/:fileName", (c) => c.json({ error: "Kernel not available" }, 404));
-  app.put("/api/kernel/agentfs/:agentId/:fileName", (c) => c.json({ error: "Kernel not available" }, 501));
-  app.get("/api/kernel/global", (c) => c.json({ files: [] }));
-  app.get("/api/kernel/ledger", (c) => c.json({ entries: [] }));
-  app.get("/api/kernel/ledger/stats", (c) => c.json({ stats: { totalEntries: 0, agents: [], actions: [] } }));
 }

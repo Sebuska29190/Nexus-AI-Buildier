@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
-  MessageSquare, Users, Zap, History, Brain,
-  FolderGit2, Terminal,
-  BookOpen, Search, Orbit,
-  Code
+  MessageSquare, Users, History, Terminal,
+  Puzzle, Brain, BarChart3, BookOpen,
+  Settings, Search, Orbit, PanelLeftClose,
+  PanelLeft, Sparkles
 } from "lucide-react";
 
 interface SidebarProps {
@@ -21,24 +21,24 @@ interface NavItem {
 }
 
 const navGroups: { label: string; items: NavItem[] }[] = [
-  { label: "AI Agent", items: [
+  { label: "PRACA", items: [
     { id: "chat", icon: MessageSquare, label: "Chat" },
-    { id: "agents", icon: Users, label: "Agents" },
-    { id: "skills", icon: Zap, label: "Skills" },
+    { id: "agentconfig", icon: Users, label: "Agenci" },
+    { id: "sessions", icon: History, label: "Sesje" },
   ]},
-  { label: "Development", items: [
-    { id: "workspace", icon: FolderGit2, label: "Workspace" },
+  { label: "NARZĘDZIA", items: [
     { id: "terminal", icon: Terminal, label: "Terminal" },
-    { id: "code", icon: Code, label: "Code Editor" },
+    { id: "skills", icon: Puzzle, label: "Narzędzia" },
+    { id: "code", icon: Sparkles, label: "Edytor" },
   ]},
-  { label: "Data", items: [
-    { id: "sessions", icon: History, label: "Sessions" },
-    { id: "memory", icon: Brain, label: "Memory" },
+  { label: "DANE", items: [
+    { id: "memory", icon: Brain, label: "Pamięć" },
+    { id: "workspace", icon: BarChart3, label: "Workspace" },
   ]},
-  { label: "Configuration", items: [
-    { id: "aimodels", icon: BookOpen, label: "Models" },
-    { id: "playground", icon: Search, label: "Playground" },
-    { id: "docs", icon: BookOpen, label: "Docs" },
+  { label: "SYSTEM", items: [
+    { id: "aimodels", icon: BookOpen, label: "Modele" },
+    { id: "docs", icon: BookOpen, label: "Dokumentacja" },
+    { id: "agentconfig", icon: Settings, label: "Konfiguracja" },
   ]},
 ];
 
@@ -52,21 +52,27 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
   }
 
   const recentSessions = [...sessions]
-    .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime())
+    .filter(s => s && (s.createdAt || s.created_at))
+    .sort((a, b) => {
+      const ta = new Date(a.createdAt || a.created_at || 0).getTime();
+      const tb = new Date(b.createdAt || b.created_at || 0).getTime();
+      return tb - ta;
+    })
     .slice(0, 5);
 
   if (collapsed) {
     return (
-      <aside className="w-14 bg-[rgba(18,18,26,0.95)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.06)] flex flex-col items-center z-20">
+      <aside className="w-14 bg-[rgba(10,10,18,0.98)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.05)] flex flex-col items-center z-20 py-2">
         <button
           onClick={() => setCollapsed(false)}
-          className="p-3 text-[#475569] hover:text-[#6366f1] transition-colors duration-200"
-          title="Expand sidebar"
+          className="p-2.5 text-[#475569] hover:text-[#818cf8] transition-colors duration-200 rounded-xl hover:bg-[rgba(99,102,241,0.08)]"
+          title="Rozwiń sidebar"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          <PanelLeft size={16} />
         </button>
-        <nav className="flex flex-col gap-1 mt-2 w-full px-2">
-          {navGroups.flatMap(g => g.items).slice(0, 12).map((item) => {
+        <div className="w-8 h-px bg-[rgba(255,255,255,0.06)] my-2" />
+        <nav className="flex flex-col gap-1 w-full px-2">
+          {navGroups.flatMap(g => g.items).map((item) => {
             const Icon = item.icon;
             return (
               <button
@@ -74,9 +80,9 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
                 type="button"
                 onClick={() => onRoute(item.id)}
                 title={item.label}
-                className={`p-2 rounded-xl transition-all duration-200 ${
+                className={`p-2.5 rounded-xl transition-all duration-200 ${
                   route === item.id
-                    ? "bg-[rgba(99,102,241,0.12)] text-[#818cf8] shadow-[0_0_12px_rgba(99,102,241,0.1)]"
+                    ? "bg-[rgba(99,102,241,0.12)] text-[#818cf8] shadow-[0_0_12px_rgba(99,102,241,0.08)]"
                     : "text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)]"
                 }`}
               >
@@ -90,24 +96,24 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
   }
 
   return (
-    <aside className="w-64 bg-[rgba(18,18,26,0.95)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.06)] flex flex-col justify-between z-20 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-30">
+    <aside className="w-64 bg-[rgba(10,10,18,0.98)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.05)] flex flex-col justify-between z-20 max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-30">
       <div className="overflow-y-auto flex-1">
         {/* Branding */}
-        <div className="p-5 border-b border-[rgba(255,255,255,0.06)]">
+        <div className="p-5 border-b border-[rgba(255,255,255,0.05)]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#06B6D4] flex items-center justify-center shadow-[0_0_20px_rgba(124,58,237,0.25)]">
               <Orbit size={18} className="text-white" />
             </div>
             <div className="flex-1">
               <h1 className="font-extrabold text-sm tracking-wide text-white font-mono">NEXUS AI</h1>
-              <span className="text-[9px] text-[#818cf8] tracking-widest uppercase font-mono font-semibold">CODING AGENT</span>
+              <span className="text-[9px] text-[#06B6D4] tracking-widest uppercase font-mono font-semibold">v{version || "4.0"}</span>
             </div>
             <button
               onClick={() => setCollapsed(true)}
               className="text-[#475569] hover:text-[#f1f5f9] transition-colors duration-200 max-md:hidden"
-              title="Collapse sidebar"
+              title="Zwiń sidebar"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              <PanelLeftClose size={16} />
             </button>
           </div>
         </div>
@@ -118,8 +124,8 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
             <Search size={14} className="absolute left-3 top-2.5 text-[#475569]" />
             <input
               type="text"
-              placeholder="Search or paste Session ID..."
-              className="glass-input w-full pl-9 pr-4 py-2 text-[11px]"
+              placeholder="Szukaj lub wklej ID sesji..."
+              className="w-full pl-9 pr-4 py-2 text-[11px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-xl text-[#f1f5f9] placeholder-[#475569] focus:outline-none focus:border-[#7C3AED]/30 focus:bg-[rgba(124,58,237,0.04)] transition-all duration-200"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const val = (e.target as HTMLInputElement).value.trim();
@@ -134,7 +140,7 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
         <nav className="px-3 space-y-4 pb-6">
           {navGroups.map((group) => (
             <div key={group.label}>
-              <div className="text-[9px] font-bold text-[#475569] uppercase tracking-widest px-3 mb-1">{group.label}</div>
+              <div className="text-[9px] font-bold text-[#475569] uppercase tracking-[0.15em] px-3 mb-1.5">{group.label}</div>
               <div className="space-y-0.5">
                 {group.items.map((item: NavItem) => {
                   const Icon = item.icon;
@@ -146,12 +152,12 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
                       onClick={() => onRoute(item.id)}
                       className={`flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
                         isActive
-                          ? "bg-[rgba(99,102,241,0.1)] text-white shadow-[inset_3px_0_0_0_#6366f1]"
+                          ? "bg-[rgba(124,58,237,0.1)] text-white shadow-[inset_3px_0_0_0_#7C3AED]"
                           : "text-[#94a3b8] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)]"
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <Icon size={16} className={isActive ? "text-[#818cf8]" : ""} />
+                        <Icon size={16} className={isActive ? "text-[#06B6D4]" : "text-[#475569]"} />
                         <span>{item.label}</span>
                       </div>
                       {item.badge && (
@@ -166,39 +172,43 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
             </div>
           ))}
 
-          {/* Recent Sessions */}
+          {/* Ostatnie sesje */}
           {recentSessions.length > 0 && (
             <div>
-              <div className="text-[9px] font-bold text-[#475569] uppercase tracking-widest px-3 mb-1">Recent Sessions</div>
+              <div className="text-[9px] font-bold text-[#475569] uppercase tracking-[0.15em] px-3 mb-1.5">OSTATNIE</div>
               <div className="space-y-0.5">
-                {recentSessions.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => resumeSession(s.id)}
-                    className="flex items-center gap-2 w-full px-3 py-1.5 rounded-xl text-[11px] font-mono text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)] transition-all duration-200 truncate text-left"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-[rgba(99,102,241,0.4)] shrink-0" />
-                    <span className="truncate">{s.modelRef || s.model || s.id?.slice(0, 12)}</span>
-                    <span className="text-[9px] text-[#475569] ml-auto shrink-0">{s.messageCount || s.messages?.length || 0}msgs</span>
-                  </button>
-                ))}
+                {recentSessions.map((s) => {
+                  const model = s.modelRef || s.model || "deepseek";
+                  const shortModel = model.includes("/") ? model.split("/").pop() : model.slice(0, 12);
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => resumeSession(s.id)}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 rounded-xl text-[11px] font-mono text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)] transition-all duration-200 truncate text-left"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#7C3AED]/40 shrink-0" />
+                      <span className="truncate">{shortModel}</span>
+                      <span className="text-[9px] text-[#475569] ml-auto shrink-0">{s.messageCount || 0}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
         </nav>
       </div>
 
-      {/* Bottom: Profile */}
-      <div className="p-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(10,10,15,0.6)]">
+      {/* Bottom bar */}
+      <div className="p-3 border-t border-[rgba(255,255,255,0.05)] bg-[rgba(10,10,18,0.6)]">
         <div className="flex items-center justify-between p-2 rounded-xl hover:bg-[rgba(255,255,255,0.04)] transition-all duration-200 cursor-pointer">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center text-[10px] font-bold text-white shadow-[0_0_12px_rgba(99,102,241,0.3)]">
-              OP
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#06B6D4] flex items-center justify-center text-[9px] font-bold text-white shadow-[0_0_12px_rgba(124,58,237,0.2)]">
+              NX
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-white">Operator</div>
-              <div className="text-[9px] text-[#475569]">core@nexus-ai</div>
+              <div className="text-[11px] font-semibold text-white">Nexus AI</div>
+              <div className="text-[9px] text-[#475569]">v{version || "4.0"}</div>
             </div>
           </div>
         </div>

@@ -15,7 +15,6 @@
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, statSync, unlinkSync, rmSync, appendFileSync } from "node:fs";
 import { join, relative, resolve, extname, basename, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import { knowledgeBase } from "../knowledge/store.ts";
 
 export interface WorkspaceFile {
   path: string;
@@ -66,14 +65,6 @@ class WorkspaceManager {
         folders: this.folders,
       }, null, 2), "utf-8");
 
-      // Log to knowledge base
-      knowledgeBase.save({
-        title: `Workspace Set: ${this.rootDir}`,
-        content: `Workspace initialized at \`${this.rootDir}\`\n\nFolders: ${this.folders.length}\nCreated: ${this.createdAt}`,
-        category: "config",
-        tags: ["workspace", "filesystem"],
-        source: "workspace",
-      });
 
       return true;
     } catch {
@@ -320,14 +311,6 @@ class WorkspaceManager {
       mkdirSync(dirname(fullPath), { recursive: true });
       writeFileSync(fullPath, content, "utf-8");
 
-      // Log to knowledge base
-      knowledgeBase.save({
-        title: `File Created: ${relativePath}`,
-        content: `Created file \`${relativePath}\` in workspace\n\n\`\`\`\n${content.slice(0, 500)}\n\`\`\``,
-        category: "feature",
-        tags: ["workspace", "file-created", extname(relativePath).replace(".", "")],
-        source: "workspace",
-      });
 
       return true;
     } catch {

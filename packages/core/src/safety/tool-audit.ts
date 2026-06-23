@@ -9,6 +9,7 @@
  * 
  * @see https://genai.owasp.org/resource/multi-agentic-system-threat-modeling-guide-v1-0/
  */
+import { createHash } from "node:crypto";
 
 import { emitEvent } from "../event-bus/index.ts";
 
@@ -121,20 +122,8 @@ class ToolAuditLogger {
    */
   hashParams(params: Record<string, unknown>): string {
     const json = JSON.stringify(params, Object.keys(params).sort());
-    // Używamy prostego hasha (Bun wspiera crypto)
-    const hash = this.simpleHash(json);
+    const hash = createHash("sha256").update(json).digest("hex").slice(0, 16);
     return hash;
-  }
-
-  private simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    // Zwróć jako hex string
-    return Math.abs(hash).toString(16).padStart(8, "0");
   }
 
   /**

@@ -18,9 +18,9 @@ import { safeMessage } from "../errors.ts";
 import { agentStore } from "./store.ts";
 import { sessionAgentMap } from "./runner.ts";
 
-/** Resolve agent ID from session ID */
+/** Resolve agent ID from session ID — fallback to session ID if no agent mapped */
 function resolveAgentFromSession(sessionId: string): string | null {
-  return sessionAgentMap.get(sessionId) ?? null;
+  return sessionAgentMap.get(sessionId) ?? sessionId;
 }
 
 type MemoryType = "episodic" | "semantic";

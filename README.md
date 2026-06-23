@@ -1,40 +1,21 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.0.0-blue" alt="version">
-  <img src="https://img.shields.io/badge/agents-128-purple" alt="agents">
-  <img src="https://img.shields.io/badge/tools-18-orange" alt="tools">
-  <img src="https://img.shields.io/badge/plugins-26-blueviolet" alt="plugins">
+  <img src="https://img.shields.io/badge/version-4.0.0-blue" alt="version">
+  <img src="https://img.shields.io/badge/agents-125-purple" alt="agents">
+  <img src="https://img.shields.io/badge/tools-20-orange" alt="tools">
   <img src="https://img.shields.io/badge/providers-6-blue" alt="providers">
-  <img src="https://img.shields.io/badge/mesh-13_agents-green" alt="mesh">
 </p>
 
 ---
 
 ## What is Nexus AI?
 
-**Nexus AI v2.0 "Aurora"** is a self-hosted, agent-first platform for orchestrating autonomous AI agents. 126 specialized agents connected via **Agent Mesh Protocol** — from code auditing to penetration testing, from API design to database administration.
+**Nexus AI v4.0** is a self-hosted, agent-first platform for orchestrating autonomous AI agents. 125 specialized agents — from code auditing to penetration testing, from API design to database administration.
 
 Built on **Bun + Hono + React 19 + SQLite**. Every agent has persistent memory, self-learning capabilities, and a trust-based reputation system. Runs 100% locally — your API keys never leave your machine.
 
 ### Why Nexus AI?
 
-| Feature | Nexus AI | LangChain | AutoGPT | CrewAI |
-|---------|----------|-----------|---------|--------|
-| **Agent count** | 126 | Manual build | ~1 | ~5 |
-| **Agent Mesh Protocol** | ✅ 13 interconnected agents | ❌ | ❌ | ❌ |
-| **Agent Work Viewer** | ✅ Live SSE streaming | ❌ | ❌ | ❌ |
-| **Evidence Protocol** | ✅ Validates every report | ❌ | ❌ | ❌ |
-| **Quality Scoring** | ✅ Trust-based reputation | ❌ | ❌ | ❌ |
-| **Smart Router** | ✅ Auto-select best agent | ❌ | ❌ | ❌ |
-| **Learning Loop** | ✅ Self-correcting prompts | ❌ | ❌ | ❌ |
-| **Persistent Memory** | ✅ Auto-learns from runs | ❌ | ❌ | ❌ |
-| **Agent Chambers** | ✅ Multi-agent teams | ❌ | ❌ | Limited |
-| **Workflow Builder** | ✅ Chain agents, tools, conditions | ❌ | ❌ | ❌ |
-| **Skill Hub** | ✅ agentskills.io integration | ❌ | ❌ | ❌ |
-| **FTS5 Search** | ✅ Full-text transcript search | ❌ | ❌ | ❌ |
-| **Plugin System** | ✅ 26 community plugins | ❌ | ❌ | ❌ |
-| **RAG Knowledge Base** | ✅ FTS5 + LLM answers | ✅ | ❌ | ❌ |
-| **Messaging platforms** | 5 (Telegram, Discord, Slack, WhatsApp, Signal) | Plugin | ❌ | ❌ |
-| **Web UI** | ✅ Built-in (React 19 + Vite 6) | ❌ Need separate | ❌ CLI only | ❌ |
+> **Status:** 125 specialized agents | 20 built-in tools | 6 LLM providers | 200+ REST endpoints
 
 ---
 
@@ -75,42 +56,23 @@ nexus-ai/
 │   │   │   ├── scoring.ts           #   Trust-based quality scoring
 │   │   │   ├── router.ts            #   Smart Router — auto-select best agent
 │   │   │   ├── learning.ts          #   Learning Loop — self-correcting prompts
-│   │   │   ├── community-agents.ts  #   13 native agents
-│   │   │   └── community-agents-voltagent.ts  # 113 imported agents
-│   │   │
-│   │   ├── agent-mesh/              # Agent Mesh Protocol
-│   │   │   ├── bus.ts               #   Pub/sub event bus
-│   │   │   ├── router.ts            #   Agent registry + routing
-│   │   │   └── protocol.ts          #   Handshake + capabilities
-│   │   │
-│   │   ├── multi-agent/             # Team collaboration
-│   │   │   ├── subagent.ts          #   Spawn sub-agents
-│   │   │   ├── chamber.ts           #   Agent Chambers — round-robin teams
-│   │   │   └── tools_parallel.ts    #   Parallel execution tools
+│   │   │   └── community-agents.ts  #   125 agent definitions
 │   │   │
 │   │   ├── plugin/                  # Tool system
-│   │   │   ├── tools.ts             #   Core workspace + security tools
-│   │   │   ├── community-skills.ts  #   66 community tools
+│   │   │   ├── tools.ts             #   Core workspace + web tools
+│   │   │   ├── registry.ts          #   Provider + tool registry
 │   │   │   └── community-plugins.ts #   26 plugins
-│   │   │
-│   │   ├── skill/                   # Skill ecosystem
-│   │   │   ├── loader.ts            #   Load skills from disk
-│   │   │   ├── self-improve.ts      #   AI auto-creates skills
-│   │   │   └── hub.ts               #   agentskills.io integration
 │   │   │
 │   │   ├── safety/                  # Security middleware
 │   │   │   ├── circuit-breaker-tools.ts  # Loop detection + rate limits
 │   │   │   └── tool-audit.ts        #   Real-time audit logging
 │   │   │
-│   │   ├── auth/                    # JWT authentication
-│   │   ├── channel/                 # 5 messaging platforms
-│   │   ├── cron/                    # Natural-language scheduler
-│   │   ├── memory/                  # Persistent knowledge store
-│   │   ├── kernel/                  # Audit ledger + AgentFS
-│   │   ├── workflow/                # Workflow engine
-│   │   ├── monitor/                 # Usage & cost tracking
-│   │   ├── rag/                     # RAG knowledge base
-│   │   └── api/                     # 200+ REST endpoints
+│   │   ├── session/                 # Session management + FTS5 transcripts
+│   │   ├── config/                  # Provider config with AES encryption
+│   │   ├── event-bus/               # Pub/sub event system
+│   │   ├── harness/                 # Provider harness (pi/)
+│   │   ├── api/                     # 200+ REST endpoints
+│   │   └── ...
 │   │
 │   └── ui/                          # Frontend — React 19 + Vite 6
 │       └── src/routes/              # 30+ pages
@@ -156,15 +118,6 @@ Live SSE streaming of agent execution: tool calls, results, thinking, progress. 
 | **Data & AI** | 13 | data-scientist, data-engineer, ml-engineer, mlops-engineer, llm-architect, nlp-engineer, prompt-engineer, postgres-pro, ai-engineer, and more |
 | **Developer Experience** | 15 | refactoring-specialist, build-engineer, cli-developer, git-workflow-manager, legacy-modernizer, documentation-engineer, mcp-developer, and more |
 | **Meta-Orchestration** | 11 | multi-agent-coordinator, workflow-orchestrator, task-distributor, knowledge-synthesizer, context-manager, codebase-orchestrator, and more |
-
-### Agent Chambers
-Multi-agent teams collaborate on tasks through shared discussion. Round-robin execution, delegation via @mentions, consensus detection. 126 agents available as team members.
-
-### Agent Mesh Protocol
-13 core agents interconnected via pub/sub event bus. Dynamic routing, capability discovery, task delegation between agents.
-
-### Workflow Builder
-Chain agents, tools, and conditions into repeatable workflows with variable passing and branching.
 
 ### Persistent Memory
 Every agent remembers across sessions. Episodic (what happened) + semantic (what was learned). Auto-consolidation after each run. Deduplication prevents redundant memories.
@@ -231,16 +184,7 @@ GET    /api/agents/:id/learning       # Learning loop history
 POST   /api/agents/:id/remediate      # Force remediation
 GET    /api/agents/runs/:runId/events # Live SSE agent execution stream
 POST   /api/agents/runs/:runId/steer  # Steer running agent
-POST   /api/agents/runs/:runId/stop   # Stop running agent
-
-# Mesh
-GET    /api/mesh/topology             # Agent interconnection graph
-GET    /api/mesh/agents               # Mesh agent registry
-POST   /api/mesh/send                 # Route message via mesh
-
-# Chambers
-POST   /api/chambers                  # Create team from 126 agents
-POST   /api/chambers/:id/run          # Start team discussion
+GET    /api/agents/runs/:runId/stop   # Stop running agent
 
 # Memory
 GET    /api/agents/:id/memory         # Agent's learned knowledge
@@ -258,8 +202,6 @@ POST   /api/agents/:id/learn          # Manually teach an agent
 - ✅ **Path traversal protection** — blocks `../` patterns
 - ✅ **Circuit breaker** — loop detection, tool call limits, depth limits
 - ✅ **Tool audit logging** — every tool call recorded
-- ✅ **Kernel ledger** — immutable audit trail
-- ✅ **Optional auth** — Bearer token for all API endpoints
 - ✅ No telemetry, no cloud dependency, 100% local
 
 ---
@@ -270,4 +212,4 @@ MIT with Attribution — see [LICENSE](LICENSE).
 
 ---
 
-**Built for the agent-first era. Nexus AI v2.0 "Aurora".**
+> **Built for the agent-first era. Nexus AI v4.0.**

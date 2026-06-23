@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { join, dirname } from "node:path";
 import { mkdirSync, existsSync } from "node:fs";
 import { emitEvent } from "../event-bus/index.ts";
-import { knowledgeBase } from "../knowledge/store.ts";
 
 export interface SessionRow {
   id: string; createdAt: string; updatedAt: string;
@@ -188,16 +187,8 @@ class SessionManager {
   /**
    * Auto-save session transcript to knowledge base
    */
-  saveToKnowledge(sessionId: string): void {
-    try {
-      const session = this.getSession(sessionId);
-      if (!session) return;
-      const messages = this.getTranscript(sessionId);
-      if (messages.length === 0) return;
-      knowledgeBase.saveSession(sessionId, messages, session.modelRef);
-    } catch (e) {
-      // Silent fail — knowledge base is non-critical
-    }
+  saveToKnowledge(_sessionId: string): void {
+    // Removed in v4.0 — knowledge base module was unstable
   }
 
   close(): void { this.db?.close(); }

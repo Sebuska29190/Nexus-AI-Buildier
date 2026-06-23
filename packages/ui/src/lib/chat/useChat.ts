@@ -47,23 +47,56 @@ export function useChat() {
   const fullTextRef = useRef("");
   const activityRef = useRef<ChatActivity[]>([]);
   const startTimeRef = useRef(0);
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectAttempts = useRef(0);
 
   // Sync activity ref
   useEffect(() => { activityRef.current = activity; }, [activity]);
 
-  // Connect WebSocket
+  // Clean up reconnect timer
+  useEffect(() => {
+    return () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    };
+  }, []);
+
+  // Connect WebSocket with auto-reconnect
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     try {
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
-      ws.onopen = () => setConnected(true);
-      ws.onclose = () => { setConnected(false); wsRef.current = null; };
+      ws.onopen = () => {
+        setConnected(true);
+        reconnectAttempts.current = 0;
+        // Start heartbeat
+        if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+        heartbeatRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "ping" }));
+          }
+        }, 30000);
+      };
+      ws.onclose = () => {
+        setConnected(false);
+        wsRef.current = null;
+        if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
+        // Auto-reconnect with exponential backoff (1s, 2s, 4s, 8s... max 30s)
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+        reconnectAttempts.current++;
+        reconnectRef.current = setTimeout(() => connect(), delay);
+      };
       ws.onmessage = (e) => {
         try {
           const msg = JSON.parse(e.data);
+          if (msg.type === "pong") return; // Heartbeat response — ignore
           handleMessage(msg);
         } catch {}
+      };
+      ws.onerror = () => {
+        // onclose will fire after this, reconnect handles it
       };
     } catch {}
   }, []);

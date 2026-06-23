@@ -8,6 +8,7 @@ import { onEvent, emitEvent } from "../../event-bus/index.ts";
 import { qualityScorer } from "../../agent/scoring.ts";
 import { capabilityRegistry } from "../../agent/router.ts";
 import { learningLoop } from "../../agent/learning.ts";
+import { agentMemory } from "../../agent/memory.ts";
 import { agentScheduler } from "../../agent/scheduler.ts";
 
 export function register(app: Hono): void {
@@ -212,7 +213,6 @@ Return valid JSON only (no markdown, no code fences):
   app.get("/api/agents/:id/runs/history", (c) => {
     try {
       const agentId = c.req.param("id");
-      const { agentMemory } = require("../../agent/memory.ts") as typeof import("../../agent/memory.ts");
       const entries = agentMemory.getEntries(agentId);
       return c.json({ runs: entries });
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 400); }
@@ -222,7 +222,6 @@ Return valid JSON only (no markdown, no code fences):
     try {
       const agentId = c.req.param("id");
       const body = await c.req.json<{ insight: string; category?: string }>();
-      const { agentMemory } = require("../../agent/memory.ts") as typeof import("../../agent/memory.ts");
       agentMemory.recordInsight(agentId, body.insight, body.category || "manual");
       return c.json({ status: "recorded" });
     } catch (e: unknown) { return c.json({ error: safeMessage(e) }, 400); }

@@ -11,7 +11,7 @@ export interface AgentStatus {
   id: string; name: string; status: 'online' | 'busy' | 'idle' | 'offline'; activeTasks: number;
   tools: number; skills: number; model: string; connections: string[];
 }
-export type Route = 'chat' | 'workflows' | 'chambers' | 'rag' | 'agents' | 'memory' | 'skills' | 'plugins' | 'integrations' | 'playground' | 'code-editor' | 'git' | 'terminal' | 'workspace' | 'worker' | 'sessions' | 'channels' | 'settings' | 'apikeys' | 'logs' | 'profiles' | 'models' | 'cron' | 'analytics' | 'tools-analytics' | 'docs';
+export type Route = 'dashboard' | 'chat' | 'rag' | 'agents' | 'memory' | 'skills' | 'plugins' | 'integrations' | 'playground' | 'code-editor' | 'git' | 'terminal' | 'workspace' | 'sessions' | 'channels' | 'settings' | 'apikeys' | 'logs' | 'profiles' | 'models' | 'analytics' | 'tools-analytics' | 'docs';
 
 // ─── Store ────────────────────────────────────
 interface AppState {

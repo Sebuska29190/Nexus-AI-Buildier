@@ -108,8 +108,11 @@ function truncate(text: string, max = 120) {
   return text.length > max ? text.slice(0, max) + "..." : text;
 }
 
-function importanceColor(level: string) {
-  switch (level?.toLowerCase()) {
+function importanceColor(level: any) {
+  const lvl = typeof level === "string" ? level.toLowerCase()
+    : typeof level === "number" ? (level >= 4 ? "high" : level >= 2 ? "medium" : "low")
+    : "medium";
+  switch (lvl) {
     case "high":   return "bg-red-950 text-red-400 border-red-900/30";
     case "medium": return "bg-amber-950 text-amber-400 border-amber-900/30";
     case "low":    return "bg-slate-800 text-slate-400 border-slate-700/30";
@@ -138,8 +141,8 @@ function AgentReportCard({ memory, onDelete }: { memory: any; onDelete: (id: str
             </h3>
           </div>
         </div>
-        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${importanceColor(memory.importance || memory.importance_level)} shrink-0`}>
-          {(memory.importance || memory.importance_level || "medium").toUpperCase()}
+        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${importanceColor(memory.importance ?? memory.importance_level)} shrink-0`}>
+          {(memory.importance ?? memory.importance_level ?? "medium").toString().toUpperCase()}
         </span>
       </div>
 
@@ -231,7 +234,7 @@ function MemoryCard({ memory, onDelete }: { memory: any; onDelete: (id: string) 
         </div>
         {(memory.importance || memory.importance_level) && (
           <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${importanceColor(memory.importance || memory.importance_level)} shrink-0`}>
-            {(memory.importance || memory.importance_level).toUpperCase()}
+            {(memory.importance ?? memory.importance_level ?? "medium").toString().toUpperCase()}
           </span>
         )}
       </div>

@@ -1,32 +1,4 @@
 import { Hono } from "hono";
-import { getCookie } from "hono/cookie";
-
-// Auth middleware — auth/jwt.ts was removed; verifyToken stubbed
-function verifyToken(token: string): unknown | null {
-  // Stub: auth not configured
-  return null;
-}
-
-// Auth middleware — bypass for /health, /api/auth, /v1, and /api/sessions
-const PUBLIC_PATHS = ["/health", "/api/auth", "/", "/assets"];
-
-function authMiddleware(c: any, next: any) {
-  const path = c.req.path;
-  if (PUBLIC_PATHS.some((p) => path === p || path.startsWith(p))) return next();
-  const auth = c.req.header("Authorization") || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : getCookie(c, "nova_token") || "";
-  if (token) {
-    const user = verifyToken(token);
-    if (user) {
-      c.set("user", user);
-      return next();
-    }
-  }
-  // Allow public GET requests only for known safe endpoints
-  const PUBLIC_GET_PATHS = ["/api/sessions", "/api/tools", "/api/agents", "/api/skills", "/v1/models", "/health"];
-  if (c.req.method === "GET" && PUBLIC_GET_PATHS.some(p => path === p || path.startsWith(p + "/"))) return next();
-  return c.json({ error: "Unauthorized" }, 401);
-}
 
 // Simple in-memory rate limiter
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -68,17 +40,14 @@ function rateLimitMiddleware(c: any, next: any) {
   return next();
 }
 
-export { authMiddleware, rateLimit, rateLimitMap, PUBLIC_PATHS, PUBLIC_GET_PATHS };
+export { rateLimit, rateLimitMap };
 
 /**
  * Register middleware on the given Hono app.
  */
 export function registerRoutes(app: Hono): void {
-  // Rate limiting (applied first, before auth)
+  // Rate limiting
   app.use("*", rateLimitMiddleware);
-
-  // Auth middleware
-  app.use("*", authMiddleware);
 
   // Security headers
   app.use("*", async (c, next) => {

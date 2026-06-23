@@ -10,7 +10,8 @@ import hljs from "highlight.js";
 import { 
   Settings, Copy, Plus, X, ChevronDown, ChevronRight,
   Cpu, Check, Terminal, FileCode, Search, Loader2,
-  AlertCircle, CheckCircle, XCircle, Clock, Zap
+  AlertCircle, CheckCircle, XCircle, Clock, Zap,
+  SplitSquareVertical, PanelRightClose
 } from "lucide-react";
 import { api } from "../lib/api";
 import { CodeBlock } from "../lib/components/chat/CodeBlock";
@@ -20,7 +21,8 @@ import { useChat } from "../lib/chat/useChat";
 
 marked.setOptions({
   highlight: (code: string, lang: string) => {
-    if (lang && hljs.getLanguage(lang)) return hljs.highlight(code, { language: lang }).value;
+    const langStr = typeof lang === "string" ? lang : "";
+    if (langStr && hljs.getLanguage(langStr)) return hljs.highlight(code, { language: langStr }).value;
     return hljs.highlightAuto(code).value;
   },
   breaks: true,
@@ -89,7 +91,7 @@ function ToolCallCard({ tool }: { tool: ToolActivity }) {
   );
 }
 
-// ─── Activity Panel ─────────────────────────────────────────────────────────
+// ─── Activity / Tool Timeline Panel ──────────────────────────────────────────
 
 function ActivityPanel({ 
   tools, 
@@ -108,34 +110,113 @@ function ActivityPanel({
     <div className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(10,11,30,0.8)] p-3">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-[10px] text-[#4a5068] hover:text-[#8892a8] transition-colors"
+        className="flex items-center gap-2 text-[10px] text-[#4a5068] hover:text-[#8892a8] transition-colors w-full"
       >
         {status === "thinking" ? (
-          <Loader2 size={10} className="text-[#6366f1] animate-spin" />
+          <Loader2 size={10} className="text-[#7C3AED] animate-spin" />
         ) : status === "running" ? (
-          <Loader2 size={10} className="text-[#00d4ff] animate-spin" />
+          <Loader2 size={10} className="text-[#06B6D4] animate-spin" />
         ) : (
           <CheckCircle size={10} className="text-[#22c55e]" />
         )}
         <span className="font-mono">
-          {status === "thinking" && "Thinking..."}
-          {status === "running" && `Running ${tools.length} tool${tools.length !== 1 ? "s" : ""}`}
-          {status === "done" && `Done ${tools.length} tool${tools.length !== 1 ? "s" : ""}`}
+          {status === "thinking" && "Myślenie..."}
+          {status === "running" && `Wykonano ${tools.length} narzędzi${tools.length !== 1 ? "" : ""}`}
+          {status === "done" && `Zakończono (${tools.length} narzędzi)`}
         </span>
-        <ChevronDown size={10} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+        <ChevronDown size={10} className={`ml-auto transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
       
       {expanded && (
         <div className="mt-2 space-y-1">
+          {/* Thinking block */}
           {thinking && (
-            <div className="text-[10px] text-[#6366f1] font-mono bg-[rgba(99,102,241,0.05)] rounded p-2">
-              {thinking.slice(0, 200)}
-              {thinking.length > 200 && "..."}
+            <div className="bg-[rgba(124,58,237,0.06)] border border-[rgba(124,58,237,0.12)] rounded-lg p-2.5 mb-2">
+              <div className="text-[9px] text-[#7C3AED] font-mono mb-1">💭 THINKING</div>
+              <div className="text-[10px] text-[#6b7280] font-mono whitespace-pre-wrap max-h-24 overflow-y-auto">
+                {thinking}
+              </div>
             </div>
           )}
-          {tools.map((tool) => (
-            <ToolCallCard key={tool.id} tool={tool} />
+          
+          {/* Tool timeline */}
+          {tools.map((tool, i) => (
+            <TimelineItem key={tool.id || i} tool={tool} index={i} isLast={i === tools.length - 1} />
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Timeline Item ───────────────────────────────────────────────────────────
+
+function TimelineItem({ tool, index, isLast }: { tool: ToolActivity; index: number; isLast: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const statusColor = tool.status === "done" ? "bg-[#22c55e]"
+    : tool.status === "error" ? "bg-[#ef4444]"
+    : tool.status === "running" ? "bg-[#06B6D4]"
+    : "bg-[#4a5068]";
+
+  const statusIcon = tool.status === "done" ? "✓"
+    : tool.status === "error" ? "✗"
+    : tool.status === "running" ? "⟳"
+    : "○";
+
+  return (
+    <div className="relative pl-5">
+      {/* Timeline line */}
+      {!isLast && (
+        <div className="absolute left-[7px] top-3 bottom-0 w-px bg-[rgba(255,255,255,0.06)]" />
+      )}
+      
+      {/* Timeline dot */}
+      <div className={`absolute left-[3px] top-[7px] w-2.5 h-2.5 rounded-full ${statusColor} ${
+        tool.status === "running" ? "animate-pulse" : ""
+      }`} />
+      
+      <button
+        onClick={() => tool.result && setExpanded(!expanded)}
+        className="w-full flex items-center gap-2 py-1 text-left"
+      >
+        <span className={`text-[10px] font-mono ${
+          tool.status === "done" ? "text-[#22c55e]"
+          : tool.status === "error" ? "text-[#ef4444]"
+          : tool.status === "running" ? "text-[#06B6D4]"
+          : "text-[#4a5068]"
+        }`}>
+          {statusIcon}
+        </span>
+        <span className="text-[10px] font-mono text-[#94a3b8] truncate flex-1">{tool.tool}</span>
+        {tool.duration !== undefined && (
+          <span className="text-[9px] text-[#475569] font-mono shrink-0">
+            {(tool.duration / 1000).toFixed(1)}s
+          </span>
+        )}
+        {tool.result && (
+          <ChevronRight size={10} className={`text-[#475569] transition-transform ${expanded ? "rotate-90" : ""}`} />
+        )}
+      </button>
+      
+      {/* Duration bar */}
+      {tool.duration !== undefined && (
+        <div className="h-0.5 bg-[rgba(255,255,255,0.04)] rounded-full overflow-hidden ml-2 mr-2 mb-1">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              tool.status === "done" ? "bg-[#22c55e]" : "bg-[#06B6D4]"
+            }`}
+            style={{ width: `${Math.min((tool.duration / 5000) * 100, 100)}%` }}
+          />
+        </div>
+      )}
+      
+      {expanded && tool.result && (
+        <div className="ml-2 mb-2 p-2 bg-[rgba(0,0,0,0.2)] rounded-lg border border-[rgba(255,255,255,0.04)]">
+          <pre className="text-[9px] text-[#6b7280] font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
+            {tool.result.slice(0, 1500)}
+            {tool.result.length > 1500 && "\n..."}
+          </pre>
         </div>
       )}
     </div>
@@ -176,6 +257,7 @@ export function ChatPage({
   const [tools, setTools] = useState<ToolActivity[]>([]);
   const [status, setStatus] = useState<"idle" | "thinking" | "running" | "done">("idle");
   const [thinking, setThinking] = useState("");
+  const [showSplitView, setShowSplitView] = useState(true); // Split panel thinking/response
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll
@@ -407,6 +489,17 @@ export function ChatPage({
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowSplitView(!showSplitView)}
+            className={`p-1.5 rounded-lg transition-all ${
+              showSplitView
+                ? "text-[#818cf8] bg-[rgba(99,102,241,0.08)]"
+                : "text-[#4a5068] hover:text-[#8892a8] hover:bg-[rgba(255,255,255,0.04)]"
+            }`}
+            title={showSplitView ? "Hide thinking panel" : "Show thinking panel"}
+          >
+            <SplitSquareVertical size={15} />
+          </button>
+          <button
             onClick={() => chat.clearMessages()}
             className="px-3 py-1 rounded-lg text-[10px] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.04)] transition-all flex items-center gap-1"
           >
@@ -483,20 +576,19 @@ export function ChatPage({
                 {(chat.isThinking || chat.isRunning) && (
                   <div className="animate-fade-in-up">
                     {chat.isThinking && chat.thinking && (
-                      <div className="glass-card rounded-2xl p-4 max-w-[85%] mb-3">
+                      <div className={`glass-card rounded-2xl p-4 ${showSplitView ? "max-w-full" : "max-w-[85%]"} mb-3`}>
                         <div className="flex items-center gap-2 mb-2">
                           <Loader2 size={12} className="text-[#6366f1] animate-spin" />
                           <span className="text-[10px] text-[#6366f1] font-mono">Thinking...</span>
                         </div>
-                        <div className="text-[11px] text-[#6b7280] font-mono whitespace-pre-wrap">
-                          {chat.thinking.slice(0, 300)}
-                          {chat.thinking.length > 300 && "..."}
+                        <div className="text-[11px] text-[#6b7280] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                          {chat.thinking}
                         </div>
                       </div>
                     )}
 
                     {chat.isRunning && chat.streamingContent && (
-                      <div className="glass-card rounded-2xl p-4 max-w-[85%]">
+                      <div className={`${showSplitView ? "max-w-full" : "max-w-[85%]"} glass-card rounded-2xl p-4`}>
                         <div
                           className="prose-nova text-sm leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderContent(chat.streamingContent)) }}

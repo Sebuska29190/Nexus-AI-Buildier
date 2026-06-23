@@ -39,7 +39,7 @@ for (const p of [join(process.cwd(), ".env"), join(process.cwd(), ".env.local")]
 }
 
 console.log("\n  ╔═══════════════════════════════════════╗");
-console.log("  ║       Nexus AI v3.0 — Coding Agent     ║");
+console.log("  ║       Nexus AI v4.0 — Coding Agent     ║");
 console.log("  ╚═══════════════════════════════════════╝\n");
 
 sessionManager.init(process.env.NOVA_DB_PATH);
@@ -62,9 +62,7 @@ if (agentStore.list().length === 0) {
   agentStore.create({ name: "default", description: "Default Nexus coding agent", modelRef: "deepseek/deepseek-chat", emoji: "◇" });
 }
 
-import { registerSubAgents } from "./agent/subagents/index.ts";
-registerSubAgents();
-console.log(`  ✓ Sub-agents: senior-dev, cyber-auditor, web-researcher, api-connector`);
+
 
 // Seed community agents on first run
 import { seedCommunityAgents } from "./agent/community-agents.ts";
@@ -302,6 +300,11 @@ const server = Bun.serve({
         // Chat: JSON-based messaging
         const raw = typeof message === "string" ? message : String(message);
         const data = JSON.parse(raw);
+        // Heartbeat ping/pong
+        if (data.type === "ping") {
+          ws.send(JSON.stringify({ type: "pong" }));
+          return;
+        }
         let ctx = (ws as any)._ctx as WsData | undefined;
         if (!ctx) { ctx = { sessionId: null, runId: null }; (ws as any)._ctx = ctx; }
         handleWs(ws, ctx, data);

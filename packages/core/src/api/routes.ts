@@ -12,6 +12,29 @@ import { register as registerMemory } from "./routes/memory.routes.ts";
 
 export function createRouter(): Hono {
   const app = new Hono();
+  // Gzip compression MUST run before CORS to avoid ReadableStream conflicts
+  app.use("*", async (c, next) => {
+    await next();
+    const accept = c.req.header("Accept-Encoding") || "";
+    const ct = c.res.headers.get("Content-Type") || "";
+    if (accept.includes("gzip") && ct.includes("json") && c.res.body) {
+      // Clone the response to avoid "ReadableStream already used" errors
+      const original = c.res.clone();
+      const text = await original.text();
+      if (text.length > 1024) {
+        const { gzipSync } = await import("node:zlib");
+        const compressed = gzipSync(Buffer.from(text));
+        c.res = new Response(compressed, {
+          status: c.res.status,
+          headers: {
+            "Content-Type": ct,
+            "Content-Encoding": "gzip",
+            "Vary": "Accept-Encoding",
+          },
+        });
+      }
+    }
+  });
   app.use("*", cors({
     origin: process.env.NOVA_CORS_ORIGIN || "http://localhost:4123",
   }));

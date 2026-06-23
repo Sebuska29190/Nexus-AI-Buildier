@@ -186,7 +186,4 @@ export function register(app: Hono): void {
     }
   });
 
-  // --- MCP Management stubbed — mcp/client.ts was removed -----------
-  app.get("/api/mcp/servers", (c) => c.json({ servers: [] }));
-  app.post("/api/mcp/restart", (c) => c.json({ error: "MCP not available" }, 501));
 }

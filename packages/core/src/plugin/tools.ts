@@ -43,21 +43,29 @@ registerTool({
 
 registerTool({
   name: "web_search",
-  description: "Search the web via DuckDuckGo",
+  description: "Search the web via DuckDuckGo Lite (POST-based). Returns up to 10 results with titles and snippets.",
   parameters: { type: "object", properties: { query: { type: "string", description: "Search query" } }, required: ["query"], additionalProperties: false },
   async execute(args) {
     const { query } = args as { query: string };
     const encoded = encodeURIComponent(query);
-    const res = await fetch(`https://lite.duckduckgo.com/lite/?q=${encoded}`, {
-      signal: AbortSignal.timeout(8000),
-      headers: { "User-Agent": "Nova/1.0" },
+    const res = await fetch("https://lite.duckduckgo.com/lite/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+      body: `q=${encoded}`,
+      signal: AbortSignal.timeout(10000),
     });
     const html = await res.text();
     const results: string[] = [];
-    const regex = /<a[^>]*class="result-link"[^>]*>([^<]+)<\/a>\s*<span[^>]*class="result-snippet"[^>]*>([^<]+)<\/span>/gi;
+    // Match: <a ... class='result-link'>TITLE</a> followed by <td class='result-snippet'>SNIPPET
+    const regex = /<a[^>]*class='result-link'[^>]*>([^<]+)<\/a>\s*<td[^>]*class='result-snippet'[^>]*>([^<]*)<\/td>/gi;
     let m;
     while ((m = regex.exec(html)) !== null) {
-      results.push(`${m[1].trim()}: ${m[2].trim()}`);
+      const title = m[1].trim().replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+      const snippet = m[2].trim().replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+      results.push(`${title}: ${snippet}`);
       if (results.length >= 10) break;
     }
     return results.length > 0 ? results.join("\n") : "No results found";
@@ -176,6 +184,11 @@ registerTool({
     const guard = workspaceGuard();
     if (!guard.ok) return guard.msg;
     const { path } = args as { path: string };
+    // Block reading secret files
+    const SECRET_PATTERNS = /(^|\/)(\.env|jwt_secret|provider-config|\.encryption_key|oauth|secret|password)|\b(private\.key|id_rsa|known_hosts)\b/i;
+    if (SECRET_PATTERNS.test(path)) {
+      return `❌ Security: Reading "${path}" is blocked — contains sensitive data.`;
+    }
     const content = workspaceManager.readFile(path);
     if (content === null) return `Error: File "${path}" not found, is empty, or exceeds 1 MB. Use workspace_list_files to check available files.`;
     return content;
@@ -301,7 +314,7 @@ registerTool({
         cwd: guard.root,
         timeout: maxTimeout,
         maxBuffer: 5 * 1024 * 1024,
-        shell: true,
+        shell: false,
         encoding: "utf-8",
         windowsHide: true,
       });
@@ -318,29 +331,5 @@ registerTool({
 
 // ─── Checkpoint Tools ───────────────────────────────────────────────────────
 
-registerTool({
-  name: "create_checkpoint",
-  description: "Create a file backup snapshot before making changes. Restore with restore_checkpoint. Use before risky file operations.",
-  parameters: { type: "object", properties: { description: { type: "string", default: "auto-checkpoint" }, files: { type: "array", items: { type: "string" }, description: "File paths to backup (optional — defaults to current workspace files)" } }, additionalProperties: false },
-  async execute(args: any) {
-    const { makeSnapshot, listSnapshots } = await import("../checkpoint/store.ts");
-    const desc = args.description || `checkpoint_${Date.now()}`;
-    const files = args.files || [];
-    const snapshot = makeSnapshot(desc, files);
-    return `✅ Checkpoint created: ${snapshot.id}\n${snapshot.description}\n${snapshot.files.length} file(s) backed up`;
-  },
-});
-
-registerTool({
-  name: "restore_checkpoint",
-  description: "Restore files from a previous checkpoint. Use checkpoint ID from list_checkpoints.",
-  parameters: { type: "object", properties: { id: { type: "string", description: "Checkpoint ID to restore from" } }, required: ["id"], additionalProperties: false },
-  async execute(args: any) {
-    const { rewindFiles, listSnapshots } = await import("../checkpoint/store.ts");
-    const snapshots = listSnapshots();
-    const snap = snapshots.find(s => s.id === args.id);
-    if (!snap) return `❌ Checkpoint "${args.id}" not found. Use list_checkpoints to see available IDs.`;
-    const count = rewindFiles(args.id);
-    return `✅ Restored ${count} file(s) from checkpoint ${args.id} (${snap.description})`;
-  },
-});
+// Checkpoint tools disabled — checkpoint/store.ts was removed
+// To re-enable, create packages/core/src/checkpoint/store.ts with makeSnapshot, listSnapshots, rewindFiles

@@ -14,7 +14,7 @@ import { findSkillsForContext, buildSkillContext, loadSkillByName } from "../ski
 import { agentMemory } from "./memory.ts";
 import { toolBreaker } from "../safety/circuit-breaker-tools.ts";
 import { toolAudit } from "../safety/tool-audit.ts";
-import { usageTracker } from "../monitor/usage.ts";
+
 import { workspaceManager } from "../workspace/manager.ts";
 import { EVIDENCE_PROTOCOL_PROMPT, validateReport, strikeTracker } from "./validator.ts";
 import { qualityScorer } from "./scoring.ts";
@@ -23,6 +23,7 @@ import { learningLoop } from "./learning.ts";
 // Session → Agent mapping for memory tools
 // TTL: entries older than 30 minutes are cleaned up
 const SESSION_AGENT_TTL_MS = 30 * 60 * 1000;
+const MAX_TOOL_ITERATIONS = 25; // Safety limit to prevent infinite tool loops
 const sessionAgentTimestamps = new Map<string, number>();
 export const sessionAgentMap = new Map<string, string>();
 
@@ -347,19 +348,6 @@ async function toolLoop(params: RunParams, ctx: {
   // ─── Safety: Initialize tool circuit breaker ─────────────────
   toolBreaker.initTask(taskId);
 
-  // ─── Usage tracker: log the start of this run ─────────────────
-  try { usageTracker.init(); } catch { /* best-effort */ }
-  usageTracker.log({
-    agentId,
-    sessionId: params.sessionId,
-    modelRef: params.modelRef,
-    action: "agent_run",
-    tokensInput: 0,
-    tokensOutput: 0,
-    cost: 0,
-    durationMs: 0,
-  });
-
   // ─── Workspace Manager: auto-init if not yet active ──────────
   try {
     if (!workspaceManager.isActive()) {
@@ -449,19 +437,7 @@ async function toolLoop(params: RunParams, ctx: {
     inputTokens += piResult.usage?.inputTokens ?? 0;
     outputTokens += piResult.usage?.outputTokens ?? 0;
 
-    // ─── Usage tracking ───────────────────────────────────────
-    usageTracker.log({
-      agentId,
-      sessionId: params.sessionId,
-      modelRef: params.modelRef,
-      action: "api_call",
-      tokensInput: piResult.usage?.inputTokens ?? 0,
-      tokensOutput: piResult.usage?.outputTokens ?? 0,
-      cost: (piResult.usage?.inputTokens ?? 0) * 0.000002 + (piResult.usage?.outputTokens ?? 0) * 0.00001,
-      durationMs: Date.now() - startTime,
-    });
-
-    const content = piResult.content ?? "";
+    const content = piResult.text ?? "";
 
     // ─── Check for tool calls ─────────────────────────────────
     if (piResult.toolCalls && piResult.toolCalls.length > 0) {
@@ -546,18 +522,6 @@ async function toolLoop(params: RunParams, ctx: {
             durationMs: toolDuration,
             resultPreview: resultStr.slice(0, 200),
           },
-        });
-
-        // ─── Usage tracking for tool call ──────────────────────
-        usageTracker.log({
-          agentId,
-          sessionId: params.sessionId,
-          modelRef: params.modelRef,
-          action: "tool_call",
-          tokensInput: 0,
-          tokensOutput: 0,
-          cost: 0,
-          durationMs: toolDuration,
         });
 
         // ─── Safety: After-call hook ──────────────────────────

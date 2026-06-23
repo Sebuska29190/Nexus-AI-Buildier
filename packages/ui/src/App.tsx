@@ -1,40 +1,41 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { api } from "./lib/api";
 import { Sidebar } from "./lib/components/Sidebar";
 import { StatusBar } from "./lib/components/StatusBar";
 import { ToastProvider, useToast } from "./lib/components/ui/Toast";
 import { ErrorBoundary } from "./lib/ErrorBoundary";
 import { MobileNav } from "./lib/components/MobileNav";
-// Pages — Coding agent focused
-import { ChatPage } from "./routes/ChatPage";
-import { AgentsPage } from "./routes/AgentsPage";
-import { SkillsPage } from "./routes/SkillsPage";
-import { SessionsPage } from "./routes/SessionsPage";
-import { ModelsPage } from "./routes/ModelsPage";
-import { DocsPage } from "./routes/DocsPage";
-import { TerminalPage } from "./routes/TerminalPage";
-import { WorkspacePage } from "./routes/WorkspacePage";
-import { PromptPlaygroundPage } from "./routes/PromptPlaygroundPage";
-import { MemoryPage } from "./routes/MemoryPage";
-import { CodeEditorPage } from "./routes/CodeEditorPage";
+import { DashboardPage } from "./routes/DashboardPage"; // Keep as eager load (landing page)
 
-// Placeholder pages for missing implementations
-function PlaceholderPage({ title, description }: { title: string; description?: string }) {
+// Lazy loaded pages — split into separate chunks
+const ChatPage = lazy(() => import("./routes/ChatPage").then(m => ({ default: m.ChatPage })));
+const AgentsPage = lazy(() => import("./routes/AgentsPage").then(m => ({ default: m.AgentsPage })));
+const SkillsPage = lazy(() => import("./routes/SkillsPage").then(m => ({ default: m.SkillsPage })));
+const SessionsPage = lazy(() => import("./routes/SessionsPage").then(m => ({ default: m.SessionsPage })));
+const ModelsPage = lazy(() => import("./routes/ModelsPage").then(m => ({ default: m.ModelsPage })));
+const DocsPage = lazy(() => import("./routes/DocsPage").then(m => ({ default: m.DocsPage })));
+const TerminalPage = lazy(() => import("./routes/TerminalPage").then(m => ({ default: m.TerminalPage })));
+const WorkspacePage = lazy(() => import("./routes/WorkspacePage").then(m => ({ default: m.WorkspacePage })));
+const PromptPlaygroundPage = lazy(() => import("./routes/PromptPlaygroundPage").then(m => ({ default: m.PromptPlaygroundPage })));
+const MemoryPage = lazy(() => import("./routes/MemoryPage").then(m => ({ default: m.MemoryPage })));
+const CodeEditorPage = lazy(() => import("./routes/CodeEditorPage").then(m => ({ default: m.CodeEditorPage })));
+const AgentConfigPage = lazy(() => import("./routes/AgentConfigPage").then(m => ({ default: m.AgentConfigPage })));
+
+// Loading fallback
+function PageFallback() {
   return (
-    <div className="max-w-5xl mx-auto w-full flex flex-col items-center justify-center h-full gap-4">
-      <div className="w-16 h-16 rounded-2xl bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center">
-        <svg className="w-7 h-7 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
-        </svg>
+    <div className="flex items-center justify-center h-full">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-[rgba(124,58,237,0.3)] border-t-[#7C3AED] animate-spin" />
+        <span className="text-[10px] text-[#475569] font-mono">Loading...</span>
       </div>
-      <h2 className="text-lg font-bold text-white">{title}</h2>
-      <p className="text-xs text-[#475569] text-center max-w-md">{description || "This section is under development"}</p>
     </div>
   );
 }
 
-// Page component map
+// Page component map (lazy)
 const pages: Record<string, React.ComponentType<any>> = {
+  dashboard: DashboardPage,
   chat: ChatPage,
   agents: AgentsPage,
   skills: SkillsPage,
@@ -46,6 +47,7 @@ const pages: Record<string, React.ComponentType<any>> = {
   playground: PromptPlaygroundPage,
   memory: MemoryPage,
   code: CodeEditorPage,
+  agentconfig: AgentConfigPage,
 };
 
 function AppContent() {
@@ -56,7 +58,7 @@ function AppContent() {
   const [agents, setAgents] = useState<any[]>([]);
   const [version, setVersion] = useState("");
   const [connected, setConnected] = useState(false);
-  const [route, setRoute] = useState("chat");
+  const [route, setRoute] = useState("dashboard");
   const [workspaceName, setWorkspaceName] = useState("");
   const [resumeSessionId, setResumeSessionId] = useState("");
   const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat");
@@ -66,7 +68,7 @@ function AppContent() {
     try {
       const h = await api.health();
       setHealth(h);
-      setVersion(h.version || "3.0.0");
+      setVersion(h.version || "4.0.0");
       setConnected(true);
     } catch {
       setConnected(false);
@@ -89,12 +91,12 @@ function AppContent() {
     if ("showDirectoryPicker" in window) {
       (window as any).showDirectoryPicker().then((dir: any) => {
         setWorkspaceName(dir.name);
-        showToast(`Workspace mapped: ${dir.name}`, "success");
+        showToast(`Workspace: ${dir.name}`, "success");
       }).catch(() => {
-        showToast("Directory picker cancelled", "info");
+        showToast("Anulowano wybór katalogu", "info");
       });
     } else {
-      showToast("Directory picker not available in this browser", "info");
+      showToast("Wybór katalogu niedostępny", "info");
     }
   }
 
@@ -135,42 +137,49 @@ function AppContent() {
         <Sidebar route={route} onRoute={setRoute} version={version} sessions={sessions} />
 
         <div className="flex-1 flex flex-col min-w-0">
-          <StatusBar
-            connected={connected}
-            version={version || "3.0.0"}
-            selectedModel={selectedModel}
-            models={models}
-            workspaceName={workspaceName}
-            onWorkspacePick={triggerWorkspacePicker}
-            onModelChange={setSelectedModel}
-            onNewChat={handleNewChat}
-          />
+          {route !== "dashboard" && (
+            <StatusBar
+              connected={connected}
+              version={version || "4.0.0"}
+              selectedModel={selectedModel}
+              models={models}
+              workspaceName={workspaceName}
+              onWorkspacePick={triggerWorkspacePicker}
+              onModelChange={setSelectedModel}
+              onNewChat={handleNewChat}
+            />
+          )}
 
-          <main className="flex-1 overflow-y-auto relative p-6 z-10 animate-fade-in" id="main-content">
+          <main className="flex-1 overflow-y-auto relative z-10 animate-fade-in" id="main-content">
             <ErrorBoundary>
-            {PageComponent ? (
-              <PageComponent
-                models={models}
-                skills={skills}
-                agents={agents}
-                sessions={sessions}
-                onResolved={() => {}}
-                onRefresh={() => refresh()}
-                onSessionChange={() => refresh()}
-                sessionKey={route === "chat" ? resumeSessionId : ""}
-                onSessionKeyChange={(key: string) => setResumeSessionId(key)}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-4 text-[#475569] max-w-5xl mx-auto w-full">
-                <div className="w-16 h-16 rounded-2xl bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.1)]">
-                  <svg className="w-7 h-7 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
-                  </svg>
+              <Suspense fallback={<PageFallback />}>
+              {PageComponent ? (
+                <PageComponent
+                  models={models}
+                  skills={skills}
+                  agents={agents}
+                  sessions={sessions}
+                  health={health}
+                  connected={connected}
+                  onResolved={() => {}}
+                  onRefresh={() => refresh()}
+                  onSessionChange={() => refresh()}
+                  onNavigate={setRoute}
+                  sessionKey={route === "chat" ? resumeSessionId : ""}
+                  onSessionKeyChange={(key: string) => setResumeSessionId(key)}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-4 text-[#475569] max-w-5xl mx-auto w-full">
+                  <div className="w-16 h-16 rounded-2xl bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.1)]">
+                    <svg className="w-7 h-7 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
+                    </svg>
+                  </div>
+                  <h2 className="text-lg font-bold text-white">W budowie</h2>
+                  <p className="text-xs text-[#475569]">Ta sekcja jest w trakcie tworzenia</p>
                 </div>
-                <h2 className="text-lg font-bold text-white">Coming Soon</h2>
-                <p className="text-xs text-[#475569]">This section is under development</p>
-              </div>
-            )}
+              )}
+              </Suspense>
             </ErrorBoundary>
           </main>
         </div>

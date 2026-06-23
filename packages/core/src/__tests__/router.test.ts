@@ -1,5 +1,23 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import { capabilityRegistry } from "../agent/router.ts";
+import { agentStore } from "../agent/store.ts";
+
+beforeAll(() => {
+  agentStore.init(":memory:");
+  // Build capability registry with test agents
+  const testAgents = [
+    { name: "typescript-pro", description: "TypeScript specialist", modelRef: "deepseek/deepseek-chat", emoji: "🔤", skills: ["web_search", "get_current_time"] },
+    { name: "python-pro", description: "Python specialist", modelRef: "deepseek/deepseek-chat", emoji: "🐍", skills: ["web_search", "get_current_time"] },
+    { name: "rust-engineer", description: "Rust systems programmer", modelRef: "deepseek/deepseek-chat", emoji: "🦀", skills: ["web_search"] },
+    { name: "devops-engineer", description: "DevOps, Docker, Kubernetes, Terraform specialist", modelRef: "deepseek/deepseek-chat", emoji: "🐳", skills: ["workspace_run_command"] },
+    { name: "api-designer", description: "API design and REST/GraphQL endpoints", modelRef: "deepseek/deepseek-chat", emoji: "🔌", skills: ["web_search"] },
+    { name: "code-reviewer", description: "Code review specialist", modelRef: "deepseek/deepseek-chat", emoji: "👁️", skills: ["web_search", "workspace_read_file"] },
+    { name: "generalist", description: "General coding assistant", modelRef: "deepseek/deepseek-chat", emoji: "🤖", skills: [] },
+  ];
+  for (const a of testAgents) {
+    try { agentStore.create(a); } catch {}
+  }
+});
 
 describe("Smart Router v2", () => {
   it("should extract domains from task description", () => {
@@ -16,10 +34,10 @@ describe("Smart Router v2", () => {
       5
     );
     expect(matches.length).toBeGreaterThan(0);
-    // Top agent should have devops or architecture domain
-    const reasons = matches[0].reason;
-    const hasRelevantDomain = reasons.some(r => r.includes("domain:"));
-    expect(hasRelevantDomain).toBe(true);
+    // The devops-engineer agent should be ranked highly for this task
+    const devopsIndex = matches.findIndex(m => m.agentId === "devops-engineer");
+    expect(devopsIndex).toBeGreaterThanOrEqual(0);
+    expect(devopsIndex).toBeLessThan(3); // Should be in top 3
   });
 
   it("should match language-specific tasks", () => {
