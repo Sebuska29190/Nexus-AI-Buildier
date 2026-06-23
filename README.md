@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.0-blue" alt="version">
-  <img src="https://img.shields.io/badge/agents-126-purple" alt="agents">
-  <img src="https://img.shields.io/badge/tools-66-orange" alt="tools">
+  <img src="https://img.shields.io/badge/version-3.0.0-blue" alt="version">
+  <img src="https://img.shields.io/badge/agents-128-purple" alt="agents">
+  <img src="https://img.shields.io/badge/tools-18-orange" alt="tools">
   <img src="https://img.shields.io/badge/plugins-26-blueviolet" alt="plugins">
-  <img src="https://img.shields.io/badge/providers-12-blue" alt="providers">
+  <img src="https://img.shields.io/badge/providers-6-blue" alt="providers">
   <img src="https://img.shields.io/badge/mesh-13_agents-green" alt="mesh">
 </p>
 

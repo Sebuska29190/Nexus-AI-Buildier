@@ -1,6 +1,6 @@
-# Nova AI Platform v0.4
+# Nexus AI — Coding Agent
 
-A TypeScript/Bun monorepo AI agent platform — ported from CheetahClaws v3.05.79.
+A TypeScript/Bun monorepo AI agent platform.
 
 ## Architecture
 

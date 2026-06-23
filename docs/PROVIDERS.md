@@ -1,6 +1,6 @@
-# Nova Providers
+# Nexus AI Providers
 
-Nova supports 12 LLM providers. Set the corresponding environment variable to enable each provider.
+Nexus AI supports 6 LLM providers. Set the corresponding environment variable to enable each provider.
 
 ## Provider List
 

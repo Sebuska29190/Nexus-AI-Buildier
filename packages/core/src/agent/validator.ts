@@ -165,22 +165,66 @@ When no real issues are found, say so honestly and cite the test/build output as
 `;
 
 /**
- * Strike system — tracks agent failures
+ * Strike system — tracks agent failures (persistent to SQLite)
  */
+import { Database } from "bun:sqlite";
+import { join } from "node:path";
+
 class StrikeTracker {
-  private strikes = new Map<string, { count: number; reasons: string[]; lastStrike: number }>();
+  private db!: Database;
+  private mem = new Map<string, { count: number; reasons: string[]; lastStrike: number }>(); // Hot cache
+  private initialized = false;
+
+  init(dbPath?: string, db?: Database): void {
+    if (this.initialized) return;
+    if (db) {
+      this.db = db;
+    } else {
+      const path = dbPath ?? join(process.cwd(), "nova.db");
+      this.db = new Database(path);
+    }
+    this.db.run(`CREATE TABLE IF NOT EXISTS agent_strikes (
+      agent_id TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      reasons TEXT NOT NULL DEFAULT '[]',
+      last_strike INTEGER NOT NULL DEFAULT 0
+    )`);
+    // Warm cache from DB
+    const rows = this.db.query("SELECT * FROM agent_strikes").all() as any[];
+    for (const r of rows) {
+      this.mem.set(r.agent_id, {
+        count: r.count,
+        reasons: JSON.parse(r.reasons || "[]"),
+        lastStrike: r.last_strike,
+      });
+    }
+    this.initialized = true;
+  }
+
+  private flush(agentId: string): void {
+    const entry = this.mem.get(agentId);
+    if (!entry) {
+      this.db.run("DELETE FROM agent_strikes WHERE agent_id = ?", [agentId]);
+      return;
+    }
+    this.db.run(
+      "INSERT OR REPLACE INTO agent_strikes (agent_id, count, reasons, last_strike) VALUES (?, ?, ?, ?)",
+      [agentId, entry.count, JSON.stringify(entry.reasons), entry.lastStrike],
+    );
+  }
 
   addStrike(agentId: string, reason: string): number {
-    const entry = this.strikes.get(agentId) || { count: 0, reasons: [], lastStrike: 0 };
+    const entry = this.mem.get(agentId) || { count: 0, reasons: [], lastStrike: 0 };
     entry.count++;
     entry.reasons.push(reason.slice(0, 200));
     entry.lastStrike = Date.now();
-    this.strikes.set(agentId, entry);
+    this.mem.set(agentId, entry);
+    this.flush(agentId);
     return entry.count;
   }
 
   getStrikes(agentId: string): number {
-    return this.strikes.get(agentId)?.count || 0;
+    return this.mem.get(agentId)?.count || 0;
   }
 
   isDegraded(agentId: string): boolean {
@@ -188,15 +232,16 @@ class StrikeTracker {
   }
 
   reset(agentId: string): void {
-    this.strikes.delete(agentId);
+    this.mem.delete(agentId);
+    this.flush(agentId);
   }
 
   getReasons(agentId: string): string[] {
-    return this.strikes.get(agentId)?.reasons || [];
+    return this.mem.get(agentId)?.reasons || [];
   }
 
   getFeedback(agentId: string): string {
-    const entry = this.strikes.get(agentId);
+    const entry = this.mem.get(agentId);
     if (!entry || entry.count === 0) return "";
     return `\n\n## ⚠️ Previous Strike Feedback\nYou have ${entry.count} strike(s). Fix these issues:\n${entry.reasons.map((r, i) => `${i + 1}. ${r}`).join("\n")}`;
   }

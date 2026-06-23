@@ -23,7 +23,7 @@ function authMiddleware(c: any, next: any) {
     }
   }
   // Allow public GET requests only for known safe endpoints
-  const PUBLIC_GET_PATHS = ["/api/sessions", "/api/tools", "/api/agents", "/v1/models", "/health"];
+  const PUBLIC_GET_PATHS = ["/api/sessions", "/api/tools", "/api/agents", "/api/skills", "/v1/models", "/health"];
   if (c.req.method === "GET" && PUBLIC_GET_PATHS.some(p => path === p || path.startsWith(p + "/"))) return next();
   return c.json({ error: "Unauthorized" }, 401);
 }
@@ -42,12 +42,41 @@ function rateLimit(key: string, maxRequests = 10, windowMs = 60000): boolean {
   return true;
 }
 
+// Periodic cleanup of expired rate limit entries
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
+}, 60000);
+
+// Rate limiting middleware (applied to all API routes)
+function rateLimitMiddleware(c: any, next: any) {
+  const path = c.req.path;
+  // Skip rate limiting for static assets and health checks
+  if (!path.startsWith("/v1/") && !path.startsWith("/api/")) return next();
+
+  // Use IP as key (fallback to "anonymous")
+  const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "127.0.0.1";
+  const isGet = c.req.method === "GET";
+
+  // GET: 60 req/min per IP, POST: 20 req/min per IP
+  const max = isGet ? 60 : 20;
+  if (!rateLimit(ip, max, 60000)) {
+    return c.json({ error: "Too many requests — rate limit exceeded" }, 429);
+  }
+  return next();
+}
+
 export { authMiddleware, rateLimit, rateLimitMap, PUBLIC_PATHS, PUBLIC_GET_PATHS };
 
 /**
  * Register middleware on the given Hono app.
  */
 export function registerRoutes(app: Hono): void {
+  // Rate limiting (applied first, before auth)
+  app.use("*", rateLimitMiddleware);
+
   // Auth middleware
   app.use("*", authMiddleware);
 

@@ -16,7 +16,6 @@ import { toolBreaker } from "../safety/circuit-breaker-tools.ts";
 import { toolAudit } from "../safety/tool-audit.ts";
 import { usageTracker } from "../monitor/usage.ts";
 import { workspaceManager } from "../workspace/manager.ts";
-import { ledger } from "../kernel/ledger.ts";
 import { EVIDENCE_PROTOCOL_PROMPT, validateReport, strikeTracker } from "./validator.ts";
 import { qualityScorer } from "./scoring.ts";
 import { learningLoop } from "./learning.ts";
@@ -304,7 +303,7 @@ Your job is to COMPLETE TASKS, not to DISCUSS them.
     } catch (e: unknown) {
       const classified = classifyError(e, providerId);
       breaker.recordFailure();
-      emitEvent({ type: "event", kind: "message", sessionId: params.sessionId, data: { text: `â ${classified.category}: ${classified.recoveryHint}` } });
+      emitEvent({ type: "event", kind: "message", sessionId: params.sessionId, data: { text: `⚠ ${classified.category}: ${classified.recoveryHint}` } });
       emitEvent({ type: "error", sessionId: params.sessionId, runId: params.runId, message: safeMessage(e) });
       if (candidates.length === 1) {
         return { sessionId: params.sessionId, text: `Error: ${safeMessage(e)}`, modelRef, usage: { input: 0, output: 0 } };
@@ -347,15 +346,6 @@ async function toolLoop(params: RunParams, ctx: {
 
   // ─── Safety: Initialize tool circuit breaker ─────────────────
   toolBreaker.initTask(taskId);
-
-  // ─── Ledger: Record agent run start ───────────────────────────
-  ledger.append({
-    agentId,
-    action: "agent_run",
-    target: params.modelRef,
-    status: "started",
-    detail: params.message.slice(0, 200),
-  });
 
   // ─── Usage tracker: log the start of this run ─────────────────
   try { usageTracker.init(); } catch { /* best-effort */ }
@@ -585,6 +575,9 @@ async function toolLoop(params: RunParams, ctx: {
             toolDuration,
             iteration
           );
+          // Also save as transcript entries so session history is preserved
+          sessionManager.append(params.sessionId, "assistant", `🔧 **${toolName}**\n\`\`\`json\n${argsStr.slice(0, 500)}\n\`\`\``, tc.id ?? `call_${iteration}`, toolName);
+          sessionManager.append(params.sessionId, "tool", resultStr.slice(0, 2000), tc.id ?? `call_${iteration}`, toolName);
         } catch { /* best-effort: tool activity is non-critical */ }
 
         // ─── Append tool result to messages ───────────────────
@@ -611,34 +604,64 @@ async function toolLoop(params: RunParams, ctx: {
     // ═══ Smart exit detection v2: don't let AGENTS quit early ═══
     // CRITICAL: This only applies to agent INVESTIGATIONS (agentId set, not "default").
     // Regular chat must exit immediately — users expect instant answers to simple questions.
-    // v2: Stricter min rounds, plan detection, completion recognition.
+    // v3: Polish-friendly, respects force-exit mode after iter 14.
     
     const isAgentMode = agentId && agentId !== "default";
     
     if (isAgentMode && messageIsTask) {
+      // AFTER iteration 14 (tools removed): accept ANY substantive text as final
+      if (iteration >= 14) {
+        if (content.trim().length >= 50) {
+          // Accept as final — agent has no tools, this IS the report
+          fullResponse = content;
+          toolBreaker.resetTask(taskId);
+          try { sessionManager.append(params.sessionId, "assistant", fullResponse); } catch {}
+          return {
+            sessionId: params.sessionId,
+            text: fullResponse,
+            modelRef: params.modelRef,
+            usage: { input: inputTokens, output: outputTokens },
+          };
+        }
+        // If content is empty/too short, use accumulated fullResponse
+        toolBreaker.resetTask(taskId);
+        try { 
+          const text = fullResponse || content || "⚠️ Agent reached limit without producing a final report.";
+          if (text.length > 10) sessionManager.append(params.sessionId, "assistant", text);
+        } catch {}
+        return {
+          sessionId: params.sessionId,
+          text: fullResponse || content || "⚠️ Agent reached limit without producing a final report.",
+          modelRef: params.modelRef,
+          usage: { input: inputTokens, output: outputTokens },
+        };
+      }
+
       // TASK MODE: require deeper investigation
-      const minRounds = 3;  // reduced from 6 — enough for most tasks
-      const isShortResponse = content.length < 200;  // reduced from 300
-      const looksIncomplete = /^(ok|rozumiem|zaraz|sprawdzam|let me|i'll|i will|checking|looking|starting|begin|first|sure|absolutely|of course)/i.test(content.trim());
-      const looksLikePlan = /^(plan|next steps|here's what|proposed|approach|strategy|roadmap|will do|going to|first i'll|start by|to do|todo|checklist)/i.test(content.trim());
-      const noRealOutput = content.trim().length < 80;  // reduced from 100
+      const minRounds = 3;
+      const isShortResponse = content.length < 200;
+      const looksIncomplete = /^(ok|rozumiem|zaraz|sprawdzam|let me|i'll|i will|checking|looking|starting|begin|first|sure|absolutely|of course|oczekuj|chwila|moment)/i.test(content.trim());
+      const looksLikePlan = /^(plan|next steps|here's what|proposed|approach|strategy|roadmap|will do|going to|first i'll|start by|to do|todo|checklist|krok|plan|zaczn)/i.test(content.trim());
+      const noRealOutput = content.trim().length < 80;
       const hasDoneWork = iteration > 0;
-      const looksComplete = /^(completed|fixed|done|implemented|created|updated|changed|resolved|analyzed|found|here's what|summary|report|findings)/i.test(content.trim());
+      const looksComplete = /^(completed|fixed|done|implemented|created|updated|changed|resolved|analyzed|found|here's what|summary|report|findings|mam|oto|przedstawiam|wynik|raport|analiza|podsumowanie|the|this is|here is|i have|zakończ|gotowe|zrobiłem)/i.test(content.trim());
+      const hasSubstance = content.trim().length > 300 && !looksIncomplete && !looksLikePlan;
       
       if (iteration < minRounds || isShortResponse || looksIncomplete || looksLikePlan || noRealOutput) {
         // ALLOW completion if agent looks done AND has done real work
-        if (looksComplete && hasDoneWork && !isShortResponse) {
+        if ((looksComplete && hasDoneWork && !isShortResponse) || (hasSubstance && hasDoneWork)) {
           // Fall through to success — agent finished properly
         } else {
           const reason = noRealOutput ? "empty response"
             : looksLikePlan ? "plan instead of execution"
             : looksIncomplete ? "placeholder reply"
-            : isShortResponse ? `too short (${content.length} chars, need 200+)`
-            : `need ${minRounds - iteration} more investigation rounds`;
+            : isShortResponse ? `too short (${content.length} chars)`
+            : `need more investigation`;
           
+          // Add rejection but with clearer instruction
           ctx.messages.push({
             role: "user",
-            content: `⚠️ REJECTED: ${reason}. Continue working — use tools, gather evidence, produce a COMPREHENSIVE final report with concrete findings.`,
+            content: `⚠️ REJECTED: ${reason}. If you have enough evidence, produce your FINAL report NOW. If not, continue gathering data.`,
           });
           iteration++;
           continue;
@@ -658,15 +681,14 @@ async function toolLoop(params: RunParams, ctx: {
     // ─── Safety: Reset circuit breaker ─────────────────────────
     toolBreaker.resetTask(taskId);
 
-    // ─── Ledger: Record completion ────────────────────────────
-    ledger.append({
-      agentId,
-      action: "agent_run",
-      target: params.modelRef,
-      status: "completed",
-      detail: fullResponse.slice(0, 200),
-    });
+    // ─── Save final response to session history ────────────────
+    try {
+      if (fullResponse && fullResponse.length > 10) {
+        sessionManager.append(params.sessionId, "assistant", fullResponse);
+      }
+    } catch { /* best-effort */ }
 
+    // ─── Ledger: Record completion ────────────────────────────
     return {
       sessionId: params.sessionId,
       text: fullResponse,
@@ -677,13 +699,13 @@ async function toolLoop(params: RunParams, ctx: {
 
   // ─── Max iterations reached without final response ─────────
   toolBreaker.resetTask(taskId);
-  ledger.append({
-    agentId,
-    action: "agent_run",
-    target: params.modelRef,
-    status: "failed",
-    detail: "Max tool call iterations reached without final response",
-  });
+
+  // ─── Save whatever we have to session history ──────────────
+  try {
+    if (fullResponse && fullResponse.length > 10) {
+      sessionManager.append(params.sessionId, "assistant", fullResponse);
+    }
+  } catch { /* best-effort */ }
 
   return {
     sessionId: params.sessionId,

@@ -2,17 +2,36 @@ import type { HarnessV2, HarnessContext, HarnessResult, HarnessOutcome, ToolCall
 import { registry } from "../plugin/registry.ts";
 import { emitEvent } from "../event-bus/index.ts";
 import { loadRaw } from "../config/provider-config.ts";
+import { statSync } from "node:fs";
+import { join } from "node:path";
 
 // Cache provider config to avoid disk I/O + decryption on every send
+// Extended TTL + mtime tracking — reloads only when file actually changes
 let _cachedConfig: { providers: Record<string, { maxTokens?: number }> } | null = null;
-let _configCacheTime = 0;
-const CONFIG_CACHE_TTL = 30000;
+let _lastMtime = 0;
+let _initDone = false;
+
+const CONFIG_PATH = join(process.cwd(), "data", "provider-config.json");
 
 function getCachedConfig(): { providers: Record<string, { maxTokens?: number }> } {
-  if (_cachedConfig && Date.now() - _configCacheTime < CONFIG_CACHE_TTL) return _cachedConfig;
-  _cachedConfig = loadRaw();
-  _configCacheTime = Date.now();
-  return _cachedConfig;
+  // First call: always load
+  if (!_initDone) {
+    _cachedConfig = loadRaw();
+    try { _lastMtime = statSync(CONFIG_PATH).mtimeMs; } catch {}
+    _initDone = true;
+    return _cachedConfig;
+  }
+  // Subsequent calls: only re-read if mtime changed
+  try {
+    const mtime = statSync(CONFIG_PATH).mtimeMs;
+    if (mtime !== _lastMtime) {
+      _cachedConfig = loadRaw();
+      _lastMtime = mtime;
+    }
+  } catch {
+    // Config file deleted or unavailable — keep last known config
+  }
+  return _cachedConfig!;
 }
 
 export const piHarness: HarnessV2 = {

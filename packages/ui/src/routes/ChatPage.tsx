@@ -193,6 +193,30 @@ export function ChatPage({
       .catch(() => {});
   }, []);
 
+  // Load session history if resuming
+  useEffect(() => {
+    if (!initialSessionId) return;
+    fetch(`/api/sessions/${initialSessionId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.messages || data.messages.length === 0) return;
+        const loaded = data.messages
+          .filter(m => m.role === "user" || m.role === "assistant")
+          .map((m: any) => ({
+            id: `msg_${m.id || Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.created_at || Date.now()).getTime(),
+          }));
+        if (loaded.length > 0) {
+          chat.setMessages(loaded);
+          // Set sessionId so new messages continue this session
+          chat.setSessionId(initialSessionId);
+        }
+      })
+      .catch(() => {});
+  }, [initialSessionId]);
+
   // Track tool activity from chat
   useEffect(() => {
     if (chat.activity.length > 0) {

@@ -13,8 +13,10 @@ export interface SkillDef {
 }
 
 const SKILL_DIRS = [
-  join(process.cwd(), "skills"),
-  join(process.cwd(), "..", "skills"),
+  join(import.meta.dir, "..", "..", "..", "skills"),  // reliable: from <core>/src/skill/ up to project root
+  join(process.cwd(), "skills"),                       // from project root
+  join(process.cwd(), "..", "..", "skills"),           // from packages/core/
+  join(process.cwd(), "..", "skills"),                 // from packages/
 ];
 
 // ─── Cache ────────────────────────────────────────────────────────────

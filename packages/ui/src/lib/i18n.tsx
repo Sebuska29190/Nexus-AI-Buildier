@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useCallback } from "react";
 type Dict = Record<string, string>;
 
 const pl: Dict = {
-  "app.name": "NOVA",
+  "app.name": "NEXUS",
   "app.loading": "Ładowanie...",
   "app.online": "Online",
   "app.offline": "Offline",
@@ -67,7 +67,7 @@ const pl: Dict = {
   "profiles.active": "Aktywny",
   "profiles.activate": "Aktywuj",
   "docs.title": "Dokumentacja",
-  "docs.subtitle": "Przewodnik po interfejsie NOVA",
+  "docs.subtitle": "Przewodnik po interfejsie Nexus AI",
   "sessions.title": "Sesje",
   "channels.title": "Kanały",
   "memory.title": "Pamięć",
@@ -84,7 +84,7 @@ const pl: Dict = {
 };
 
 const en: Dict = {
-  "app.name": "NOVA",
+  "app.name": "NEXUS",
   "app.loading": "Loading...",
   "app.online": "Online",
   "app.offline": "Offline",
@@ -146,7 +146,7 @@ const en: Dict = {
   "profiles.active": "Active",
   "profiles.activate": "Activate",
   "docs.title": "Documentation",
-  "docs.subtitle": "NOVA interface guide",
+  "docs.subtitle": "Nexus AI interface guide",
   "sessions.title": "Sessions",
   "channels.title": "Channels",
   "memory.title": "Memory",

@@ -5,6 +5,14 @@ import { runAutoBugFixer } from "../../agent/auto-bug-fixer.ts";
 import { workspaceManager } from "../../workspace/manager.ts";
 
 export function register(app: Hono): void {
+  // Health check
+  app.get("/health", (c) => c.json({
+    status: "ok",
+    version: "3.0.0",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  }));
+
   // Monitor routes removed — monitor/scheduler.ts was deleted
 
   // Terminal runner stubbed — gateway/routes-terminal.ts was deleted
@@ -70,6 +78,13 @@ export function register(app: Hono): void {
   app.post("/api/workspace/clear", (c) => {
     workspaceManager.clear();
     return c.json({ status: "cleared" });
+  });
+  app.post("/api/workspace/delete", async (c) => {
+    const body = await c.req.json<{ path: string }>();
+    if (!body.path) return c.json({ error: "path required" }, 400);
+    const ok = workspaceManager.delete(body.path);
+    if (!ok) return c.json({ error: "Delete failed" }, 400);
+    return c.json({ status: "deleted" });
   });
 
   // --- Kernel stubbed — kernel/index.ts was removed ----------------------------

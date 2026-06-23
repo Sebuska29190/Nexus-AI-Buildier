@@ -53,7 +53,7 @@ Return valid JSON only (no markdown, no code fences):
 }`;
 
       // Use piHarness for a quick one-shot completion via the session manager
-      const sessionId = c.get("sessionId") || "ai-create-" + Date.now();
+      const sessionId = (c.get("sessionId") as string) || "ai-create-" + Date.now();
       const resolved = registry.resolveModel("deepseek/deepseek-chat");
       if (!resolved) return c.json({ error: "No provider available" }, 500);
 

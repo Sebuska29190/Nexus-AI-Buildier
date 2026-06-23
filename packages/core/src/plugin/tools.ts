@@ -93,13 +93,25 @@ registerTool({
   async execute(args) {
     const { path } = args as { path: string };
     const normalized = path.replace(/\\/g, "/").replace(/\/+$/, "");
-    const BLOCKED = ["/windows", "/windows/system32", "/etc", "/root", "/boot", "/sys", "/proc", "/dev", "/bin", "/sbin", "/usr/lib", "/var/run"];
+    // Blocked system paths (case-insensitive, both POSIX and Windows)
+    const BLOCKED_POSIX = ["/windows", "/windows/system32", "/etc", "/root", "/boot", "/sys", "/proc", "/dev", "/bin", "/sbin", "/usr/lib", "/var/run", "/usr", "/home"];
+    const BLOCKED_WIN = ["c:/windows", "c:/windows/system32", "c:/program files", "c:/program files (x86)", "c:/users/all users", "c:/system volume information", "c:/recovery", "c:/$recycle.bin"];
     const lower = normalized.toLowerCase();
-    for (const blocked of BLOCKED) {
+    // Check POSIX paths
+    for (const blocked of BLOCKED_POSIX) {
       if (lower === blocked || lower.startsWith(blocked + "/")) {
         return `❌ Security: Cannot set workspace to system path "${path}". Choose a project or home directory.`;
       }
     }
+    // Check Windows paths (strip drive letter prefix for matching)
+    const noDrive = lower.replace(/^[a-z]:\//, "/");
+    for (const blocked of BLOCKED_WIN) {
+      const bClean = blocked.replace(/^[a-z]:\//, "/");
+      if (noDrive === bClean || noDrive.startsWith(bClean + "/")) {
+        return `❌ Security: Cannot set workspace to system path "${path}". Choose a project or home directory.`;
+      }
+    }
+    // Path traversal check
     if (normalized.includes("/../") || normalized.includes("/./") || normalized.endsWith("/..")) {
       return `❌ Security: Path traversal detected in "${path}"`;
     }

@@ -207,5 +207,6 @@ export function useChat() {
     connected, messages, streamingContent, thinking, isThinking,
     pendingApprovals, activity, isRunning, sessionId, error,
     send, approve, reject, abort, clearMessages, connect,
+    setMessages, setSessionId,
   };
 }

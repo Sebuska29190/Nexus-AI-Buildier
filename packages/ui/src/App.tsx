@@ -5,71 +5,47 @@ import { StatusBar } from "./lib/components/StatusBar";
 import { ToastProvider, useToast } from "./lib/components/ui/Toast";
 import { ErrorBoundary } from "./lib/ErrorBoundary";
 import { MobileNav } from "./lib/components/MobileNav";
-// Pages — Agent-focused
+// Pages — Coding agent focused
 import { ChatPage } from "./routes/ChatPage";
 import { AgentsPage } from "./routes/AgentsPage";
 import { SkillsPage } from "./routes/SkillsPage";
-import { PluginsPage } from "./routes/PluginsPage";
 import { SessionsPage } from "./routes/SessionsPage";
-import { ChannelsPage } from "./routes/ChannelsPage";
-import { MemoryPage } from "./routes/MemoryPage";
-import { ConfigPage } from "./routes/ConfigPage";
-import { EnvPage } from "./routes/EnvPage";
-import { LogsPage } from "./routes/LogsPage";
-import { AnalyticsPage } from "./routes/AnalyticsPage";
 import { ModelsPage } from "./routes/ModelsPage";
-import { CronPage } from "./routes/CronPage";
-import { ProfilesPage } from "./routes/ProfilesPage";
 import { DocsPage } from "./routes/DocsPage";
-import { WorkerPage } from "./routes/WorkerPage";
 import { TerminalPage } from "./routes/TerminalPage";
 import { WorkspacePage } from "./routes/WorkspacePage";
-import { IntegrationsPage } from "./routes/IntegrationsPage";
-import { RagPage } from "./routes/RagPage";
-import { ChambersPage } from "./routes/ChambersPage";
-import { WorkflowsPage } from "./routes/WorkflowsPage";
-import { ToolsAnalyticsPage } from "./routes/ToolsAnalyticsPage";
 import { PromptPlaygroundPage } from "./routes/PromptPlaygroundPage";
-import { GitAutomationPage } from "./routes/GitAutomationPage";
+import { MemoryPage } from "./routes/MemoryPage";
 import { CodeEditorPage } from "./routes/CodeEditorPage";
-import { KnowledgeGraphPage } from "./routes/KnowledgeGraphPage";
-import { AgentWorkPage } from "./routes/AgentWorkPage";
-import { SettingsPage } from "./routes/SettingsPage";
-import { ApiKeysPage } from "./routes/ApiKeysPage";
-import { SystemLogsPage } from "./routes/SystemLogsPage";
+
+// Placeholder pages for missing implementations
+function PlaceholderPage({ title, description }: { title: string; description?: string }) {
+  return (
+    <div className="max-w-5xl mx-auto w-full flex flex-col items-center justify-center h-full gap-4">
+      <div className="w-16 h-16 rounded-2xl bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center">
+        <svg className="w-7 h-7 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
+        </svg>
+      </div>
+      <h2 className="text-lg font-bold text-white">{title}</h2>
+      <p className="text-xs text-[#475569] text-center max-w-md">{description || "This section is under development"}</p>
+    </div>
+  );
+}
 
 // Page component map
 const pages: Record<string, React.ComponentType<any>> = {
   chat: ChatPage,
   agents: AgentsPage,
   skills: SkillsPage,
-  plugins: PluginsPage,
   sessions: SessionsPage,
-  channels: ChannelsPage,
-  memory: MemoryPage,
-  config: ConfigPage,
-  settings: SettingsPage,
-  env: EnvPage,
-  apikeys: ApiKeysPage,
-  logs: SystemLogsPage,
-  analytics: AnalyticsPage,
   aimodels: ModelsPage,
-  schedule: CronPage,
-  profiles: ProfilesPage,
   docs: DocsPage,
-  worker: WorkerPage,
   terminal: TerminalPage,
   workspace: WorkspacePage,
-  integrations: IntegrationsPage,
-  rag: RagPage,
-  chambers: ChambersPage,
-  workflows: WorkflowsPage,
-  "tools-analytics": ToolsAnalyticsPage,
-  git: GitAutomationPage,
   playground: PromptPlaygroundPage,
-  "code-editor": CodeEditorPage,
-  knowledge: KnowledgeGraphPage,
-  "agent-work": AgentWorkPage,
+  memory: MemoryPage,
+  code: CodeEditorPage,
 };
 
 function AppContent() {
@@ -78,8 +54,6 @@ function AppContent() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [skills, setSkills] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
-  const [channels, setChannels] = useState<any[]>([]);
-  const [memories, setMemories] = useState<any[]>([]);
   const [version, setVersion] = useState("");
   const [connected, setConnected] = useState(false);
   const [route, setRoute] = useState("chat");
@@ -92,33 +66,23 @@ function AppContent() {
     try {
       const h = await api.health();
       setHealth(h);
-      setVersion(h.version || "0.3.0");
+      setVersion(h.version || "3.0.0");
       setConnected(true);
     } catch {
       setConnected(false);
       return;
     }
     try {
-      // Fetch grouped models (only providers with API keys)
-      const groupedRes = await fetch("/api/models/grouped");
+      const groupedRes = await fetch("/v1/models");
       if (groupedRes.ok) {
         const data = await groupedRes.json();
-        const flatModels: { id: string }[] = [];
-        for (const provider of Object.values(data.grouped || {})) {
-          for (const m of (provider as any).models || []) {
-            flatModels.push({ id: m.id });
-          }
-        }
+        const flatModels: { id: string }[] = (data.data || []).map((m: any) => ({ id: m.id }));
         setModels(flatModels);
-      } else {
-        setModels(await api.models());
       }
     } catch { setModels([]); }
     try { setSessions(await api.sessions()); } catch {}
     try { setSkills(await api.skills()); } catch {}
     try { setAgents(await api.agents()); } catch {}
-    try { setChannels(await api.channels()); } catch {}
-    try { setMemories(await api.memories()); } catch {}
   }
 
   function triggerWorkspacePicker() {
@@ -173,7 +137,7 @@ function AppContent() {
         <div className="flex-1 flex flex-col min-w-0">
           <StatusBar
             connected={connected}
-            version={version || "0.7.0"}
+            version={version || "3.0.0"}
             selectedModel={selectedModel}
             models={models}
             workspaceName={workspaceName}

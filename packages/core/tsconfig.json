@@ -6,11 +6,11 @@
     "strict": true,
     "declaration": true,
     "outDir": "dist",
-    "rootDir": "../../",
+    "rootDir": ".",
     "types": ["node", "bun-types"],
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "../provider-*/src", "../../provider-*/src", "../../demos"]
+  "include": ["src"]
 }

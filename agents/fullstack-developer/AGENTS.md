@@ -1,3 +1,3 @@
 # fullstack-developer
 
-Agent workspace for Nova AI Platform.
+Agent workspace for Nexus AI Coding Agent.

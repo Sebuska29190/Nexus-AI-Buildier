@@ -1,873 +1,125 @@
 import { useState, useEffect } from "react";
-import { Activity, Hexagon, Network } from "lucide-react";
+import { Users, Plus, Trash2, Play } from "lucide-react";
 import { api } from "../lib/api";
-import { AgentWorkPanel } from "../lib/components/agent/AgentWorkPanel";
 
 export function AgentsPage() {
   const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formModel, setFormModel] = useState("deepseek/deepseek-chat");
-  const [formSkills, setFormSkills] = useState("");
-  const [formPrompt, setFormPrompt] = useState("");
-  const [availableModels, setAvailableModels] = useState<any[]>([]);
-  const [taskResult, setTaskResult] = useState("");
-  const [showAgentModal, setShowAgentModal] = useState(false);
-  const [taskInput, setTaskInput] = useState("");
-  const [taskModel, setTaskModel] = useState("");
-  const [taskRunning, setTaskRunning] = useState(false);
-  const [workspacePath, setWorkspacePath] = useState("");
-  const [enabledSkills, setEnabledSkills] = useState<string[]>([]);
-  const [thinkingLevel, setThinkingLevel] = useState("medium");
-  const [wsConnected, setWsConnected] = useState(false);
-  const [agentLog, setAgentLog] = useState<string[]>([]);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [agentFiles, setAgentFiles] = useState<any[]>([]);
-  const [editingFile, setEditingFile] = useState<{ name: string; content: string } | null>(null);
-  const [allSkills, setAllSkills] = useState<any[]>([]);
-  const [meshTopology, setMeshTopology] = useState<any>(null);
-  const [agentTab, setAgentTab] = useState<"info" | "files" | "skills" | "memory">("info");
-  const [agentMemories, setAgentMemories] = useState<any[]>([]);
-  const [agentMemoryTotal, setAgentMemoryTotal] = useState(0);
-  const [newMemory, setNewMemory] = useState("");
-  const [memoryType, setMemoryType] = useState("observation");
-  const [memoryImportance, setMemoryImportance] = useState(3);
-  const [activeRunId, setActiveRunId] = useState("");
-  const [activeRunAgent, setActiveRunAgent] = useState("");
 
-  // Memory functions
-  async function loadAgentMemory(agentId: string) {
-    try {
-      const res = await fetch(`/api/agents/${agentId}/memory`);
-      if (res.ok) { const d = await res.json(); setAgentMemories(d.memories || []); setAgentMemoryTotal(d.total || 0); }
-    } catch {}
-  }
-  async function addAgentMemory(agentId: string) {
-    if (!newMemory.trim()) return;
-    try {
-      await fetch(`/api/agents/${agentId}/memory`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: memoryType, content: newMemory.trim(), importance: memoryImportance }),
-      });
-      setNewMemory("");
-      loadAgentMemory(agentId);
-    } catch {}
-  }
-  async function deleteAgentMemory(agentId: string, memoryId: string) {
-    if (!confirm("Delete this memory entry?")) return;
-    try {
-      await fetch(`/api/agents/${agentId}/memory/${memoryId}`, { method: "DELETE" });
-      loadAgentMemory(agentId);
-    } catch {}
-  }
-
-  useEffect(() => {
-    loadAgents();
-    api.models().then((m: any[]) => setAvailableModels(m)).catch(() => {});
-    fetch("/api/skills").then(r => r.json()).then(d => setAllSkills(d.skills || [])).catch(() => {});
-    fetch("/api/mesh/topology").then(r => r.json()).then(d => setMeshTopology(d)).catch(() => {});
-    connectSSE();
-    return () => { /* cleanup handled in connectSSE */ };
-  }, []);
+  useEffect(() => { loadAgents(); }, []);
 
   async function loadAgents() {
     setLoading(true);
-    try {
-      setAgents(await api.agents());
-    } catch (e: any) {
-      setErrorMsg("Failed to load agents: " + (e.message || e));
-    } finally {
-      setLoading(false);
-    }
+    try { setAgents(await api.agents()); } catch {}
+    setLoading(false);
   }
 
   async function createAgent() {
     if (!formName.trim()) return;
-    setCreating(true);
     try {
-      const res = await fetch("/api/agents", {
+      await fetch("/api/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formName.trim(),
-          description: formDescription.trim(),
-          model: formModel,
-          skills: formSkills.split(",").map(s => s.trim()).filter(Boolean),
-          systemPrompt: formPrompt.trim() || undefined,
-        }),
+        body: JSON.stringify({ name: formName, description: formDescription, modelRef: formModel }),
       });
-      if (!res.ok) throw new Error(await res.text());
-      await loadAgents();
       setShowForm(false);
-      setFormName(""); setFormDescription(""); setFormModel("deepseek/deepseek-chat"); setFormSkills(""); setFormPrompt("");
-    } catch (e: any) {
-      setErrorMsg("Failed to create agent: " + (e.message || e));
-    } finally {
-      setCreating(false);
-    }
+      setFormName("");
+      setFormDescription("");
+      loadAgents();
+    } catch {}
   }
 
   async function deleteAgent(id: string) {
-    if (!confirm("Delete this agent? This cannot be undone.")) return;
+    if (!confirm("Delete this agent?")) return;
     try {
-      await fetch("/api/agents/" + id, { method: "DELETE" });
-      if (selectedAgent?.id === id) setSelectedAgent(null);
-      await loadAgents();
-    } catch (e: any) {
-      setErrorMsg("Failed to delete agent: " + (e.message || e));
-    }
-  }
-
-  async function startAgent(id: string) {
-    try {
-      await fetch("/api/agents/" + id + "/start", { method: "POST" });
-      await loadAgents();
-    } catch (e: any) {
-      setErrorMsg("Failed to start agent: " + (e.message || e));
-    }
-  }
-
-  async function stopAgent(id: string) {
-    try {
-      await fetch("/api/agents/" + id + "/stop", { method: "POST" });
-      await loadAgents();
-    } catch (e: any) {
-      setErrorMsg("Failed to stop agent: " + (e.message || e));
-    }
-  }
-
-  async function runAgentTask(agentId: string, task: string) {
-    setTaskRunning(true);
-    setTaskResult("");
-    try {
-      const res = await fetch(`/api/agents/${agentId}/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task, workspace: workspacePath || undefined }),
-      });
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        throw new Error(res.status + ": " + errText);
-      }
-      const data = await res.json();
-      const runId = data.runId || "";
-      setTaskResult(`✅ Agent started (runId: ${runId.slice(0, 12)})`);
-      if (runId) {
-        setActiveRunId(runId);
-        setActiveRunAgent(agent.name || agentId);
-      } else {
-        setTimeout(() => setShowAgentModal(false), 1500);
-      }
-    } catch (e: any) {
-      setTaskResult("Error: " + (e.message || e));
-    } finally {
-      setTaskRunning(false);
-    }
-  }
-
-  async function toggleAgent(id: string) {
-    const agent = agents.find(a => a.id === id);
-    if (!agent) return;
-    if (agent.status === "running") await stopAgent(id);
-    else await startAgent(id);
-  }
-
-  async function loadAgentFiles(agentId: string) {
-    try {
-      const res = await fetch(`/api/agents/${agentId}/files`);
-      const data = await res.json();
-      setAgentFiles(data.files?.filter((f: any) => !f.missing) || []);
-    } catch { setAgentFiles([]); }
-  }
-
-  async function saveAgentFile(agentId: string, fileName: string, content: string) {
-    try {
-      await fetch(`/api/agents/${agentId}/files/${fileName}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-      });
-      setEditingFile(null);
-      loadAgentFiles(agentId);
-    } catch (e: any) {
-      setErrorMsg("Failed to save file: " + (e.message || e));
-    }
-  }
-
-  async function updateAgentSkills(agentId: string, skills: string[]) {
-    try {
-      await fetch(`/api/agents/${agentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skills }),
-      });
+      await fetch(`/api/agents/${id}`, { method: "DELETE" });
       loadAgents();
-    } catch (e: any) {
-      setErrorMsg("Failed to update skills: " + (e.message || e));
-    }
+    } catch {}
   }
 
-  function connectSSE() {
-    try {
-      const socket = new WebSocket(`ws://${window.location.host}/ws`);
-      socket.onopen = () => setWsConnected(true);
-      socket.onmessage = (ev) => {
-        setAgentLog((prev) => [...prev, ev.data]);
-        try {
-          const data = JSON.parse(ev.data);
-          if (data.type === "job_done") {
-            loadAgents();
-            if (selectedAgent?.id === data.agentId) {
-              setTaskResult(data.status === "completed"
-                ? "✅ Agent completed the task. Check MEMORY.md for report."
-                : "❌ Agent task failed" + (data.error ? ": " + data.error : ""));
-            }
-          }
-        } catch { /* ignore */ }
-      };
-      socket.onclose = () => setWsConnected(false);
-      socket.onerror = () => setWsConnected(false);
-    } catch {
-      setWsConnected(false);
-    }
-  }
-
-  function statusColor(status: string) {
-    switch (status) {
-      case "running": return "bg-emerald-500/20 text-[#22c55e] border-emerald-500/30";
-      case "idle": return "bg-slate-500/20 text-[#94a3b8] border-slate-500/30";
-      case "error": return "bg-red-500/20 text-[#ef4444] border-red-500/30";
-      case "stopped": return "bg-[rgba(245,158,11,0.1)] text-[#f59e0b] border-[rgba(245,158,11,0.2)]";
-      default: return "bg-slate-500/20 text-[#94a3b8] border-slate-500/30";
-    }
+  function chatWithAgent(agentId: string) {
+    window.dispatchEvent(new CustomEvent("nova-navigate", { detail: "chat" }));
   }
 
   return (
-    <div className="max-w-5xl mx-auto w-full">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-lg font-bold text-white">Agents</h2>
-          <p className="text-xs text-[#94a3b8] mt-0.5">
-            {wsConnected ? (
-              <span className="text-[#22c55e]">● Connected</span>
-            ) : (
-              <span className="text-[#475569]">● Disconnected</span>
-            )}
-            &middot; {agents.length} agent{agents.length !== 1 ? "s" : ""}
-          </p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Users size={20} className="text-[#818cf8]" />
+          <h1 className="text-lg font-bold">Agents</h1>
+          <span className="text-xs text-[#475569]">{agents.length} agents</span>
         </div>
-        <button className="btn-nova px-4 py-1.5 rounded-lg text-sm" onClick={() => setShowForm(true)}>
-          + Create Agent
+        <button onClick={() => setShowForm(!showForm)} className="btn-nova text-xs px-3 py-1.5">
+          <Plus size={14} /> New Agent
         </button>
       </div>
 
-      {/* Agent Mesh Topology — Nexus v2.0 */}
-      {meshTopology && meshTopology.agents && (
-        <div className="glass-card rounded-2xl p-5 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#8b5cf6] flex items-center justify-center">
-              <Network size={12} className="text-white" />
-            </div>
-            <h3 className="text-sm font-semibold text-white">Agent Mesh</h3>
-            <span className="text-[10px] text-[#4a5068] font-mono ml-auto">
-              {meshTopology.agents.filter((a: any) => a.status === "online").length}/{meshTopology.agents.length} online
-            </span>
+      {showForm && (
+        <div className="glass-card p-4 rounded-xl space-y-3">
+          <input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Agent name" className="glass-input w-full text-xs" />
+          <input value={formDescription} onChange={e => setFormDescription(e.target.value)} placeholder="Description" className="glass-input w-full text-xs" />
+          <select value={formModel} onChange={e => setFormModel(e.target.value)} className="glass-input w-full text-xs">
+            <option value="deepseek/deepseek-chat">DeepSeek Chat</option>
+            <option value="anthropic/claude-sonnet-4-20250514">Claude Sonnet</option>
+            <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+          </select>
+          <div className="flex gap-2">
+            <button onClick={createAgent} className="btn-nova text-xs px-3 py-1.5">Create</button>
+            <button onClick={() => setShowForm(false)} className="text-xs text-[#475569] hover:text-white px-3 py-1.5">Cancel</button>
           </div>
-          <svg viewBox="0 0 600 160" className="w-full" style={{ maxHeight: "180px" }}>
-            {/* Connection lines */}
-            {meshTopology.routes?.map((r: any, i: number) => {
-              const src = meshTopology.agents.find((a: any) => a.id === r.sourceId);
-              const tgt = meshTopology.agents.find((a: any) => a.id === r.targetId);
-              if (!src || !tgt) return null;
-              const srcIdx = meshTopology.agents.indexOf(src);
-              const tgtIdx = meshTopology.agents.indexOf(tgt);
-              const spacing = 560 / (meshTopology.agents.length - 1);
-              const x1 = 20 + srcIdx * spacing;
-              const x2 = 20 + tgtIdx * spacing;
-              return (
-                <line key={i} x1={x1} y1={50} x2={x2} y2={50}
-                  stroke="rgba(0,212,255,0.12)" strokeWidth={1}
-                  strokeDasharray="4 3" />
-              );
-            })}
-            {/* Agent nodes */}
-            {meshTopology.agents.map((a: any, i: number) => {
-              const spacing = 560 / (meshTopology.agents.length - 1);
-              const x = 20 + i * spacing;
-              const color = a.status === "online" ? "#10b981" : a.status === "idle" ? "#f59e0b" : "#4a5068";
-              return (
-                <g key={a.id}>
-                  <circle cx={x} cy={50} r={14} fill="rgba(13,15,32,0.95)" stroke={color} strokeWidth={1.5} />
-                  <text x={x} y={54} textAnchor="middle" fill="#e8ecf2" fontSize="10" fontFamily="system-ui">
-                    {a.name?.split(" ")[0] || a.id}
-                  </text>
-                  <text x={x} y={85} textAnchor="middle" fill="#4a5068" fontSize="8" fontFamily="system-ui">
-                    {a.connections?.length || 0} links
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-      )}
-
-      {errorMsg && (
-        <div className="glass-panel rounded-xl p-3 mb-4 border border-red-500/30">
-          <p className="text-xs text-[#ef4444]">{errorMsg}</p>
         </div>
       )}
 
       {loading ? (
-        <div className="glass-panel rounded-xl p-8 flex items-center justify-center">
-          <p className="text-sm text-[#94a3b8]">Loading agents...</p>
-        </div>
+        <div className="text-center text-[#475569] py-8">Loading agents...</div>
       ) : agents.length === 0 ? (
-        <div className="glass-panel rounded-xl p-8 flex flex-col items-center justify-center gap-2">
-          <p className="text-sm text-[#94a3b8]">No agents yet</p>
-          <p className="text-xs text-[#475569]">Create your first agent to get started</p>
-        </div>
+        <div className="text-center text-[#475569] py-8">No agents yet. Create one to get started.</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-3">
           {agents.map((agent) => (
-            <div key={agent.id}
-              className="glass-panel rounded-xl p-5 flex flex-col justify-between transition-all hover:border-indigo-500/30 cursor-pointer"
-              onClick={() => setSelectedAgent(selectedAgent?.id === agent.id ? null : agent)}>
-              <div>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-[rgba(99,102,241,0.1)] border border-indigo-500/30 flex items-center justify-center text-sm">
-                      {agent.emoji || "🤖"}
-                    </div>
-                    <h3 className="font-bold text-sm text-white">{agent.name}</h3>
+            <div
+              key={agent.id}
+              onClick={() => setSelectedAgent(selectedAgent?.id === agent.id ? null : agent)}
+              className={`glass-card p-4 rounded-xl cursor-pointer transition-all hover:border-[rgba(99,102,241,0.3)] ${
+                selectedAgent?.id === agent.id ? "border-[rgba(99,102,241,0.4)]" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{agent.emoji || "🤖"}</span>
+                  <div>
+                    <div className="text-sm font-semibold">{agent.name}</div>
+                    <div className="text-[11px] text-[#475569]">{agent.description || "No description"}</div>
                   </div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusColor(agent.status)}`}>
-                    {agent.status || "unknown"}
-                  </span>
                 </div>
-                {agent.description && <p className="text-xs text-[#94a3b8] mb-3 line-clamp-2">{agent.description}</p>}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  <span className="text-[10px] font-mono text-[#475569]">{agent.model || "default"}</span>
-                  {agent.skills?.length > 0 && agent.skills.map((skill: string, i: number) => (
-                    <span key={i} className="custom-badge text-[10px]">{skill?.name ?? skill}</span>
-                  ))}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-[#475569]">{agent.modelRef}</span>
+                  <button onClick={(e) => { e.stopPropagation(); chatWithAgent(agent.id); }} className="p-1.5 hover:bg-[rgba(99,102,241,0.1)] rounded-lg" title="Chat">
+                    <Play size={14} className="text-[#818cf8]" />
+                  </button>
+                  {agent.id !== "default" && (
+                    <button onClick={(e) => { e.stopPropagation(); deleteAgent(agent.id); }} className="p-1.5 hover:bg-[rgba(239,68,68,0.1)] rounded-lg" title="Delete">
+                      <Trash2 size={14} className="text-[#ef4444]" />
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.06)] pt-3 mt-1">
-                <button className="text-[11px] px-2.5 py-1 rounded bg-[rgba(99,102,241,0.1)] hover:bg-[rgba(99,102,241,0.15)] text-[#818cf8] border border-[rgba(99,102,241,0.2)] transition-all"
-                  onClick={(e) => { e.stopPropagation(); toggleAgent(agent.id); }}>
-                  {agent.status === "running" ? "Stop" : "Start"}
-                </button>
-                <button className="text-[11px] px-2.5 py-1 rounded bg-slate-900 hover:bg-[rgba(255,255,255,0.06)] text-[#94a3b8] border border-[rgba(255,255,255,0.06)] transition-all"
-                  onClick={(e) => { e.stopPropagation(); setSelectedAgent(agent); setShowAgentModal(true); setTaskModel(agent.modelRef || ""); setTaskInput(""); setTaskResult(""); setWorkspacePath(agent.workspace || ""); setEnabledSkills([...(agent.skills || [])]); setThinkingLevel(agent.thinkingLevel || "medium"); }}>
-                  Run Task
-                </button>
-                <button className="text-[11px] px-2.5 py-1 rounded bg-[rgba(34,197,94,0.1)] hover:bg-[rgba(34,197,94,0.15)] text-[#22c55e] border border-[rgba(34,197,94,0.2)] transition-all"
-                  onClick={(e) => { e.stopPropagation(); window.open("/agents/" + agent.id, "_blank"); }}>
-                  Browser
-                </button>
-                <button className="text-[11px] px-2.5 py-1 rounded bg-[rgba(239,68,68,0.1)] hover:bg-[rgba(239,68,68,0.15)] text-[#ef4444] border border-[rgba(239,68,68,0.2)] transition-all ml-auto"
-                  onClick={(e) => { e.stopPropagation(); deleteAgent(agent.id); }}>
-                  Delete
-                </button>
-              </div>
+              {selectedAgent?.id === agent.id && (
+                <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.06)] text-[11px] text-[#94a3b8] space-y-1">
+                  <div>ID: <span className="font-mono">{agent.id}</span></div>
+                  <div>Status: <span className={agent.status === "ready" ? "text-emerald-400" : "text-yellow-400"}>{agent.status}</span></div>
+                  {agent.skills?.length > 0 && <div>Skills: {agent.skills.join(", ")}</div>}
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
-
-      {/* Selected Agent Detail */}
-      {selectedAgent && !showAgentModal && (
-        <div className="glass-panel rounded-xl p-5 mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-sm text-white">{selectedAgent.emoji || "🤖"} {selectedAgent.name}</h3>
-            <button className="text-xs text-[#475569] hover:text-white transition-colors" onClick={() => { setSelectedAgent(null); setAgentTab("info"); }}>✕</button>
-          </div>
-
-          {/* Sub-tabs */}
-          <div className="flex gap-1 mb-4 border-b border-[rgba(255,255,255,0.06)] pb-0">
-            {(["info", "files", "skills", "memory"] as const).map((t) => (
-              <button key={t} onClick={() => { setAgentTab(t); if (t === "files" && selectedAgent) loadAgentFiles(selectedAgent.id); if (t === "memory" && selectedAgent) loadAgentMemory(selectedAgent.id); }}
-                className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all border-b-2 ${agentTab === t ? "border-[#6366f1] text-white" : "border-transparent text-[#475569] hover:text-slate-300"}`}>
-                {t === "info" ? "📋 Info" : t === "files" ? "📁 Files" : t === "skills" ? "⚡ Skills" : "🧠 Memory"}
-              </button>
-            ))}
-          </div>
-
-          {agentTab === "info" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-[#94a3b8] mb-1"><span className="text-[#475569]">ID:</span> {selectedAgent.id}</p>
-                <p className="text-xs text-[#94a3b8] mb-1"><span className="text-[#475569]">Model:</span> {selectedAgent.model || selectedAgent.modelRef || "default"}</p>
-                <p className="text-xs text-[#94a3b8] mb-1"><span className="text-[#475569]">Status:</span> <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColor(selectedAgent.status)}`}>{selectedAgent.status || "unknown"}</span></p>
-                {selectedAgent.description && <p className="text-xs text-[#94a3b8] mb-1"><span className="text-[#475569]">Description:</span> {selectedAgent.description}</p>}
-                <p className="text-xs text-[#94a3b8] mb-1"><span className="text-[#475569]">Skills:</span> {(selectedAgent.skills || []).length > 0 ? selectedAgent.skills.join(", ") : <span className="text-[#475569] italic">none</span>}</p>
-                {selectedAgent.systemPrompt && (
-                  <div className="mt-2">
-                    <p className="text-xs text-[#475569] mb-1">System Prompt:</p>
-                    <pre className="text-[11px] text-[#94a3b8] bg-[rgba(255,255,255,0.04)] rounded-lg p-3 overflow-x-auto max-h-32 overflow-y-auto">{selectedAgent.systemPrompt}</pre>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <button className="btn-nova px-3 py-1.5 rounded-lg text-xs text-center"
-                  onClick={() => { setShowAgentModal(true); }}>
-                  Run Task
-                </button>
-                <button className="text-[11px] px-2.5 py-1 rounded bg-[rgba(34,197,94,0.1)] hover:bg-[rgba(34,197,94,0.15)] text-[#22c55e] border border-[rgba(34,197,94,0.2)] transition-all text-center"
-                  onClick={() => window.open("/agents/" + selectedAgent.id, "_blank")}>
-                  Open Browser
-                </button>
-              </div>
-            </div>
-          )}
-
-          {agentTab === "files" && (
-            <div>
-              {agentFiles.length === 0 ? (
-                <p className="text-xs text-[#475569] italic">No workspace files found.</p>
-              ) : editingFile ? (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-white font-mono font-bold">{editingFile.name}</span>
-                    <div className="flex gap-2">
-                      <button className="text-[10px] px-2 py-1 rounded bg-[rgba(255,255,255,0.06)] text-[#94a3b8] hover:text-white" onClick={() => setEditingFile(null)}>Cancel</button>
-                      <button className="text-[10px] px-2 py-1 rounded bg-[#6366f1]/20 text-[#6366f1] hover:bg-[#6366f1]/30" onClick={() => saveAgentFile(selectedAgent.id, editingFile.name, editingFile.content)}>Save</button>
-                    </div>
-                  </div>
-                  <textarea className="w-full bg-[#0a0a0f]/80 border border-[rgba(255,255,255,0.06)] rounded-lg p-3 text-xs text-white font-mono focus:outline-none focus:border-[#6366f1] resize-y" rows={12}
-                    value={editingFile.content}
-                    onChange={(e) => setEditingFile({ ...editingFile, content: e.target.value })} />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {agentFiles.map((file) => (
-                    <div key={file.name} className="flex items-center justify-between p-2 bg-[#0a0a0f]/40 rounded-lg border border-[rgba(255,255,255,0.06)]/50">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="text-xs text-slate-300 font-mono truncate">{file.name}</span>
-                        <span className="text-[10px] text-[#475569]">{file.size ? `${(file.size / 1024).toFixed(1)} KB` : ""}</span>
-                      </div>
-                      <button className="text-[10px] px-2 py-1 rounded bg-[rgba(255,255,255,0.06)] text-[#94a3b8] hover:text-white"
-                        onClick={() => setEditingFile({ name: file.name, content: file.content || "" })}>
-                        Edit
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {agentTab === "skills" && (
-            <div>
-              <p className="text-xs text-[#94a3b8] mb-3">Toggle skills for <strong className="text-white">{selectedAgent.name}</strong>:</p>
-              <div className="flex flex-wrap gap-2 mb-4 max-h-48 overflow-y-auto">
-                {allSkills.length === 0 ? (
-                  <p className="text-xs text-[#475569] italic">No skills available.</p>
-                ) : (
-                  allSkills.map((skill) => {
-                    const skillName = skill.name || skill.id;
-                    const isEnabled = (selectedAgent.skills || []).includes(skillName);
-                    return (
-                      <button key={skillName} onClick={async () => {
-                        const currentSkills = selectedAgent.skills || [];
-                        const newSkills = isEnabled
-                          ? currentSkills.filter((s: string) => s !== skillName)
-                          : [...currentSkills, skillName];
-                        selectedAgent.skills = newSkills;
-                        await updateAgentSkills(selectedAgent.id, newSkills);
-                      }}
-                        className={`px-2.5 py-1 text-[10px] rounded-lg border transition-all ${isEnabled ? "border-[#6366f1] text-white bg-[#6366f1]/10" : "border-[rgba(255,255,255,0.06)] text-[#475569] hover:text-white hover:border-slate-600"}`}>
-                        {isEnabled ? "✓ " : "+ "}{skillName}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-              {selectedAgent.skills?.length > 0 && (
-                <div className="border-t border-[rgba(255,255,255,0.06)] pt-2 mt-1">
-                  <p className="text-[10px] text-[#475569] mb-1">Active skills ({selectedAgent.skills.length}):</p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedAgent.skills.map((s: string) => (
-                      <span key={s} className="custom-badge text-[10px]">{s}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {agentTab === "memory" && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-[#94a3b8]">Agent Memory <span className="text-[#475569]">({agentMemoryTotal} entries)</span></p>
-              </div>
-
-              {/* Add memory */}
-              <div className="flex gap-2 mb-4">
-                <input value={newMemory} onChange={(e) => setNewMemory(e.target.value)}
-                  placeholder="Add a memory for this agent..."
-                  className="flex-1 bg-[#0a0a0f]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1]"
-                  onKeyDown={(e) => { if (e.key === "Enter" && selectedAgent) addAgentMemory(selectedAgent.id); }} />
-                <select value={memoryType} onChange={(e) => setMemoryType(e.target.value)}
-                  className="bg-[#0a0a0f]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-2 py-2 text-xs text-white">
-                  <option value="observation">Observation</option>
-                  <option value="decision">Decision</option>
-                  <option value="fact">Fact</option>
-                  <option value="preference">Preference</option>
-                </select>
-                <button onClick={() => selectedAgent && addAgentMemory(selectedAgent.id)}
-                  className="btn-nova text-[10px] px-3 py-2 rounded-lg whitespace-nowrap">Save</button>
-              </div>
-
-              {/* Memory list */}
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {agentMemories.length === 0 ? (
-                  <p className="text-xs text-[#475569] italic text-center py-6">No memories yet. Add one above.</p>
-                ) : (
-                  agentMemories.map((mem: any) => (
-                    <div key={mem.id} className="flex items-start gap-2 p-2 bg-[#0a0a0f]/40 rounded-lg border border-[rgba(255,255,255,0.06)]/50 group">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                            mem.type === "decision" ? "bg-amber-500/20 text-amber-400" :
-                            mem.type === "fact" ? "bg-blue-500/20 text-blue-400" :
-                            mem.type === "preference" ? "bg-purple-500/20 text-purple-400" :
-                            "bg-slate-600/20 text-[#94a3b8]"
-                          }`}>{mem.type}</span>
-                          <span className="text-[9px] text-[#475569]">
-                            {mem.importance === 5 ? "🔴 " : mem.importance >= 3 ? "🟡 " : "🟢 "}
-                            Importance: {mem.importance}/5
-                          </span>
-                          <span className="text-[9px] text-[#475569] ml-auto">{new Date(mem.createdAt || mem.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-xs text-slate-300 whitespace-pre-wrap">{mem.content}</p>
-                        {mem.tags?.length > 0 && (
-                          <div className="flex gap-1 mt-1">
-                            {mem.tags.map((t: string) => <span key={t} className="text-[9px] text-[#475569]">#{t}</span>)}
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={() => deleteAgentMemory(selectedAgent.id, mem.id)}
-                        className="text-[#475569] hover:text-[#ef4444] opacity-0 group-hover:opacity-100 transition-all text-xs">✕</button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Agent Work Viewer — live execution */}
-      {activeRunId && (
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold text-white">Agent Work</h4>
-            <button
-              className="text-[9px] text-[#4a5068] hover:text-white"
-              onClick={() => setActiveRunId("")}
-            >Close</button>
-          </div>
-          <AgentWorkPanel
-            runId={activeRunId}
-            agentName={activeRunAgent}
-            onComplete={() => {}} // user can close manually
-          />
-        </div>
-      )}
-
-      {/* Agent Log */}
-      {agentLog.length > 0 && (
-        <div className="glass-panel rounded-xl p-5 mt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-xs font-bold text-white">Agent Log</h4>
-            <button className="text-[10px] text-[#475569] hover:text-white" onClick={() => setAgentLog([])}>Clear</button>
-          </div>
-          <div className="max-h-48 overflow-y-auto space-y-1">
-            {agentLog.map((entry, i) => (
-              <p key={i} className="text-[11px] text-[#94a3b8] font-mono">{String(entry)}</p>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Agent Modal */}
-      {showAgentModal && selectedAgent && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12121a] border border-[rgba(255,255,255,0.06)] max-w-2xl w-full rounded-xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="bg-[rgba(18,18,26,0.95)] px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between sticky top-0 z-10">
-              <div className="flex items-center gap-2 text-white">
-                <span className="text-lg">{selectedAgent.emoji || "🤖"}</span>
-                <span className="text-xs font-bold tracking-wide uppercase font-mono">{selectedAgent.name}</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${selectedAgent.status === "ready" ? "bg-emerald-500/20 text-[#22c55e]" : "bg-amber-500/20 text-amber-400"} border ${selectedAgent.status === "ready" ? "border-emerald-500/30" : "border-amber-500/30"}`}>{selectedAgent.status}</span>
-              </div>
-              <button onClick={() => setShowAgentModal(false)} className="text-[#475569] hover:text-white">✕</button>
-            </div>
-            <div className="px-4 py-2 bg-[#0a0a0f]/40 border-b border-[rgba(255,255,255,0.06)] flex flex-wrap gap-1.5 items-center">
-              <span className="text-[9px] text-[#475569] uppercase tracking-wider mr-1">Skills:</span>
-              {(selectedAgent.skills || []).map((skill: string, i: number) => (
-                <span key={i} className="custom-badge text-[10px]">{skill?.name ?? skill}</span>
-              ))}
-              <span className="text-[10px] text-[#475569] ml-auto font-mono">{selectedAgent.model}</span>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="text-[9px] text-[#94a3b8] uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  Task / Prompt
-                </label>
-                <textarea value={taskInput} onChange={(e) => setTaskInput(e.target.value)}
-                  placeholder="e.g. analyze project structure, fix all eslint errors, build test suite for all components..."
-                  className="w-full bg-[#0a0a0f]/60 border border-[rgba(255,255,255,0.06)] rounded-lg p-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1] min-h-[80px]" />
-              </div>
-              <div>
-                <label className="text-[9px] text-[#94a3b8] uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  Workspace Folder
-                </label>
-                <div className="flex gap-2">
-                  <input value={workspacePath} onChange={(e) => setWorkspacePath(e.target.value)}
-                    placeholder="e.g. C:\Projects\my-app"
-                    className="flex-1 bg-[#0a0a0f]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1] font-mono" />
-                  <button onClick={async () => {
-                    try {
-                      const res = await fetch("/api/workspace/browse", { method: "POST" });
-                      if (res.ok) { const data = await res.json(); if (data?.path) setWorkspacePath(data.path); }
-                    } catch { /* ignore */ }
-                  }}
-                    className="bg-[#0a0a0f] hover:bg-slate-900 text-[#94a3b8] border border-[rgba(255,255,255,0.06)] px-3 py-2 rounded-lg text-xs flex items-center gap-1.5">
-                    Browse...
-                  </button>
-                </div>
-                {workspacePath && <p className="text-[10px] text-emerald-500 mt-1 flex items-center gap-1">Workspace selected</p>}
-              </div>
-              <div>
-                <label className="text-[9px] text-[#94a3b8] uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
-                  Skills to enable for this task
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {(selectedAgent.skills || []).map((skill: string) => (
-                    <button key={skill} onClick={() => {
-                      setEnabledSkills((prev) => prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]);
-                    }}
-                      className={`px-2.5 py-1 text-[10px] rounded-lg border transition-all ${enabledSkills.includes(skill) ? "border-[#6366f1] text-white bg-[#6366f1]/10" : "border-[rgba(255,255,255,0.06)] text-[#475569] hover:text-white hover:border-slate-600"}`}>
-                      {enabledSkills.includes(skill) ? "✓" : "+"} {skill}
-                    </button>
-                  ))}
-                  {(selectedAgent.skills || []).length === 0 && (
-                    <span className="text-[10px] text-[#475569] italic">No skills assigned to this agent</span>
-                  )}
-                </div>
-              </div>
-              <details className="group">
-                <summary className="text-[9px] text-[#94a3b8] uppercase tracking-wider cursor-pointer hover:text-slate-300 flex items-center gap-1.5">
-                  Advanced Settings
-                </summary>
-                <div className="mt-2 space-y-2 pl-2">
-                  <div className="flex items-center gap-3">
-                    <label className="text-[10px] text-[#475569] w-16">Model:</label>
-                    <select value={taskModel} onChange={(e) => setTaskModel(e.target.value)}
-                      className="flex-1 bg-[#0a0a0f]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-2 py-1.5 text-xs text-white">
-                      <option value="">Default ({selectedAgent.model})</option>
-                      {availableModels.map((m: any) => (
-                        <option key={m.id} value={m.id}>{m.id}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <label className="text-[10px] text-[#475569] w-16">Thinking:</label>
-                    <select value={thinkingLevel} onChange={(e) => setThinkingLevel(e.target.value)}
-                      className="flex-1 bg-[#0a0a0f]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-2 py-1.5 text-xs text-white">
-                      <option value="none">None</option>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </div>
-                </div>
-              </details>
-              {/* Sub-agent delegation */}
-              <details className="group">
-                <summary className="text-[9px] text-[#94a3b8] uppercase tracking-wider cursor-pointer hover:text-slate-300 flex items-center gap-1.5">
-                  Sub-Agent Delegation
-                </summary>
-                <div className="mt-2 space-y-2 pl-2">
-                  <div className="flex gap-2">
-                    <select value={taskModel} onChange={(e) => setTaskModel(e.target.value)}
-                      className="flex-1 bg-[#0a0a0f]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-2 py-1.5 text-xs text-white">
-                      {agents.filter((a: any) => a.id !== selectedAgent.id).map((a: any) => (
-                        <option key={a.id} value={a.id}>{a.name} ({a.id})</option>
-                      ))}
-                    </select>
-                    <button onClick={async () => {
-                      const subAgent = agents.find((a: any) => a.id === taskModel);
-                      if (!subAgent || !taskInput.trim()) { setTaskResult("Select a sub-agent and write a task first."); return; }
-                      try {
-                        setTaskRunning(true);
-                        const res = await fetch("/api/subagent", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            id: subAgent.id,
-                            name: subAgent.name,
-                            modelRef: subAgent.modelRef,
-                            systemPrompt: subAgent.systemPrompt,
-                            message: taskInput,
-                          }),
-                        });
-                        const data = await res.json();
-                        setTaskResult(`[Delegated to ${subAgent.name}]\n${JSON.stringify(data.result, null, 2)}`);
-                      } catch (e: any) {
-                        setTaskResult(`Delegation failed: ${e.message}`);
-                      } finally { setTaskRunning(false); }
-                    }} disabled={taskRunning}
-                      className="btn-nova text-[10px] px-3 py-1.5 rounded-lg whitespace-nowrap">
-                      Delegate
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-[#475569]">Select another agent and click Delegate to assign a subtask.</p>
-                </div>
-              </details>
-              <div className="flex justify-between items-center pt-2 border-t border-[rgba(255,255,255,0.06)]">
-                <div className="flex gap-2">
-                  <button onClick={() => setShowAgentModal(false)} className="bg-[#0a0a0f] hover:bg-slate-900 text-[#94a3b8] border border-[rgba(255,255,255,0.06)] px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-                  {taskResult && <button onClick={() => setTaskResult("")} className="text-[10px] text-[#475569] hover:text-white underline">Clear result</button>}
-                </div>
-                <button onClick={() => runAgentTask(selectedAgent.id, taskInput)}
-                  disabled={taskRunning || !taskInput.trim()}
-                  className="btn-nova px-5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2">
-                  {taskRunning ? "Running task..." : "Execute Task"}
-                </button>
-              </div>
-              {taskResult && (
-                <div className="border-t border-[rgba(255,255,255,0.06)] pt-3 mt-1">
-                  <p className="text-[9px] text-[#475569] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">Result</p>
-                  <pre className="text-[11px] text-slate-300 bg-[#0a0a0f]/80 rounded-lg p-3 max-h-40 overflow-y-auto font-mono whitespace-pre-wrap">{taskResult}</pre>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Agent Form */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="glass-panel rounded-xl p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-sm text-white mb-4">Create Agent</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-[11px] text-[#94a3b8] font-medium">Name</label>
-                <input className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white placeholder-slate-500 mt-1"
-                  placeholder="My Agent" value={formName} onChange={(e) => setFormName(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-[11px] text-[#94a3b8] font-medium">Description</label>
-                <textarea className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white placeholder-slate-500 mt-1 resize-none"
-                  rows={2} placeholder="What does this agent do?" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-[11px] text-[#94a3b8] font-medium">Model</label>
-                <select className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white mt-1"
-                  value={formModel} onChange={(e) => setFormModel(e.target.value)}>
-                  {availableModels.map((m: any) => (
-                    <option key={String(m.id || m)} value={String(m.id || m)}>{String(m.id || m)}</option>
-                  ))}
-                  <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] text-[#94a3b8] font-medium">Skills (comma separated)</label>
-                <input className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white placeholder-slate-500 mt-1"
-                  placeholder="code, research, writing" value={formSkills} onChange={(e) => setFormSkills(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-[11px] text-[#94a3b8] font-medium">System Prompt</label>
-                <textarea className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white placeholder-slate-500 mt-1 resize-none font-mono"
-                  rows={4} placeholder="You are an agent that..." value={formPrompt} onChange={(e) => setFormPrompt(e.target.value)} />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-5">
-              <button className="px-3 py-1.5 rounded-lg text-xs text-[#94a3b8] border border-[rgba(255,255,255,0.06)] hover:bg-slate-900 transition-all"
-                onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn-nova px-3 py-1.5 rounded-lg text-xs"
-                onClick={createAgent} disabled={creating || !formName.trim()}>
-                {creating ? "Creating..." : "Create"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Parallel Workers Panel */}
-      <div className="glass-panel rounded-xl p-5 mt-6 border border-indigo-500/10">
-        <div className="flex items-center gap-2 mb-3">
-          <svg className="w-4 h-4 text-[#818cf8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>
-          </svg>
-          <span className="text-sm text-white font-medium">Parallel Workers</span>
-          <span className="text-[10px] text-[#475569]">— spawn multiple sub-agents at once</span>
-        </div>
-        <p className="text-[10px] text-[#475569] mb-4">Each worker runs the same system prompt on a different subtask. Results are merged automatically.</p>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i}>
-                <label className="text-[10px] text-[#475569]">Task {i}</label>
-                <input id={`ptask${i}`}
-                  className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white placeholder-slate-600 mt-1"
-                  placeholder={`e.g. ${["Research React 19 features", "Research Vue 4 features", "Research Svelte 5 features", "Research Angular 18 features"][i - 1]}`} />
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="text-[10px] text-[#475569]">Worker Group Name</label>
-              <input id="pname"
-                className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white placeholder-slate-600 mt-1"
-                placeholder="research-team" />
-            </div>
-            <div>
-              <label className="text-[10px] text-[#475569]">System Prompt</label>
-              <textarea id="pprompt"
-                className="w-full px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-white placeholder-slate-600 mt-1 resize-none"
-                rows={1} placeholder="You are a researcher..."></textarea>
-            </div>
-            <div className="flex items-end">
-              <button id="parallel-submit-btn" className="btn-nova px-4 py-1.5 rounded-lg text-xs w-full"
-                onClick={() => {
-                  const tasks: string[] = [];
-                  for (let i = 1; i <= 4; i++) {
-                    const el = document.getElementById("ptask" + i) as HTMLInputElement;
-                    if (el?.value?.trim()) tasks.push(el.value.trim());
-                  }
-                  const name = (document.getElementById("pname") as HTMLInputElement)?.value?.trim() || "parallel";
-                  const prompt = (document.getElementById("pprompt") as HTMLTextAreaElement)?.value?.trim() || "You are a helpful assistant.";
-                  if (tasks.length === 0) return;
-                  const btn = document.getElementById("parallel-submit-btn") as HTMLButtonElement;
-                  btn.disabled = true;
-                  btn.textContent = "Running...";
-                  fetch("/api/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      messages: [{ role: "user", content: `spawn_parallel name="${name}" systemPrompt="${prompt}" tasks=${JSON.stringify(tasks)} merge=true` }],
-                      model: "deepseek/deepseek-chat",
-                      tools: ["spawn_parallel"],
-                    }),
-                  }).finally(() => {
-                    btn.disabled = false;
-                    btn.textContent = "Run Parallel Workers";
-                  });
-                }}>
-                Run Parallel Workers
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

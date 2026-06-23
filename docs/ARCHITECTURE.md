@@ -1,8 +1,8 @@
-# Nova Architecture
+# Nexus AI Architecture
 
 ## Overview
 
-Nova is a TypeScript/Bun monorepo AI agent platform. It follows a plugin-based architecture with a core engine that orchestrates agents, sessions, tools, and providers.
+Nexus AI is a TypeScript/Bun monorepo AI agent platform. It follows a plugin-based architecture with a core engine that orchestrates agents, sessions, tools, and providers.
 
 ## Core Components
 

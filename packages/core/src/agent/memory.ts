@@ -41,6 +41,10 @@ class AgentMemoryManager {
   private db!: Database;
   private initialized = false;
 
+  constructor() {
+    this.init();
+  }
+
   init(dbPath?: string): void {
     if (this.initialized) return;
     const path = dbPath ?? join(process.cwd(), "nova.db");
@@ -142,6 +146,11 @@ class AgentMemoryManager {
   /** Consolidate run results into semantic memories */
   async consolidateRun(agentId: string, runSummary: string, runId: string): Promise<number> {
     if (!runSummary || runSummary.length < 50) return 0;
+
+    // Save full report as episodic memory (for persistent storage)
+    try {
+      this.add(agentId, "episodic", `[Agent Report] ${runSummary.slice(0, 2000)}`, 3, ["agent-report", "auto-saved"], runId);
+    } catch {}
 
     // Extract key learnings via simple heuristics:
     // Sentences containing: "learned", "discovered", "found that", "important", "remember"

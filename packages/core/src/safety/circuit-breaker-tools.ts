@@ -40,7 +40,7 @@ export interface ToolCallContext {
 const DEFAULT_CONFIG: ToolCircuitBreakerConfig = {
   maxToolCallsPerTask: 50,
   maxAgentDepth: 5,
-  taskTimeoutSeconds: 120,
+  taskTimeoutSeconds: 300,
   maxDuplicateHash: 3,
 };
 

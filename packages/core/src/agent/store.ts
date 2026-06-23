@@ -156,7 +156,7 @@ class AgentStore {
     mkdirSync(dir, { recursive: true });
 
     const files: Record<string, string> = {
-      "AGENTS.md": `# ${this.get(id)?.name || id}\n\nAgent workspace for Nova AI Platform.`,
+      "AGENTS.md": `# ${this.get(id)?.name || id}\n\nAgent workspace for Nexus AI Platform.`,
       "SOUL.md": systemPrompt || `You are a helpful AI assistant.`,
       "IDENTITY.md": `# Identity\n\nName: ${this.get(id)?.name || id}\n`,
     };

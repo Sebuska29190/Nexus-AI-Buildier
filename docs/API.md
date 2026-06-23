@@ -1,4 +1,4 @@
-# Nova API Reference
+# Nexus AI API Reference
 
 ## Base URL
 

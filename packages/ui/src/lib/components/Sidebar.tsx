@@ -1,10 +1,9 @@
 import { useState } from "react";
 import {
-  MessageSquare, Users, Zap, PlusCircle, History, Radio, Brain,
-  FolderGit2, FileCode, Cpu, Terminal,
-  Settings, KeyRound, ScrollText, UserCog, ToyBrick, Calendar,
-  BarChart3, BookOpen, Search, Sliders, Orbit, Plug,
-  GitBranch, Building2, Activity, Menu, X, FlaskConical, GitCommitHorizontal, Code, Network
+  MessageSquare, Users, Zap, History, Brain,
+  FolderGit2, Terminal,
+  BookOpen, Search, Orbit,
+  Code
 } from "lucide-react";
 
 interface SidebarProps {
@@ -19,46 +18,27 @@ interface NavItem {
   icon: React.ElementType;
   label: string;
   badge?: string;
-  dot?: string;
 }
 
 const navGroups: { label: string; items: NavItem[] }[] = [
-  { label: "AI Agents", items: [
-    { id: "chat", icon: MessageSquare, label: "Chat Assistant" },
-    { id: "agents", icon: Users, label: "Agents", badge: "16" },
-    { id: "chambers", icon: Building2, label: "Agent Chambers", badge: "NEW" },
-    { id: "knowledge", icon: Network, label: "Knowledge Graph", badge: "NEW" },
-    { id: "rag", icon: BookOpen, label: "Knowledge Base (RAG)" },
+  { label: "AI Agent", items: [
+    { id: "chat", icon: MessageSquare, label: "Chat" },
+    { id: "agents", icon: Users, label: "Agents" },
+    { id: "skills", icon: Zap, label: "Skills" },
   ]},
   { label: "Development", items: [
-    { id: "code-editor", icon: Code, label: "Code Editor" },
-    { id: "git", icon: GitCommitHorizontal, label: "Git Automation" },
-    { id: "terminal", icon: Terminal, label: "Terminal" },
     { id: "workspace", icon: FolderGit2, label: "Workspace" },
-    { id: "workflows", icon: GitBranch, label: "Workflows", badge: "NEW" },
-  ]},
-  { label: "Tools & Skills", items: [
-    { id: "skills", icon: Zap, label: "Skills", badge: "46" },
-    { id: "plugins", icon: PlusCircle, label: "Plugins" },
-    { id: "integrations", icon: Plug, label: "Integrations" },
-    { id: "worker", icon: Cpu, label: "Worker Nodes" },
-    { id: "playground", icon: FlaskConical, label: "Prompt Playground" },
+    { id: "terminal", icon: Terminal, label: "Terminal" },
+    { id: "code", icon: Code, label: "Code Editor" },
   ]},
   { label: "Data", items: [
     { id: "sessions", icon: History, label: "Sessions" },
-    { id: "channels", icon: Radio, label: "Channels", dot: "emerald" },
-    { id: "memory", icon: Brain, label: "Memory DB" },
+    { id: "memory", icon: Brain, label: "Memory" },
   ]},
   { label: "Configuration", items: [
-    { id: "settings", icon: Settings, label: "Settings" },
-    { id: "apikeys", icon: KeyRound, label: "API Keys" },
-    { id: "logs", icon: ScrollText, label: "System Logs" },
-    { id: "profiles", icon: UserCog, label: "User Profiles" },
-    { id: "aimodels", icon: ToyBrick, label: "AI Models" },
-    { id: "schedule", icon: Calendar, label: "Cron Schedule" },
-    { id: "analytics", icon: BarChart3, label: "Analytics" },
-    { id: "tools-analytics", icon: Activity, label: "Tool Analytics" },
-    { id: "docs", icon: BookOpen, label: "Documentation" },
+    { id: "aimodels", icon: BookOpen, label: "Models" },
+    { id: "playground", icon: Search, label: "Playground" },
+    { id: "docs", icon: BookOpen, label: "Docs" },
   ]},
 ];
 
@@ -75,7 +55,6 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
     .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime())
     .slice(0, 5);
 
-  // Collapsed sidebar — icon only
   if (collapsed) {
     return (
       <aside className="w-14 bg-[rgba(18,18,26,0.95)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.06)] flex flex-col items-center z-20">
@@ -84,7 +63,7 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
           className="p-3 text-[#475569] hover:text-[#6366f1] transition-colors duration-200"
           title="Expand sidebar"
         >
-          <Menu size={18} />
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>
         <nav className="flex flex-col gap-1 mt-2 w-full px-2">
           {navGroups.flatMap(g => g.items).slice(0, 12).map((item) => {
@@ -121,14 +100,14 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
             </div>
             <div className="flex-1">
               <h1 className="font-extrabold text-sm tracking-wide text-white font-mono">NEXUS AI</h1>
-              <span className="text-[9px] text-[#818cf8] tracking-widest uppercase font-mono font-semibold">AGENT MESH</span>
+              <span className="text-[9px] text-[#818cf8] tracking-widest uppercase font-mono font-semibold">CODING AGENT</span>
             </div>
             <button
               onClick={() => setCollapsed(true)}
               className="text-[#475569] hover:text-[#f1f5f9] transition-colors duration-200 max-md:hidden"
               title="Collapse sidebar"
             >
-              <X size={16} />
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
         </div>
@@ -172,22 +151,11 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        {item.dot ? (
-                          <span className="w-4 h-4 relative">
-                            <Icon size={16} />
-                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#22c55e] active-dot" />
-                          </span>
-                        ) : (
-                          <Icon size={16} className={isActive ? "text-[#818cf8]" : ""} />
-                        )}
+                        <Icon size={16} className={isActive ? "text-[#818cf8]" : ""} />
                         <span>{item.label}</span>
                       </div>
                       {item.badge && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-lg font-mono font-bold ${
-                          item.badge === "NEW"
-                            ? "bg-[rgba(99,102,241,0.12)] text-[#818cf8]"
-                            : "bg-[rgba(255,255,255,0.05)] text-[#475569]"
-                        }`}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-lg font-mono font-bold bg-[rgba(255,255,255,0.05)] text-[#475569]">
                           {item.badge}
                         </span>
                       )}
@@ -229,11 +197,10 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
               OP
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-white">System Operator</div>
+              <div className="text-[11px] font-semibold text-white">Operator</div>
               <div className="text-[9px] text-[#475569]">core@nexus-ai</div>
             </div>
           </div>
-          <Sliders size={14} className="text-[#475569] hover:text-[#6366f1] transition-colors duration-200" />
         </div>
       </div>
     </aside>
