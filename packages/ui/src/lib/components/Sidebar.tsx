@@ -38,7 +38,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   { label: "SYSTEM", items: [
     { id: "aimodels", icon: BookOpen, label: "Modele" },
     { id: "docs", icon: BookOpen, label: "Dokumentacja" },
-    { id: "agentconfig", icon: Settings, label: "Konfiguracja" },
+    { id: "settings", icon: Settings, label: "Ustawienia" },
+    { id: "apikeys", icon: Settings, label: "Klucze API" },
   ]},
 ];
 
