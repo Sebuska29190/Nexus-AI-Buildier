@@ -1,30 +1,57 @@
 /**
  * ApiKeysPage — Real API key management with live testing
  * Uses backend /api/config/providers for real data
+ * Integrated with react-hook-form + zod validation
  */
 import { useState, useEffect } from "react";
-import { KeyRound, Eye, EyeOff, Copy, RotateCw, Trash2, Plus, Shield, CheckCircle, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { KeyRound, Eye, EyeOff, Copy, RotateCw, Trash2, Plus, Shield, CheckCircle, XCircle, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
 import { api } from "../lib/api";
 import { ConfirmDialog } from "../lib/components/ui/ConfirmDialog";
-import { apiKeySchema } from "../lib/validation";
+import { apiKeySchema, type ApiKeyFormData } from "../lib/validation";
 
 interface ProviderEntry {
   id: string; name: string; hasKey: boolean; enabled: boolean;
   models: number; lastTested?: string; status?: 'valid' | 'error' | 'untested';
 }
 
+const PROVIDER_OPTIONS = [
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "google", label: "Google" },
+  { value: "deepseek", label: "DeepSeek" },
+  { value: "grok", label: "Grok" },
+  { value: "qwen", label: "Qwen" },
+  { value: "openrouter", label: "OpenRouter" },
+  { value: "custom", label: "Custom" },
+] as const;
+
 function ApiKeysPage() {
   const [providers, setProviders] = useState<ProviderEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const [showAdd, setShowAdd] = useState(false);
-  const [newProvider, setNewProvider] = useState("openai");
-  const [newKey, setNewKey] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<Set<string>>(new Set());
   const [testResults, setTestResults] = useState<Record<string, { ok: boolean; error?: string }>>({});
   const [message, setMessage] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<{ providerId: string; name: string } | null>(null);
+
+  // React Hook Form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ApiKeyFormData>({
+    resolver: zodResolver(apiKeySchema),
+    defaultValues: {
+      name: "",
+      key: "",
+      provider: "openai",
+    },
+  });
 
   useEffect(() => { loadProviders(); }, []);
 
@@ -63,30 +90,22 @@ function ApiKeysPage() {
     }
   }
 
-  async function saveKey() {
-    if (!newKey.trim()) return;
-
-    // Validate with zod
-    const validationResult = apiKeySchema.safeParse({ provider: newProvider, apiKey: newKey });
-    if (!validationResult.success) {
-      const firstError = validationResult.error.issues[0];
-      setMessage(`❌ ${firstError.message}`);
-      return;
-    }
-
+  async function onSave(data: ApiKeyFormData) {
     setSaving(true);
+    setMessage("");
     try {
-      const res = await fetch(`/api/config/providers/${newProvider}`, {
+      const res = await fetch(`/api/config/providers/${data.provider}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: newKey, enabled: true }),
+        body: JSON.stringify({ apiKey: data.key, enabled: true, name: data.name }),
       });
-      const data = await res.json();
-      if (data.status === "saved") {
-        setMessage(`✅ Key saved for ${newProvider}`);
-        setNewKey(""); setShowAdd(false);
+      const result = await res.json();
+      if (result.status === "saved" || res.ok) {
+        setMessage(`✅ Key saved for ${data.provider}`);
+        reset();
+        setShowAdd(false);
         loadProviders();
       } else {
-        setMessage(`❌ ${data.error || "Failed"}`);
+        setMessage(`❌ ${result.error || "Failed"}`);
       }
     } catch (e: any) {
       setMessage(`❌ ${e.message}`);
@@ -131,25 +150,54 @@ function ApiKeysPage() {
         </div>
       )}
 
-      {/* Add Key Form */}
+      {/* Add Key Form with react-hook-form */}
       {showAdd && (
-        <div className="shrink-0 mb-4 p-4 rounded-xl bg-[rgba(0,212,255,0.03)] border border-[rgba(0,212,255,0.1)]">
-          <div className="flex items-center gap-3">
-            <select value={newProvider} onChange={e => setNewProvider(e.target.value)} className="glass-input px-3 py-2 text-sm">
-              {providers.filter(p => !p.hasKey).map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-              {providers.filter(p => !p.hasKey).length === 0 && (
-                <option value="">All providers configured</option>
+        <form onSubmit={handleSubmit(onSave)} className="shrink-0 mb-4 p-4 rounded-xl bg-[rgba(0,212,255,0.03)] border border-[rgba(0,212,255,0.1)] space-y-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex-1 min-w-[120px]">
+              <select {...register("provider")} className="glass-input w-full px-3 py-2 text-sm">
+                {PROVIDER_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {errors.provider && (
+                <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.provider.message}
+                </p>
               )}
-            </select>
-            <input type="password" value={newKey} onChange={e => setNewKey(e.target.value)} placeholder="sk-..." className="glass-input flex-1 px-3 py-2 text-sm" />
-            <button onClick={saveKey} disabled={saving || !newKey.trim()} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 shrink-0 disabled:opacity-50">
+            </div>
+            <div className="flex-[2] min-w-[200px]">
+              <input
+                type="text"
+                {...register("name")}
+                placeholder="Nazwa klucza (np. Production)"
+                className="glass-input w-full px-3 py-2 text-sm"
+              />
+              {errors.name && (
+                <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.name.message}
+                </p>
+              )}
+            </div>
+            <div className="flex-[2] min-w-[200px]">
+              <input
+                type="password"
+                {...register("key")}
+                placeholder="sk-... (min. 10 znaków)"
+                className="glass-input w-full px-3 py-2 text-sm"
+              />
+              {errors.key && (
+                <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.key.message}
+                </p>
+              )}
+            </div>
+            <button type="submit" disabled={saving} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 shrink-0 disabled:opacity-50">
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
               {saving ? "Saving..." : "Add & Encrypt"}
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* Providers List */}

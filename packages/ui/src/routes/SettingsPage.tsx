@@ -1,11 +1,13 @@
 /**
  * SettingsPage — Real settings with live provider/model data
- * Now with real API save/load
+ * Now with real API save/load and react-hook-form + zod validation
  */
 import { useState, useEffect } from "react";
-import { Settings, Monitor, Shield, Bot, Globe, Save, RotateCcw, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Settings, Monitor, Shield, Bot, Globe, Save, RotateCcw, Loader2, AlertCircle } from "lucide-react";
 import { api } from "../lib/api";
-import { settingsSchema } from "../lib/validation";
+import { settingsSchema, type SettingsFormData } from "../lib/validation";
 
 const TABS = [
   { id: "general", label: "General", icon: Settings },
@@ -22,17 +24,33 @@ function SettingsPage() {
   const [providers, setProviders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Form state
-  const [appName, setAppName] = useState("Nexus AI");
-  const [language, setLanguage] = useState("en");
-  const [timezone, setTimezone] = useState("Europe/Warsaw");
-  const [animations, setAnimations] = useState(true);
-  const [port, setPort] = useState("4123");
-  const [host, setHost] = useState("127.0.0.1");
-  const [authEnabled, setAuthEnabled] = useState(false);
-  const [defaultModel, setDefaultModel] = useState("");
-  const [autoApprove, setAutoApprove] = useState(false);
-  const [thinkingMode, setThinkingMode] = useState(true);
+  // React Hook Form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<SettingsFormData>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      appName: "Nexus AI",
+      theme: "dark",
+      language: "en",
+      timezone: "Europe/Warsaw",
+      animations: true,
+      port: 4123,
+      host: "127.0.0.1",
+      authEnabled: false,
+      defaultModel: "",
+      autoApprove: false,
+      thinkingMode: true,
+      notifications: true,
+    },
+  });
+
+  const animationsValue = watch("animations");
 
   useEffect(() => {
     // Load settings from API on mount
@@ -43,50 +61,38 @@ function SettingsPage() {
     ]).then(([m, p, settings]) => {
       setModels(m);
       setProviders(p);
-      if (m.length > 0 && !defaultModel) setDefaultModel(m[0].id);
 
       // Apply loaded settings
       if (settings) {
-        if (settings.appName) setAppName(settings.appName);
-        if (settings.language) setLanguage(settings.language);
-        if (settings.timezone) setTimezone(settings.timezone);
-        if (settings.animations !== undefined) setAnimations(settings.animations);
-        if (settings.port) setPort(String(settings.port));
-        if (settings.host) setHost(settings.host);
-        if (settings.authEnabled !== undefined) setAuthEnabled(settings.authEnabled);
-        if (settings.defaultModel) setDefaultModel(settings.defaultModel);
-        if (settings.autoApprove !== undefined) setAutoApprove(settings.autoApprove);
-        if (settings.thinkingMode !== undefined) setThinkingMode(settings.thinkingMode);
+        reset({
+          appName: settings.appName || "Nexus AI",
+          theme: settings.theme || "dark",
+          language: settings.language || "en",
+          timezone: settings.timezone || "Europe/Warsaw",
+          animations: settings.animations !== undefined ? settings.animations : true,
+          port: settings.port ? Number(settings.port) : 4123,
+          host: settings.host || "127.0.0.1",
+          authEnabled: settings.authEnabled !== undefined ? settings.authEnabled : false,
+          defaultModel: settings.defaultModel || (m.length > 0 ? m[0].id : ""),
+          autoApprove: settings.autoApprove !== undefined ? settings.autoApprove : false,
+          thinkingMode: settings.thinkingMode !== undefined ? settings.thinkingMode : true,
+          notifications: settings.notifications !== undefined ? settings.notifications : true,
+        });
+      } else if (m.length > 0) {
+        setValue("defaultModel", m[0].id);
       }
     }).finally(() => setLoading(false));
   }, []);
 
-  const handleSave = async () => {
+  const onSubmit = async (data: SettingsFormData) => {
     setSaving(true);
     setSaveError(null);
-
-    // Validate with zod
-    const validationResult = settingsSchema.safeParse({
-      appName, language, timezone, animations,
-      port: parseInt(port, 10) || 4123, host,
-      authEnabled, defaultModel, autoApprove, thinkingMode,
-    });
-    if (!validationResult.success) {
-      const firstError = validationResult.error.issues[0];
-      setSaveError(firstError.message);
-      setSaving(false);
-      return;
-    }
 
     try {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          appName, language, timezone, animations,
-          port: parseInt(port, 10) || 4123, host,
-          authEnabled, defaultModel, autoApprove, thinkingMode,
-        }),
+        body: JSON.stringify(data),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -105,15 +111,20 @@ function SettingsPage() {
     try {
       const res = await fetch("/api/settings/reset", { method: "POST" }).catch(() => null);
       if (res?.ok) {
-        setAppName("Nexus AI");
-        setLanguage("en");
-        setTimezone("Europe/Warsaw");
-        setAnimations(true);
-        setPort("4123");
-        setHost("127.0.0.1");
-        setAuthEnabled(false);
-        setAutoApprove(false);
-        setThinkingMode(true);
+        reset({
+          appName: "Nexus AI",
+          theme: "dark",
+          language: "en",
+          timezone: "Europe/Warsaw",
+          animations: true,
+          port: 4123,
+          host: "127.0.0.1",
+          authEnabled: false,
+          defaultModel: models.length > 0 ? models[0].id : "",
+          autoApprove: false,
+          thinkingMode: true,
+          notifications: true,
+        });
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
       }
@@ -123,8 +134,19 @@ function SettingsPage() {
   const providersWithKeys = providers.filter((p: any) => p.hasKey).length;
   const totalModels = models.length;
 
+  // Reusable field error component
+  const FieldError = ({ field }: { field: keyof SettingsFormData }) => {
+    const err = errors[field];
+    if (!err) return null;
+    return (
+      <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+        <AlertCircle className="w-3 h-3" /> {err.message}
+      </p>
+    );
+  };
+
   return (
-    <div className="h-full flex flex-col overflow-hidden max-w-5xl mx-auto w-full">
+    <form onSubmit={handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden max-w-5xl mx-auto w-full">
       {/* Header */}
       <div className="shrink-0 px-6 py-4 border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center gap-3">
@@ -142,7 +164,7 @@ function SettingsPage() {
         {/* Tabs */}
         <div className="flex gap-1 mt-4">
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+            <button key={t.id} type="button" onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 tab === t.id ? "bg-[rgba(99,102,241,0.12)] text-[#818cf8]" : "text-[#4a5068] hover:text-[#8892a8] hover:bg-[rgba(255,255,255,0.03)]"
               }`}>
@@ -161,20 +183,45 @@ function SettingsPage() {
         ) : tab === "general" ? (
           <div className="space-y-6">
             <Section title="Application">
-              <Field label="App Name" value={appName} onChange={setAppName} />
-              <Field label="Language" value={language} onChange={setLanguage} type="select" options={[{v:"en",l:"English"},{v:"pl",l:"Polski"}]} />
-              <Field label="Timezone" value={timezone} onChange={setTimezone} type="select" options={[{v:"Europe/Warsaw",l:"Warsaw (CET)"},{v:"Europe/London",l:"London (GMT)"},{v:"America/New_York",l:"New York (EST)"}]} />
-              <ToggleField label="Animations" enabled={animations} onChange={setAnimations} />
+              <div>
+                <Field label="App Name" {...register("appName")} />
+                <FieldError field="appName" />
+              </div>
+              <div>
+                <SelectField label="Theme" {...register("theme")}
+                  options={[{v:"dark",l:"Dark"},{v:"light",l:"Light"},{v:"system",l:"System"}]} />
+                <FieldError field="theme" />
+              </div>
+              <div>
+                <SelectField label="Language" {...register("language")}
+                  options={[{v:"en",l:"English"},{v:"pl",l:"Polski"}]} />
+                <FieldError field="language" />
+              </div>
+              <div>
+                <SelectField label="Timezone" {...register("timezone")}
+                  options={[{v:"Europe/Warsaw",l:"Warsaw (CET)"},{v:"Europe/London",l:"London (GMT)"},{v:"America/New_York",l:"New York (EST)"}]} />
+                <FieldError field="timezone" />
+              </div>
+              <ToggleField label="Animations" checked={animationsValue} onChange={v => setValue("animations", v)} />
             </Section>
             <Section title="Server">
-              <Field label="Port" value={port} onChange={setPort} />
-              <Field label="Host" value={host} onChange={setHost} />
+              <div>
+                <Field label="Port" {...register("port")} />
+                <FieldError field="port" />
+              </div>
+              <div>
+                <Field label="Host" {...register("host")} />
+                <FieldError field="host" />
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-[#8892a8]">Status</span>
                 <span className="text-xs text-[#10b981] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" /> Connected — port {port}
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" /> Connected — port {watch("port")}
                 </span>
               </div>
+            </Section>
+            <Section title="Notifications">
+              <ToggleField label="Enable Notifications" checked={watch("notifications")} onChange={v => setValue("notifications", v)} />
             </Section>
           </div>
         ) : tab === "models" ? (
@@ -207,16 +254,16 @@ function SettingsPage() {
               )}
             </Section>
             <Section title="Agent Defaults">
-              <Field label="Default Model" value={defaultModel} onChange={setDefaultModel} type="select"
+              <SelectField label="Default Model" {...register("defaultModel")}
                 options={models.map((m: any) => ({ v: m.id, l: m.id }))} />
-              <ToggleField label="Auto-Approve Safe Tools" enabled={autoApprove} onChange={setAutoApprove} />
-              <ToggleField label="Extended Thinking" enabled={thinkingMode} onChange={setThinkingMode} />
+              <ToggleField label="Auto-Approve Safe Tools" checked={watch("autoApprove")} onChange={v => setValue("autoApprove", v)} />
+              <ToggleField label="Extended Thinking" checked={watch("thinkingMode")} onChange={v => setValue("thinkingMode", v)} />
             </Section>
           </div>
         ) : (
           <div className="space-y-6">
             <Section title="Authentication">
-              <ToggleField label="Enable JWT Auth" enabled={authEnabled} onChange={setAuthEnabled} />
+              <ToggleField label="Enable JWT Auth" checked={watch("authEnabled")} onChange={v => setValue("authEnabled", v)} />
             </Section>
             <Section title="Security Notes">
               <div className="text-xs text-[#4a5068] space-y-2">
@@ -244,16 +291,16 @@ function SettingsPage() {
           )}
         </div>
         <div className="flex gap-2">
-          <button onClick={handleReset} className="btn-glass px-4 py-2 text-sm flex items-center gap-2">
+          <button type="button" onClick={handleReset} className="btn-glass px-4 py-2 text-sm flex items-center gap-2">
             <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
-          <button onClick={handleSave} disabled={saving} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-50">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
 
@@ -267,36 +314,41 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Field({ label, value, onChange, type = "text", options }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string;
-  options?: Array<{ v: string; l: string }>;
-}) {
+function Field({ label, ...inputProps }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex items-center justify-between gap-4">
       <label className="text-sm text-[#8892a8] font-medium min-w-[180px]">{label}</label>
-      {type === "select" && options ? (
-        <select value={value} onChange={e => onChange(e.target.value)} className="glass-input flex-1 px-3 py-2 text-sm">
-          {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
-        </select>
-      ) : (
-        <input type="text" value={value} onChange={e => onChange(e.target.value)} className="glass-input flex-1 px-3 py-2 text-sm" />
-      )}
+      <input type="text" className="glass-input flex-1 px-3 py-2 text-sm" {...inputProps} />
     </div>
   );
 }
 
-function ToggleField({ label, enabled, onChange }: {
-  label: string; enabled: boolean; onChange: (v: boolean) => void;
+function SelectField({ label, options, ...selectProps }: {
+  label: string;
+  options: Array<{ v: string; l: string }>;
+} & React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <label className="text-sm text-[#8892a8] font-medium min-w-[180px]">{label}</label>
+      <select className="glass-input flex-1 px-3 py-2 text-sm" {...selectProps}>
+        {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function ToggleField({ label, checked, onChange }: {
+  label: string; checked: boolean; onChange: (v: boolean) => void;
 }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-[#8892a8] font-medium">{label}</span>
-      <button onClick={() => onChange(!enabled)}
+      <button type="button" onClick={() => onChange(!checked)}
         className={`relative w-11 h-6 rounded-full transition-all duration-200 ${
-          enabled ? 'bg-[#00d4ff] shadow-[0_0_12px_rgba(0,212,255,0.3)]' : 'bg-[rgba(255,255,255,0.1)]'
+          checked ? 'bg-[#00d4ff] shadow-[0_0_12px_rgba(0,212,255,0.3)]' : 'bg-[rgba(255,255,255,0.1)]'
         }`}>
         <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-200 ${
-          enabled ? 'left-[22px]' : 'left-[2px]'
+          checked ? 'left-[22px]' : 'left-[2px]'
         }`} />
       </button>
     </div>

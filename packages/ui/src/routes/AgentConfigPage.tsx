@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Save, RotateCcw, Check, X, Terminal, FileCode, Search, Globe, Clock } from "lucide-react";
-import { agentConfigSchema } from "../lib/validation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, Save, RotateCcw, Check, X, Terminal, FileCode, Search, Globe, Clock, AlertCircle } from "lucide-react";
+import { agentConfigSchema, type AgentConfigFormData } from "../lib/validation";
 
 interface AgentConfigPageProps {
   agents?: any[];
@@ -17,10 +19,25 @@ const TOOL_ICONS: Record<string, React.ElementType> = {
 export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [agent, setAgent] = useState<any>(null);
-  const [prompt, setPrompt] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // React Hook Form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<AgentConfigFormData>({
+    resolver: zodResolver(agentConfigSchema),
+    defaultValues: {
+      name: "",
+      systemPrompt: "",
+      model: "",
+    },
+  });
 
   useEffect(() => {
     if (!selectedId) return;
@@ -36,7 +53,11 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
       .then(d => {
         if (d?.agent) {
           setAgent(d.agent);
-          setPrompt(d.agent.systemPrompt || "");
+          reset({
+            name: d.agent.name || "",
+            systemPrompt: d.agent.systemPrompt || "",
+            model: d.agent.modelRef || "",
+          });
           setError(null);
         }
       })
@@ -49,40 +70,36 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
       controller.abort();
       abortRef.current = null;
     };
-  }, [selectedId]);
+  }, [selectedId, reset]);
 
-  async function savePrompt() {
+  async function onSave(data: AgentConfigFormData) {
     if (!agent) return;
     setError(null);
-
-    // Validate with zod
-    const validationResult = agentConfigSchema.safeParse({
-      name: agent.name,
-      systemPrompt: prompt,
-      modelRef: agent.modelRef || "",
-    });
-    if (!validationResult.success) {
-      const firstError = validationResult.error.issues[0];
-      setError(firstError.message);
-      return;
-    }
 
     try {
       const res = await fetch(`/api/agents/${agent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ systemPrompt: prompt }),
+        body: JSON.stringify({ systemPrompt: data.systemPrompt, name: data.name }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `Save failed (${res.status})`);
       }
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch (e: any) {
       setError(e.message || "Failed to save");
+    }
+  }
+
+  function handleReset() {
+    if (agent) {
+      reset({
+        name: agent.name || "",
+        systemPrompt: agent.systemPrompt || "",
+        model: agent.modelRef || "",
+      });
     }
   }
 
@@ -188,36 +205,45 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
         </div>
       </div>
 
-      {/* System Prompt Editor */}
-      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-white">System Prompt</h3>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPrompt(finalAgent.systemPrompt || "")}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)] transition-all"
-            >
-              <RotateCcw size={12} /> Reset
-            </button>
-            <button
-              onClick={savePrompt}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
-                saved
-                  ? "bg-[rgba(34,197,94,0.1)] text-[#22C55E]"
-                  : "bg-[rgba(124,58,237,0.1)] text-[#7C3AED] hover:bg-[rgba(124,58,237,0.15)]"
-              }`}
-            >
-              {saved ? <><Check size={12} /> Saved</> : <><Save size={12} /> Save</>}
-            </button>
+      {/* System Prompt Editor with react-hook-form */}
+      <form onSubmit={handleSubmit(onSave)}>
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-white">System Prompt</h3>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)] transition-all"
+              >
+                <RotateCcw size={12} /> Reset
+              </button>
+              <button
+                type="submit"
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                  saved
+                    ? "bg-[rgba(34,197,94,0.1)] text-[#22C55E]"
+                    : "bg-[rgba(124,58,237,0.1)] text-[#7C3AED] hover:bg-[rgba(124,58,237,0.15)]"
+                }`}
+              >
+                {saved ? <><Check size={12} /> Saved</> : <><Save size={12} /> Save</>}
+              </button>
+            </div>
           </div>
+          <textarea
+            {...register("systemPrompt")}
+            className={`w-full h-64 bg-[rgba(0,0,0,0.3)] border rounded-xl p-4 text-[11px] font-mono text-[#94a3b8] placeholder-[#475569] focus:outline-none focus:border-[#7C3AED]/30 resize-y ${
+              errors.systemPrompt ? "border-[#ef4444]" : "border-[rgba(255,255,255,0.06)]"
+            }`}
+            placeholder="Enter system prompt (minimum 50 characters)..."
+          />
+          {errors.systemPrompt && (
+            <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-2">
+              <AlertCircle className="w-3 h-3" /> {errors.systemPrompt.message}
+            </p>
+          )}
         </div>
-        <textarea
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          className="w-full h-64 bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-[11px] font-mono text-[#94a3b8] placeholder-[#475569] focus:outline-none focus:border-[#7C3AED]/30 resize-y"
-          placeholder="Enter system prompt..."
-        />
-      </div>
+      </form>
 
       {/* Tools */}
       <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">

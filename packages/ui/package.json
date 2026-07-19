@@ -6,9 +6,12 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "dependencies": {
+        "@hookform/resolvers": "^5.4.0",
         "@monaco-editor/react": "4.7.0",
         "@tanstack/react-query": "^5.101.0",
         "@types/dompurify": "^3.2.0",
@@ -26,6 +29,7 @@
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "react-error-boundary": "^6.1.2",
+        "react-hook-form": "^7.82.0",
         "recharts": "^3.8.1",
         "zod": "^4.4.3",
         "zustand": "^5.0.14"
