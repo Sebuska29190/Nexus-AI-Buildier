@@ -10,6 +10,7 @@ import { register as registerSystem } from "./routes/system.routes.ts";
 import { register as registerConfig } from "./routes/config.routes.ts";
 import { register as registerTasksSkills } from "./routes/tasks-skills.routes.ts";
 import { register as registerMemory } from "./routes/memory.routes.ts";
+import { healthRouter } from "../monitoring/health.ts";
 
 export function createRouter(): Hono {
   const app = new Hono();
@@ -55,6 +56,9 @@ export function createRouter(): Hono {
   registerConfig(app);
   registerTasksSkills(app);
   registerMemory(app);
+
+  // Health check routes (no auth required)
+  app.route('/', healthRouter);
 
   app.onError((err, c) => {
     console.error("Error:", err);
