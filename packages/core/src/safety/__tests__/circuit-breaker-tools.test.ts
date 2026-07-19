@@ -5,7 +5,7 @@
  * Zgodnie z rekomendacją @CodeReviewer: testability gap 🔴
  */
 
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "vitest";
 import { ToolCircuitBreaker, CircuitBreakerError, DepthLimitError, LoopDetectionError } from "../circuit-breaker-tools.ts";
 
 let hashCounter = 0;

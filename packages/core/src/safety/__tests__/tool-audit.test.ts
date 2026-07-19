@@ -5,7 +5,7 @@
  * Bez LLM, bez tooli — czysta logika.
  */
 
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "vitest";
 import { ToolAuditLogger } from "../tool-audit.ts";
 
 describe("ToolAuditLogger", () => {

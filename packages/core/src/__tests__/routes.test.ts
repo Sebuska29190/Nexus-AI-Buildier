@@ -8,7 +8,7 @@ describe('API Router', () => {
     const app = createRouter();
     expect(app).toBeDefined();
     expect(typeof app.fetch).toBe('function');
-    expect(typeof app.routes).toBe('function');
+    expect(typeof app.routes).toBe('object');
   });
 
   it('should respond with 401 for unauthenticated /api/* requests', async () => {

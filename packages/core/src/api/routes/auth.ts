@@ -54,7 +54,15 @@ setInterval(() => {
  * Whitelisted paths (health, chat completions, static assets) skip auth.
  * Rate-limited to 100 req/min per key.
  */
+// Local-first default: auth is OFF unless explicitly enabled via NOVA_REQUIRE_AUTH=true.
+// The server binds to 127.0.0.1 by default (see .env NOVA_HOST), so exposing it
+// publicly requires opting into auth. This matches Claude Code / Codex / Hermes UX.
+const REQUIRE_AUTH = process.env.NOVA_REQUIRE_AUTH === "true";
+
 export function authMiddleware(c: any, next: any) {
+  // Local-first: skip auth entirely unless explicitly enabled
+  if (!REQUIRE_AUTH) return next();
+
   const path = c.req.path;
 
   // Whitelisted paths
