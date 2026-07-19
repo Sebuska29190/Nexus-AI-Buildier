@@ -171,7 +171,7 @@ Cała strona Settings to **fejk** — przycisk "Save" nie robi żadnego API call
 | 2026-07-19 | Faza 2 (Stabilność) | ⏳ Oczekuje | - |
 | 2026-07-19 | Faza 3 (Jakość) | ⏳ Oczekuje | - |
 | 2026-07-19 | Faza 4 (DevOps) | ⏳ Oczekuje | - |
-| 2026-07-19 | Design UI | 🔄 W toku | - |
+| 2026-07-19 | Design UI | ✅ Zakończony | `1d082833` |
 
 ---
 
