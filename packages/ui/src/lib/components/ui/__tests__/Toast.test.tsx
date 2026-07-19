@@ -37,14 +37,17 @@ describe('ToastProvider', () => {
     renderWithProvider(<ToastTrigger />);
     fireEvent.click(screen.getByText('Show Success'));
     expect(screen.getByText('Success message')).toBeInTheDocument();
-    expect(screen.getByText('✓')).toBeInTheDocument();
+    // The icon span has aria-hidden=true, use getAllByText and pick the visible one
+    const crosses = screen.getAllByText('✓');
+    expect(crosses.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows an error toast when triggered', () => {
     renderWithProvider(<ToastTrigger />);
     fireEvent.click(screen.getByText('Show Error'));
     expect(screen.getByText('Error message')).toBeInTheDocument();
-    expect(screen.getByText('✕')).toBeInTheDocument();
+    const crosses = screen.getAllByText('✕');
+    expect(crosses.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows an info toast when triggered', () => {

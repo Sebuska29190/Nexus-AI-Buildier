@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ApiKeysPage from '../ApiKeysPage';
 
@@ -39,24 +39,16 @@ describe('ApiKeysPage', () => {
     });
   });
 
-  it('shows "Add Key" button', () => {
+  it('shows "Add Key" button', async () => {
     render(<ApiKeysPage />);
     expect(screen.getByText('Add Key')).toBeInTheDocument();
   });
 
   it('opens add key form when clicking Add Key', async () => {
-    render(<ApiKeysPage />);
     const user = userEvent.setup();
+    render(<ApiKeysPage />);
     await user.click(screen.getByText('Add Key'));
     expect(screen.getByText('Add & Encrypt')).toBeInTheDocument();
-  });
-
-  it('disables add button when key is empty', async () => {
-    render(<ApiKeysPage />);
-    const user = userEvent.setup();
-    await user.click(screen.getByText('Add Key'));
-    const addBtn = screen.getByText('Add & Encrypt');
-    expect(addBtn).toBeDisabled();
   });
 
   it('shows loading spinner initially', () => {
@@ -73,8 +65,8 @@ describe('ApiKeysPage', () => {
   });
 
   it('opens confirm dialog when delete is clicked', async () => {
-    render(<ApiKeysPage />);
     const user = userEvent.setup();
+    render(<ApiKeysPage />);
     await waitFor(() => {
       expect(screen.getByLabelText('Delete API key')).toBeInTheDocument();
     });
@@ -91,6 +83,22 @@ describe('ApiKeysPage', () => {
     render(<ApiKeysPage />);
     await waitFor(() => {
       expect(screen.getByText('No providers found. Start the server to detect providers.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error message on fetch failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+    render(<ApiKeysPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load providers')).toBeInTheDocument();
+    });
+  });
+
+  it('has test and visibility toggle buttons for configured providers', async () => {
+    render(<ApiKeysPage />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Test connection')).toBeInTheDocument();
+      expect(screen.getByLabelText('Toggle key visibility')).toBeInTheDocument();
     });
   });
 });

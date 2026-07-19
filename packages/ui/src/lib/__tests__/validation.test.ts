@@ -1,24 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { apiKeySchema, agentConfigSchema, settingsSchema, channelConfigSchema } from '../validation';
+import { apiKeySchema, agentConfigSchema, settingsSchema } from '../validation';
 
 describe('apiKeySchema', () => {
   it('validates a correct API key entry', () => {
-    const result = apiKeySchema.safeParse({ provider: 'openai', apiKey: 'sk-1234567890' });
+    const result = apiKeySchema.safeParse({ provider: 'openai', name: 'My Key', key: 'sk-1234567890' });
     expect(result.success).toBe(true);
   });
 
-  it('rejects empty provider', () => {
-    const result = apiKeySchema.safeParse({ provider: '', apiKey: 'sk-1234567890' });
+  it('rejects invalid provider', () => {
+    const result = apiKeySchema.safeParse({ provider: 'invalid', name: 'My Key', key: 'sk-1234567890' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects short name (< 3 chars)', () => {
+    const result = apiKeySchema.safeParse({ provider: 'openai', name: 'AB', key: 'sk-1234567890' });
     expect(result.success).toBe(false);
   });
 
   it('rejects short API key (< 10 chars)', () => {
-    const result = apiKeySchema.safeParse({ provider: 'openai', apiKey: 'short' });
+    const result = apiKeySchema.safeParse({ provider: 'openai', name: 'My Key', key: 'short' });
     expect(result.success).toBe(false);
   });
 
-  it('rejects empty API key', () => {
-    const result = apiKeySchema.safeParse({ provider: 'openai', apiKey: '' });
+  it('rejects empty key', () => {
+    const result = apiKeySchema.safeParse({ provider: 'openai', name: 'My Key', key: '' });
     expect(result.success).toBe(false);
   });
 });
@@ -27,8 +32,8 @@ describe('agentConfigSchema', () => {
   it('validates a correct agent config', () => {
     const result = agentConfigSchema.safeParse({
       name: 'Code Assistant',
-      systemPrompt: 'You are a helpful coding assistant that writes clean TypeScript code.',
-      modelRef: 'gpt-4',
+      systemPrompt: 'You are a helpful coding assistant that writes clean TypeScript code with best practices.',
+      model: 'gpt-4',
     });
     expect(result.success).toBe(true);
   });
@@ -36,8 +41,8 @@ describe('agentConfigSchema', () => {
   it('rejects empty name', () => {
     const result = agentConfigSchema.safeParse({
       name: '',
-      systemPrompt: 'You are a helpful coding assistant that writes clean TypeScript code.',
-      modelRef: 'gpt-4',
+      systemPrompt: 'You are a helpful coding assistant that writes clean TypeScript code with best practices.',
+      model: 'gpt-4',
     });
     expect(result.success).toBe(false);
   });
@@ -46,84 +51,62 @@ describe('agentConfigSchema', () => {
     const result = agentConfigSchema.safeParse({
       name: 'Test',
       systemPrompt: 'Too short.',
-      modelRef: 'gpt-4',
+      model: 'gpt-4',
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects empty modelRef', () => {
+  it('rejects empty model', () => {
     const result = agentConfigSchema.safeParse({
       name: 'Test',
-      systemPrompt: 'A longer system prompt that must be at least fifty characters to pass validation.',
-      modelRef: '',
+      systemPrompt: 'A longer system prompt that must be at least fifty characters to pass validation easily.',
+      model: '',
     });
     expect(result.success).toBe(false);
   });
 });
 
 describe('settingsSchema', () => {
+  const validSettings = {
+    appName: 'Nexus AI',
+    theme: 'dark' as const,
+    language: 'pl' as const,
+    timezone: 'Europe/Warsaw',
+    animations: true,
+    port: 4123,
+    host: '127.0.0.1',
+    authEnabled: false,
+    defaultModel: 'deepseek/deepseek-chat',
+    autoApprove: false,
+    thinkingMode: true,
+  };
+
   it('validates correct settings', () => {
-    const result = settingsSchema.safeParse({
-      appName: 'Nexus AI',
-      language: 'en',
-      timezone: 'Europe/Warsaw',
-      animations: true,
-      port: 4123,
-      host: '127.0.0.1',
-      authEnabled: false,
-      defaultModel: 'deepseek/deepseek-chat',
-      autoApprove: false,
-      thinkingMode: true,
-    });
+    const result = settingsSchema.safeParse(validSettings);
     expect(result.success).toBe(true);
   });
 
+  it('rejects invalid theme', () => {
+    const result = settingsSchema.safeParse({ ...validSettings, theme: 'blue' });
+    expect(result.success).toBe(false);
+  });
+
   it('rejects port below 1024', () => {
-    const result = settingsSchema.safeParse({
-      appName: 'Nexus AI',
-      language: 'en',
-      timezone: 'Europe/Warsaw',
-      animations: true,
-      port: 80,
-      host: '127.0.0.1',
-      authEnabled: false,
-      defaultModel: 'deepseek/deepseek-chat',
-      autoApprove: false,
-      thinkingMode: true,
-    });
+    const result = settingsSchema.safeParse({ ...validSettings, port: 80 });
     expect(result.success).toBe(false);
   });
 
   it('rejects port above 65535', () => {
-    const result = settingsSchema.safeParse({
-      appName: 'Nexus AI',
-      language: 'en',
-      timezone: 'Europe/Warsaw',
-      animations: true,
-      port: 70000,
-      host: '127.0.0.1',
-      authEnabled: false,
-      defaultModel: 'deepseek/deepseek-chat',
-      autoApprove: false,
-      thinkingMode: true,
-    });
+    const result = settingsSchema.safeParse({ ...validSettings, port: 70000 });
     expect(result.success).toBe(false);
   });
-});
 
-describe('channelConfigSchema', () => {
-  it('validates a telegram config', () => {
-    const result = channelConfigSchema.safeParse({ token: 'abc123', chatId: '12345' });
+  it('allows optional notifications field to default', () => {
+    const { notifications, ...withoutNotif } = validSettings;
+    const result = settingsSchema.safeParse(withoutNotif);
     expect(result.success).toBe(true);
-  });
-
-  it('validates an empty config', () => {
-    const result = channelConfigSchema.safeParse({});
-    expect(result.success).toBe(true);
-  });
-
-  it('validates webhook URL', () => {
-    const result = channelConfigSchema.safeParse({ webhookUrl: 'https://hooks.example.com' });
-    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.notifications).toBe(true);
+    }
   });
 });
