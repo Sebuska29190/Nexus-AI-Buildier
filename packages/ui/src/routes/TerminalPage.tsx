@@ -18,6 +18,7 @@ export function TerminalPage() {
   const searchAddonRef = useRef<SearchAddon | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
   /* ── Disconnect (cleanup) ── */
   const disconnect = useCallback(() => {
@@ -38,20 +39,24 @@ export function TerminalPage() {
 
   /* ── Schedule auto-reconnect ── */
   const scheduleReconnect = useCallback(() => {
+    if (!mountedRef.current) return;
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     reconnectTimerRef.current = setTimeout(() => {
-      if (!connected) connect();
+      if (mountedRef.current) {
+        wsRef.current = null;
+        connectInternal();
+      }
     }, 5000);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected]);
+  }, []);
 
   /* ── Handle window resize ── */
   const handleResize = useCallback(() => {
     try { fitAddonRef.current?.fit(); } catch { /* noop */ }
   }, []);
 
-  /* ── Connect WebSocket ── */
-  const connect = useCallback(() => {
+  /* ── Internal connect (not exposed as useCallback dep cycle) ── */
+  const connectInternal = useCallback(() => {
+    if (!mountedRef.current) return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
     let ws: WebSocket;
     try {
@@ -65,6 +70,7 @@ export function TerminalPage() {
     }
 
     ws.onopen = () => {
+      if (!mountedRef.current) { ws.close(); return; }
       setConnected(true);
       terminalRef.current?.clear();
       terminalRef.current?.writeln(
@@ -83,14 +89,17 @@ export function TerminalPage() {
     };
 
     ws.onmessage = (evt) => {
+      if (!mountedRef.current) return;
       terminalRef.current?.write(evt.data);
     };
 
     ws.onerror = () => {
+      if (!mountedRef.current) return;
       setConnected(false);
     };
 
     ws.onclose = () => {
+      if (!mountedRef.current) return;
       setConnected(false);
       terminalRef.current?.writeln(
         "\r\n\x1b[33m[Connection closed — reconnecting in 5s...]\x1b[0m"
@@ -99,14 +108,22 @@ export function TerminalPage() {
     };
 
     wsRef.current = ws;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scheduleReconnect]);
+
+  /* ── Explicit connect (public) ── */
+  const connect = useCallback(() => {
+    connectInternal();
+  }, [connectInternal]);
 
   /* ── Explicit reconnect ── */
   const reconnect = useCallback(() => {
     disconnect();
-    setTimeout(() => connect(), 500);
-  }, [disconnect, connect]);
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    setTimeout(() => connectInternal(), 500);
+  }, [disconnect, connectInternal]);
 
   /* ── Clear terminal ── */
   const clearTerm = useCallback(() => {
@@ -146,6 +163,8 @@ export function TerminalPage() {
 
   /* ── Init terminal on mount ── */
   useEffect(() => {
+    mountedRef.current = true;
+
     const terminal = new Terminal({
       cursorBlink: true,
       cursorStyle: "block",
@@ -209,9 +228,10 @@ export function TerminalPage() {
     searchAddonRef.current = searchAddon;
 
     // Connect
-    connect();
+    connectInternal();
 
     return () => {
+      mountedRef.current = false;
       disconnect();
       window.removeEventListener("resize", handleResize);
       terminal.dispose();
@@ -219,7 +239,6 @@ export function TerminalPage() {
       fitAddonRef.current = null;
       searchAddonRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -253,6 +272,7 @@ export function TerminalPage() {
               onClick={toggleSearch}
               className="text-[10px] px-2 py-1 rounded border border-slate-800 bg-[#020408]/60 text-slate-400 hover:text-white hover:border-slate-600 transition-all"
               title="Toggle Search"
+              aria-label="Toggle search"
             >
               🔍
             </button>
@@ -260,6 +280,7 @@ export function TerminalPage() {
               onClick={clearTerm}
               className="text-[10px] px-2 py-1 rounded border border-slate-800 bg-[#020408]/60 text-slate-400 hover:text-white hover:border-slate-600 transition-all"
               title="Clear Terminal"
+              aria-label="Clear terminal"
             >
               ✕
             </button>
@@ -267,6 +288,7 @@ export function TerminalPage() {
               onClick={reconnect}
               className="text-[10px] px-2 py-1 rounded border border-slate-800 bg-[#020408]/60 text-slate-400 hover:text-white hover:border-slate-600 transition-all"
               title="Reconnect"
+              aria-label="Reconnect terminal"
             >
               ⟳
             </button>
@@ -292,6 +314,7 @@ export function TerminalPage() {
               onClick={() => doSearch("prev")}
               className="text-[10px] px-2 py-1 rounded border border-slate-800 bg-[#020408]/60 text-slate-400 hover:text-white transition-all"
               title="Previous"
+              aria-label="Search previous"
             >
               ▲
             </button>
@@ -299,6 +322,7 @@ export function TerminalPage() {
               onClick={() => doSearch("next")}
               className="text-[10px] px-2 py-1 rounded border border-slate-800 bg-[#020408]/60 text-slate-400 hover:text-white transition-all"
               title="Next"
+              aria-label="Search next"
             >
               ▼
             </button>

@@ -1,9 +1,11 @@
 /**
  * SettingsPage — Real settings with live provider/model data
+ * Now with real API save/load
  */
 import { useState, useEffect } from "react";
 import { Settings, Monitor, Shield, Bot, Globe, Save, RotateCcw, Loader2 } from "lucide-react";
 import { api } from "../lib/api";
+import { settingsSchema } from "../lib/validation";
 
 const TABS = [
   { id: "general", label: "General", icon: Settings },
@@ -14,6 +16,8 @@ const TABS = [
 function SettingsPage() {
   const [tab, setTab] = useState("general");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [models, setModels] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,19 +35,89 @@ function SettingsPage() {
   const [thinkingMode, setThinkingMode] = useState(true);
 
   useEffect(() => {
+    // Load settings from API on mount
     Promise.all([
       api.models().catch(() => []),
       fetch("/api/config/providers").then(r => r.json()).then(d => d.providers || []).catch(() => []),
-    ]).then(([m, p]) => {
+      fetch("/api/settings").then(r => r.json()).then(d => d.settings || d).catch(() => null),
+    ]).then(([m, p, settings]) => {
       setModels(m);
       setProviders(p);
       if (m.length > 0 && !defaultModel) setDefaultModel(m[0].id);
+
+      // Apply loaded settings
+      if (settings) {
+        if (settings.appName) setAppName(settings.appName);
+        if (settings.language) setLanguage(settings.language);
+        if (settings.timezone) setTimezone(settings.timezone);
+        if (settings.animations !== undefined) setAnimations(settings.animations);
+        if (settings.port) setPort(String(settings.port));
+        if (settings.host) setHost(settings.host);
+        if (settings.authEnabled !== undefined) setAuthEnabled(settings.authEnabled);
+        if (settings.defaultModel) setDefaultModel(settings.defaultModel);
+        if (settings.autoApprove !== undefined) setAutoApprove(settings.autoApprove);
+        if (settings.thinkingMode !== undefined) setThinkingMode(settings.thinkingMode);
+      }
     }).finally(() => setLoading(false));
   }, []);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+
+    // Validate with zod
+    const validationResult = settingsSchema.safeParse({
+      appName, language, timezone, animations,
+      port: parseInt(port, 10) || 4123, host,
+      authEnabled, defaultModel, autoApprove, thinkingMode,
+    });
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      setSaveError(firstError.message);
+      setSaving(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appName, language, timezone, animations,
+          port: parseInt(port, 10) || 4123, host,
+          authEnabled, defaultModel, autoApprove, thinkingMode,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Save failed (${res.status})`);
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e: any) {
+      setSaveError(e.message || "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      const res = await fetch("/api/settings/reset", { method: "POST" }).catch(() => null);
+      if (res?.ok) {
+        setAppName("Nexus AI");
+        setLanguage("en");
+        setTimezone("Europe/Warsaw");
+        setAnimations(true);
+        setPort("4123");
+        setHost("127.0.0.1");
+        setAuthEnabled(false);
+        setAutoApprove(false);
+        setThinkingMode(true);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      }
+    } catch {}
   };
 
   const providersWithKeys = providers.filter((p: any) => p.hasKey).length;
@@ -158,13 +232,24 @@ function SettingsPage() {
 
       {/* Save bar */}
       <div className="shrink-0 px-6 py-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)] flex items-center justify-between">
-        <span className="text-xs text-[#4a5068]">{saved ? "✅ Settings saved" : "Changes not saved"}</span>
+        <div className="flex items-center gap-2">
+          {saved && !saveError && (
+            <span className="text-xs text-[#10b981]" role="alert">✅ Settings saved</span>
+          )}
+          {saveError && (
+            <span className="text-xs text-[#ef4444]" role="alert">❌ {saveError}</span>
+          )}
+          {!saved && !saveError && (
+            <span className="text-xs text-[#4a5068]">Changes not saved</span>
+          )}
+        </div>
         <div className="flex gap-2">
-          <button className="btn-glass px-4 py-2 text-sm flex items-center gap-2">
+          <button onClick={handleReset} className="btn-glass px-4 py-2 text-sm flex items-center gap-2">
             <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
-          <button onClick={handleSave} className="btn-nova px-4 py-2 text-sm flex items-center gap-2">
-            <Save className="w-3.5 h-3.5" /> Save Changes
+          <button onClick={handleSave} disabled={saving} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-50">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>

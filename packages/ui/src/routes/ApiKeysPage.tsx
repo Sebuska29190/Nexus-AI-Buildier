@@ -5,6 +5,8 @@
 import { useState, useEffect } from "react";
 import { KeyRound, Eye, EyeOff, Copy, RotateCw, Trash2, Plus, Shield, CheckCircle, XCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { api } from "../lib/api";
+import { ConfirmDialog } from "../lib/components/ui/ConfirmDialog";
+import { apiKeySchema } from "../lib/validation";
 
 interface ProviderEntry {
   id: string; name: string; hasKey: boolean; enabled: boolean;
@@ -22,6 +24,7 @@ function ApiKeysPage() {
   const [testing, setTesting] = useState<Set<string>>(new Set());
   const [testResults, setTestResults] = useState<Record<string, { ok: boolean; error?: string }>>({});
   const [message, setMessage] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<{ providerId: string; name: string } | null>(null);
 
   useEffect(() => { loadProviders(); }, []);
 
@@ -62,11 +65,20 @@ function ApiKeysPage() {
 
   async function saveKey() {
     if (!newKey.trim()) return;
+
+    // Validate with zod
+    const validationResult = apiKeySchema.safeParse({ provider: newProvider, apiKey: newKey });
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      setMessage(`❌ ${firstError.message}`);
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch(`/api/config/providers/${newProvider}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: newKey.trim(), enabled: true }),
+        body: JSON.stringify({ apiKey: newKey, enabled: true }),
       });
       const data = await res.json();
       if (data.status === "saved") {
@@ -84,12 +96,7 @@ function ApiKeysPage() {
   }
 
   async function deleteKey(providerId: string) {
-    if (!confirm(`Remove API key for ${providerId}?`)) return;
-    try {
-      await fetch(`/api/config/providers/${providerId}`, { method: "DELETE" });
-      loadProviders();
-      setMessage(`Key removed for ${providerId}`);
-    } catch {}
+    setConfirmDelete({ providerId, name: providerId });
   }
 
   function toggleVisibility(id: string) {
@@ -203,14 +210,14 @@ function ApiKeysPage() {
                 <div className="flex items-center gap-1 shrink-0">
                   {p.hasKey && (
                     <>
-                      <button onClick={() => toggleVisibility(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Show/Hide">
+                      <button onClick={() => toggleVisibility(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Show/Hide" aria-label="Toggle key visibility">
                         {visibleKeys.has(p.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
-                      <button onClick={() => testProvider(p.id)} disabled={isTesting} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all disabled:opacity-50" title="Test connection">
+                      <button onClick={() => testProvider(p.id)} disabled={isTesting} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all disabled:opacity-50" title="Test connection" aria-label="Test connection">
                         {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
                       </button>
-                      <button onClick={() => navigator.clipboard.writeText(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Copy name"><Copy className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => deleteKey(p.id)} className="p-2 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#fca5a5] hover:bg-[rgba(239,68,68,0.2)] transition-all" title="Delete key">
+                      <button onClick={() => navigator.clipboard.writeText(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Copy name" aria-label="Copy provider name"><Copy className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => deleteKey(p.id)} className="p-2 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#fca5a5] hover:bg-[rgba(239,68,68,0.2)] transition-all" title="Delete key" aria-label="Delete API key">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </>
@@ -221,6 +228,26 @@ function ApiKeysPage() {
           })
         )}
       </div>
+
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Remove API Key"
+        message={`Are you sure you want to remove the API key for ${confirmDelete?.name}? This action cannot be undone.`}
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={async () => {
+          if (!confirmDelete) return;
+          const { providerId } = confirmDelete;
+          setConfirmDelete(null);
+          try {
+            await fetch(`/api/config/providers/${providerId}`, { method: "DELETE" });
+            loadProviders();
+            setMessage(`Key removed for ${providerId}`);
+          } catch {}
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

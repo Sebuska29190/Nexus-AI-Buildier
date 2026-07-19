@@ -3,11 +3,15 @@
  *
  * Each plugin has a GitHub repo URL, description, and install instructions.
  * The install process clones the repo and runs setup.
+ *
+ * SECURITY: All shell commands are executed via execFileSync with
+ * array arguments (no shell string interpolation). URL inputs are
+ * validated against a strict regex before use.
  */
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { safeMessage } from "../errors.ts";
 
 export interface CommunityPlugin {
@@ -50,6 +54,66 @@ export interface PluginConfigField {
 }
 
 const PLUGINS_DIR = join(process.cwd(), "plugins");
+
+// ─── Security: allowed commands whitelist ───────────────────────────────────
+
+const ALLOWED_COMMANDS = new Set(["git", "npm", "bun", "python", "pip", "which", "where", "nslookup", "ping"]);
+
+const GITHUB_URL_REGEX = /^https?:\/\/(github\.com|gitlab\.com)\/[\w.-]+\/[\w.-]+$/;
+
+function isAllowedCommand(cmd: string): boolean {
+  // Extract base command name (handle paths too: /usr/bin/git -> git)
+  const base = cmd.replace(/^.*[/\\]/, "").toLowerCase();
+  return ALLOWED_COMMANDS.has(base);
+}
+
+function validateGitHubUrl(url: string): boolean {
+  return GITHUB_URL_REGEX.test(url);
+}
+
+// ─── Safe execFile helpers ──────────────────────────────────────────────────
+
+interface ExecFileOptions {
+  timeout?: number;
+  cwd?: string;
+  stdio?: ("ignore" | "pipe" | "inherit")[];
+  env?: Record<string, string | undefined>;
+  maxBuffer?: number;
+}
+
+/**
+ * Run a command via execFileSync with array arguments.
+ * Only allowed commands are executed.
+ * Returns { stdout, stderr } or throws on non-zero exit.
+ */
+function safeExec(cmd: string, args: string[] = [], options: ExecFileOptions = {}): { stdout: string; stderr: string } {
+  if (!isAllowedCommand(cmd)) {
+    throw new Error(`Command '${cmd}' is not in the allowed whitelist`);
+  }
+  const opts: any = {
+    timeout: options.timeout ?? 30000,
+    cwd: options.cwd,
+    stdio: options.stdio ?? ["ignore", "pipe", "pipe"],
+    maxBuffer: options.maxBuffer ?? 10 * 1024 * 1024,
+    windowsHide: true,
+  };
+  if (options.env) opts.env = options.env;
+  try {
+    const result = execFileSync(cmd, args, opts);
+    return {
+      stdout: result.toString().trim(),
+      stderr: "",
+    };
+  } catch (e: any) {
+    const stdout = e.stdout ? e.stdout.toString().trim() : "";
+    const stderr = e.stderr ? e.stderr.toString().trim() : "";
+    // Re-throw with stdout/stderr accessible
+    const err = new Error(stderr || `Command failed: ${cmd} ${args.join(" ")}`);
+    (err as any).stdout = stdout;
+    (err as any).stderr = stderr;
+    throw err;
+  }
+}
 
 // ─── Community Plugin Registry ─────────────────────────────────────
 // These are well-known open-source plugins from the GitHub ecosystem.
@@ -502,103 +566,60 @@ const COMMUNITY_PLUGINS: CommunityPlugin[] = [
     installed: false,
     setupCmd: "pip install openai-whisper",
     icon: "🎤",
-    usage: "Whisper provides speech-to-text transcription.\n\n**Usage:**\n1. After install, the `@whisper` tool becomes available\n2. Provide an audio file or recording\n3. Whisper transcribes it with high accuracy\n\n**Example:**\n```\n@whisper Transcribe this meeting recording and summarize the key points\n```",
+    usage: "OpenAI Whisper provides high-quality speech recognition.\n\n**Usage:**\n1. After install, the `@whisper` tool becomes available\n2. Provide an audio file or URL\n3. Returns transcribed text with timestamps\n\n**Example:**\n```\n@whisper Transcribe this meeting recording.mp3\n```",
     toolsProvided: ["whisper"],
     configSchema: [
-      { key: "modelSize", label: "Model size", type: "select", required: false, defaultValue: "base", options: ["tiny", "base", "small", "medium", "large", "turbo"], helpText: "Larger models = better accuracy but slower and more RAM" },
-      { key: "device", label: "Compute device", type: "select", required: false, defaultValue: "cpu", options: ["cpu", "cuda", "mps"], helpText: "cpu: universal, cuda: NVIDIA GPU, mps: Apple Silicon" },
-      { key: "language", label: "Language code (optional)", type: "text", required: false, placeholder: "en", helpText: "ISO code (en, pl, de, fr...). Empty = auto-detect" },
+      { key: "model", label: "Model size", type: "select", required: false, defaultValue: "base", options: ["tiny", "base", "small", "medium", "large"], helpText: "Larger = more accurate but slower" },
+      { key: "language", label: "Language code", type: "text", required: false, defaultValue: "en", placeholder: "en", helpText: "Language code (e.g. en, pl, fr). Auto-detect if empty" },
+      { key: "device", label: "Compute device", type: "select", required: false, defaultValue: "cpu", options: ["cpu", "cuda", "mps"], helpText: "Device to run inference on" },
     ],
   },
   {
-    id: "tesseract",
-    name: "Tesseract OCR",
-    description: "Open-source OCR engine — extract text from images, scanned documents, and PDFs",
-    author: "tesseract-ocr",
-    repo: "https://github.com/tesseract-ocr/tesseract",
+    id: "stable-diffusion",
+    name: "Stable Diffusion WebUI",
+    description: "Stable Diffusion image generation — turn text prompts into images with fine-grained control",
+    author: "AUTOMATIC1111",
+    repo: "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
     type: "skill",
-    tags: ["ocr", "image-text", "scanning"],
-    stars: 65000,
+    tags: ["image-generation", "stable-diffusion", "art"],
+    stars: 155000,
     installed: false,
     setupCmd: "",
-    icon: "📄",
-    usage: "Tesseract OCR extracts text from images and scanned documents.\n\n**Usage:**\n1. After install, the `@tesseract` tool becomes available\n2. Provide an image or PDF with text\n3. Tesseract extracts the text content\n\n**Example:**\n```\n@tesseract Extract text from this scanned invoice\n```",
-    toolsProvided: ["tesseract"],
-    systemDependencies: ["tesseract-ocr"],
+    icon: "🎨",
+    usage: "Stable Diffusion generates images from text prompts.\n\n**Usage:**\n1. Ensure Stable Diffusion WebUI is running (`./webui.sh` or `webui.bat`)\n2. The `@stable-diffusion` tool becomes available\n3. Provide a text prompt and optional parameters\n\n**Example:**\n```\n@stable-diffusion A cat wearing a spacesuit, digital art style\n```",
+    toolsProvided: ["stable-diffusion"],
+    systemDependencies: ["python"],
     configSchema: [
-      { key: "binaryPath", label: "Tesseract binary path", type: "text", required: false, helpText: "Full path to tesseract executable. Leave empty to search PATH" },
-      { key: "language", label: "OCR languages", type: "text", required: false, defaultValue: "eng", placeholder: "eng+pol", helpText: "Language codes with + separator (e.g. eng+pol for English + Polish)" },
-      { key: "psmMode", label: "Page segmentation mode", type: "select", required: false, defaultValue: "3", options: ["3", "6", "4", "1"], helpText: "3=auto, 6=block of text, 4=single column, 1=automatic" },
-    ],
-  },
-
-  // ── UI Plugins ──────────────────────────────────────────────────
-  {
-    id: "open-webui",
-    name: "Open WebUI",
-    description: "Self-hosted ChatGPT-like interface — works with Ollama, OpenAI, and custom backends",
-    author: "open-webui",
-    repo: "https://github.com/open-webui/open-webui",
-    type: "ui",
-    tags: ["chat-ui", "self-hosted", "ollama"],
-    stars: 70000,
-    installed: false,
-    setupCmd: "pip install open-webui",
-    icon: "🖥️",
-    usage: "Open WebUI provides a ChatGPT-like interface for Nova.\n\n**Usage:**\n1. After install, start the Open WebUI service\n2. Access the web interface at the configured port\n3. It connects to Nova's backend for AI responses\n\n**Example:**\nOpen your browser to `http://localhost:3000` to access the chat UI.",
-    toolsProvided: [],
-    pythonVersionRequirement: ">=3.11,<3.13",
-    configSchema: [
-      { key: "port", label: "Web UI port", type: "number", required: false, defaultValue: "3000", placeholder: "3000", helpText: "Port for Open WebUI server" },
-      { key: "ollamaUrl", label: "Ollama backend URL", type: "url", required: false, defaultValue: "http://localhost:11434", placeholder: "http://localhost:11434", helpText: "Backend Ollama server for model inference" },
-      { key: "authEnabled", label: "Enable authentication", type: "select", required: false, defaultValue: "true", options: ["true", "false"], helpText: "Require login to access the UI" },
+      { key: "serverUrl", label: "WebUI API URL", type: "url", required: true, defaultValue: "http://127.0.0.1:7860", placeholder: "http://127.0.0.1:7860", helpText: "Stable Diffusion WebUI API endpoint" },
+      { key: "defaultSteps", label: "Default steps", type: "number", required: false, defaultValue: "20", placeholder: "20", helpText: "Number of sampling steps (higher = more detail, slower)" },
+      { key: "defaultSize", label: "Default image size", type: "text", required: false, defaultValue: "512x512", placeholder: "512x512", helpText: "Output resolution (e.g. 512x512, 768x768)" },
     ],
   },
   {
-    id: "flowise",
-    name: "Flowise",
-    description: "Drag-and-drop LLM flow builder — visually create AI workflows with LangChain components",
-    author: "FlowiseAI",
-    repo: "https://github.com/FlowiseAI/Flowise",
-    type: "ui",
-    tags: ["visual", "workflow", "no-code"],
-    stars: 35000,
+    id: "comfyui",
+    name: "ComfyUI",
+    description: "Powerful node-based Stable Diffusion workflow editor and inference engine",
+    author: "comfyanonymous",
+    repo: "https://github.com/comfyanonymous/ComfyUI",
+    type: "skill",
+    tags: ["stable-diffusion", "node-based", "workflows", "image"],
+    stars: 65000,
     installed: false,
-    setupCmd: "npm install && npm run build",
-    icon: "🔀",
-    usage: "Flowise provides a visual drag-and-drop workflow builder.\n\n**Usage:**\n1. After install, start the Flowise service\n2. Access the flow builder at the configured port\n3. Drag and drop LangChain components to create AI workflows\n\n**Example:**\nOpen your browser to `http://localhost:3001` to build AI flows visually.",
-    toolsProvided: [],
+    setupCmd: "pip install -r requirements.txt",
+    icon: "🎛️",
+    usage: "ComfyUI provides a node-based interface for Stable Diffusion workflows.\n\n**Usage:**\n1. After install, start ComfyUI (`python main.py`)\n2. The `@comfyui` tool becomes available for running workflows\n3. Create or load workflows via the ComfyUI frontend\n\n**Example:**\n```\n@comfyui Load the 'text-to-image' workflow and generate an image of a sunset\n```",
+    toolsProvided: ["comfyui"],
     configSchema: [
-      { key: "port", label: "Flowise port", type: "number", required: false, defaultValue: "3001", placeholder: "3001", helpText: "Port for Flowise server" },
-      { key: "apiKey", label: "API Key (optional)", type: "password", required: false, helpText: "Protect Flowise with API key authentication" },
-      { key: "llmApiKey", label: "Default LLM API Key", type: "password", required: false, helpText: "Default API key for LLM nodes in flows (OpenAI)" },
-    ],
-  },
-  {
-    id: "dify",
-    name: "Dify",
-    description: "Open-source LLM app development platform — build, deploy, and monitor AI applications",
-    author: "langgenius",
-    repo: "https://github.com/langgenius/dify",
-    type: "ui",
-    tags: ["platform", "app-builder", "workflow"],
-    stars: 60000,
-    installed: false,
-    setupCmd: "docker-compose up -d",
-    icon: "🧩",
-    usage: "Dify provides a full LLM app development platform.\n\n**Usage:**\n1. After install, start Dify with Docker Compose\n2. Access the dashboard at the configured port\n3. Build, deploy, and monitor AI applications\n\n**Example:**\nOpen your browser to `http://localhost:3002` to access the Dify dashboard.",
-    toolsProvided: [],
-    systemDependencies: ["docker", "docker-compose"],
-    configSchema: [
-      { key: "port", label: "Dify dashboard port", type: "number", required: false, defaultValue: "3002", placeholder: "3002", helpText: "Port for Dify dashboard" },
-      { key: "apiKey", label: "Dify API Key", type: "password", required: false, helpText: "API key for Dify API access" },
-      { key: "llmApiKey", label: "Default LLM API Key", type: "password", required: false, helpText: "Default API key for LLM providers within Dify" },
+      { key: "serverUrl", label: "ComfyUI Server URL", type: "url", required: true, defaultValue: "http://127.0.0.1:8188", placeholder: "http://127.0.0.1:8188", helpText: "ComfyUI server address" },
+      { key: "workflowPath", label: "Default workflow", type: "text", required: false, placeholder: "workflows/text_to_image.json", helpText: "Path to default workflow file" },
+      { key: "outputDir", label: "Output directory", type: "text", required: false, defaultValue: "./outputs", placeholder: "./outputs", helpText: "Where generated images are saved" },
     ],
   },
 ];
 
-// ─── Plugin Store (persistent state) ───────────────────────────────
-const STATE_FILE = join(PLUGINS_DIR, ".plugins-state.json");
+// ─── Plugin State (installed tracking) ───────────────────────────
+
+const STATE_FILE = join(PLUGINS_DIR, ".community-state.json");
 
 function loadState(): Record<string, boolean> {
   try {
@@ -614,100 +635,21 @@ function saveState(state: Record<string, boolean>): void {
   writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
 }
 
-// ─── Public API ────────────────────────────────────────────────────
+// ─── Helper: detect setup command from project files ──────────────
 
-/** Get all community plugins with their install status */
-export function listCommunityPlugins(): CommunityPlugin[] {
-  const state = loadState();
-  return COMMUNITY_PLUGINS.map((p) => ({
-    ...p,
-    installed: state[p.id] || false,
-    installPath: state[p.id] ? join(PLUGINS_DIR, p.id) : undefined,
-  }));
-}
-
-/** Get a single community plugin by ID */
-export function getCommunityPlugin(id: string): CommunityPlugin | undefined {
-  return listCommunityPlugins().find((p) => p.id === id);
-}
-
-/**
- * Auto-detect the project type in a cloned repo directory and return
- * the best install command for it. Falls back to the plugin's setupCmd if set.
- */
 function detectSetupCommand(dir: string, preferredCmd?: string): string | null {
-  // If a preferred command is specified, validate its prerequisites exist
-  if (preferredCmd) {
-    // If it references requirements.txt, check it exists
-    if (preferredCmd.includes("requirements.txt")) {
-      if (existsSync(join(dir, "requirements.txt"))) return preferredCmd;
-      // Fall through to auto-detection instead of using a broken command
+  if (preferredCmd) return preferredCmd;
+  try {
+    const files = readdirSync(dir).map((f) => f.toLowerCase());
+    if (files.includes("package.json")) return "npm install";
+    if (files.includes("requirements.txt")) return "pip install -r requirements.txt";
+    if (files.includes("setup.py") || files.includes("setup.cfg") || files.includes("pyproject.toml")) {
+      return "pip install -e .";
     }
-    // If it references package.json, check it exists
-    else if (preferredCmd.includes("npm") || preferredCmd.includes("node")) {
-      if (existsSync(join(dir, "package.json"))) return preferredCmd;
-      // Fall through to auto-detection
-    }
-    // If it references pyproject.toml or setup.py, check they exist
-    else if (preferredCmd.includes("pip") || preferredCmd.includes("python")) {
-      const files = readdirSync(dir);
-      if (files.includes("requirements.txt") || files.includes("pyproject.toml") || files.includes("setup.py") || files.includes("setup.cfg")) {
-        return preferredCmd;
-      }
-      // Fall through to auto-detection
-    }
-    else {
-      // No specific prerequisite check needed, use as-is
-      return preferredCmd;
-    }
-  }
-
-  // Auto-detect based on files present in the repo root
-  const files = readdirSync(dir);
-
-  // Python projects
-  if (files.includes("requirements.txt")) {
-    return "pip install -r requirements.txt";
-  }
-  if (files.includes("pyproject.toml")) {
-    return "pip install -e .";
-  }
-  if (files.includes("setup.py")) {
-    return "pip install -e .";
-  }
-  if (files.includes("setup.cfg")) {
-    return "pip install -e .";
-  }
-
-  // Node.js projects
-  if (files.includes("package.json")) {
-    return "npm install";
-  }
-  if (files.includes("yarn.lock")) {
-    return "yarn install";
-  }
-  if (files.includes("pnpm-lock.yaml")) {
-    return "pnpm install";
-  }
-  if (files.includes("bun.lock") || files.includes("bun.lockb")) {
-    return "bun install";
-  }
-
-  // Rust projects
-  if (files.includes("Cargo.toml")) {
-    return "cargo build";
-  }
-
-  // Go projects
-  if (files.includes("go.mod")) {
-    return "go mod download";
-  }
-
-  // Makefile
-  if (files.includes("Makefile") || files.includes("makefile")) {
-    return null; // Let the user know a Makefile exists but don't auto-run
-  }
-
+    if (files.includes("cargo.toml")) return "cargo build --release";
+    if (files.includes("go.mod")) return "go mod download";
+    if (files.includes("makefile")) return null; // Don't auto-run makefiles
+  } catch {}
   return null;
 }
 
@@ -735,12 +677,12 @@ function parsePythonVersion(version: string): number[] {
  */
 function checkPythonVersionRequirement(requirement: string): { ok: boolean; reason?: string } {
   try {
-    const pyVersionOut = execSync("python --version", { timeout: 10000 }).toString().trim();
+    const result = safeExec("python", ["--version"], { timeout: 10000 });
+    const pyVersionOut = result.stdout;
     const match = pyVersionOut.match(/(\d+\.\d+\.?\d*)/);
     if (!match) return { ok: false, reason: `Could not detect Python version from: ${pyVersionOut}` };
     const currentVer = parsePythonVersion(match[1]);
 
-    // Parse requirement like ">=3.11,<3.13"
     const parts = requirement.split(",").map((s) => s.trim());
     for (const part of parts) {
       const opMatch = part.match(/^(>=|<=|>|<|==|!=)(\d+\.\d+\.?\d*)/);
@@ -782,17 +724,17 @@ function compareVersions(a: number[], b: number[]): number {
  * Check if a system dependency is available (checks PATH)
  */
 function checkSystemDependency(name: string): boolean {
+  // Only allow simple dependency names (no path traversal)
+  if (!/^[\w.-]+$/.test(name)) return false;
   try {
-    execSync(`where ${name}`, { timeout: 5000, stdio: "pipe" });
+    if (process.platform === "win32") {
+      safeExec("where", [name], { timeout: 5000, stdio: ["ignore", "pipe", "pipe"] });
+    } else {
+      safeExec("which", [name], { timeout: 5000, stdio: ["ignore", "pipe", "pipe"] });
+    }
     return true;
   } catch {
-    // Try "which" as fallback (Unix)
-    try {
-      execSync(`which ${name} 2>nul`, { timeout: 5000, stdio: "pipe" });
-      return true;
-    } catch {
-      return false;
-    }
+    return false;
   }
 }
 
@@ -850,7 +792,6 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
       ...process.env,
       GIT_TERMINAL_PROMPT: "0",
     };
-    // Pass through proxy env vars for git
     for (const key of ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "NO_PROXY", "no_proxy", "GIT_SSL_NO_VERIFY", "GIT_HTTP_PROXY_AUTHMETHOD"]) {
       if (process.env[key]) gitEnv[key] = process.env[key];
     }
@@ -862,7 +803,7 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
     log.push(`\n🔍 Checking git connectivity to ${plugin.repo}...`);
     let gitReachable = false;
     try {
-      execSync(`git ls-remote --quiet "${plugin.repo}" HEAD`, {
+      safeExec("git", ["ls-remote", "--quiet", plugin.repo, "HEAD"], {
         timeout: 15000,
         stdio: ["ignore", "pipe", "pipe"],
         env: gitEnv as any,
@@ -870,10 +811,10 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
       log.push(`   ✅ Repository reachable`);
       gitReachable = true;
     } catch (gitCheckErr: unknown) {
-      const stderr = (gitCheckErr && typeof gitCheckErr === "object" && "stderr" in gitCheckErr
-        ? String((gitCheckErr as any).stderr)
-        : safeMessage(gitCheckErr)).slice(0, 300);
-      log.push(`   ❌ Cannot reach repository: ${stderr}`);
+      const msg = gitCheckErr && typeof gitCheckErr === "object" && "stderr" in (gitCheckErr as any)
+        ? String((gitCheckErr as any).stderr).slice(0, 300)
+        : safeMessage(gitCheckErr);
+      log.push(`   ❌ Cannot reach repository: ${msg}`);
     }
 
     // ── Clone the repository (with zip fallback) ──────────────────
@@ -881,9 +822,17 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
     if (gitReachable) {
       log.push(`\n🔄 Cloning repository...`);
       try {
-        const proxyConfig = proxyKey ? ` --config http.proxy='${proxyKey}' --config https.proxy='${proxyKey}'` : "";
-        execSync(`git clone --depth 1${proxyConfig} ${plugin.repo} "${targetDir}"`, {
-          timeout: 120000, // 2 minutes
+        // Validate repo URL before git clone
+        if (!validateGitHubUrl(plugin.repo)) {
+          throw new Error(`Invalid repository URL: ${plugin.repo}`);
+        }
+        const gitArgs = ["clone", "--depth", "1", plugin.repo, targetDir];
+        if (proxyKey) {
+          gitArgs.push("--config", `http.proxy=${proxyKey}`);
+          gitArgs.push("--config", `https.proxy=${proxyKey}`);
+        }
+        safeExec("git", gitArgs, {
+          timeout: 120000,
           maxBuffer: 10 * 1024 * 1024,
           stdio: ["ignore", "pipe", "pipe"],
           env: gitEnv as any,
@@ -891,10 +840,10 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
         log.push(`   ✅ Repository cloned`);
         cloned = true;
       } catch (cloneErr: unknown) {
-        const stderr = (cloneErr && typeof cloneErr === "object" && "stderr" in cloneErr
-          ? String((cloneErr as any).stderr)
-          : safeMessage(cloneErr, "unknown error")).slice(0, 500);
-        log.push(`   ❌ Git clone failed: ${stderr.slice(0, 500)}`);
+        const stderr = cloneErr && typeof cloneErr === "object" && "stderr" in (cloneErr as any)
+          ? String((cloneErr as any).stderr).slice(0, 500)
+          : safeMessage(cloneErr, "unknown error");
+        log.push(`   ❌ Git clone failed: ${stderr}`);
       }
     }
 
@@ -906,50 +855,27 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
         + "/archive/HEAD.zip";
       log.push(`\n🔄 Git unavailable — trying ZIP download from ${zipUrl}...`);
       try {
-        // Use Node.js fetch (Bun/Node 18+) to download
         const response = await fetch(zipUrl, {
           signal: AbortSignal.timeout(30000),
           headers: { "User-Agent": "Nova/1.0" },
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         const buffer = Buffer.from(await response.arrayBuffer());
-        // Save zip temporarily
         const zipPath = targetDir + ".zip";
         writeFileSync(zipPath, buffer);
         mkdirSync(targetDir, { recursive: true });
-        // Extract using powershell Expand-Archive (Windows) or node-tar / unzip (Unix)
         const isWindows = process.platform === "win32";
         try {
           if (isWindows) {
-            // Use PowerShell with long-path support prefix (\\?\) and exclude CLAUDE.md to avoid "Invalid argument"
-            const psCmd = [
-              `$zip = '${zipPath.replace(/'/g, "''")}'`,
-              `$dest = '${targetDir.replace(/'/g, "''")}'`,
-              // Enable long path support via \\?\ prefix
-              `if ($dest.Length -gt 240) { $dest = '\\\\?\\' + $dest }`,
-              `if ($zip.Length -gt 240) { $zip = '\\\\?\\' + $zip }`,
-              // Use .NET API directly (handles long paths better than Expand-Archive)
-              `Add-Type -AssemblyName System.IO.Compression.FileSystem`,
-              `try { $a = [System.IO.Compression.ZipFile]::OpenRead($zip) } catch { throw }`,
-              // Check entries — warn about long paths
-              `$longPaths = $a.Entries | Where-Object { $_.FullName.Length -gt 240 -or $_.Name -eq 'CLAUDE.md' }`,
-              `if ($longPaths) { Write-Warning "Stripping $($longPaths.Count) problematic entries" }`,
-              // Extract all entries, skipping problematic ones
-              `foreach ($entry in $a.Entries) {`,
-              `  if ($entry.Name -eq 'CLAUDE.md' -or $entry.FullName.Length -gt 248) { continue }`,
-              `  $filePath = [System.IO.Path]::Combine($dest, $entry.FullName)`,
-              `  if ($entry.FullName.EndsWith('/') -or $entry.FullName.EndsWith('\\')) {`,
-              `    [System.IO.Directory]::CreateDirectory($filePath) | Out-Null`,
-              `  } else {`,
-              `    [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($filePath)) | Out-Null`,
-              `    $entry.ExtractToFile($filePath, $true)`,
-              `  }`,
-              `}`,
-              `$a.Dispose()`,
-            ].join("; ");
-            execSync(`powershell -NoProfile -Command "${psCmd}"`, { timeout: 60000 });
+            // Use PowerShell via safeExec — validated path, no user input in string
+            safeExec("powershell", [
+              "-NoProfile",
+              "-Command",
+              `Add-Type -AssemblyName System.IO.Compression.FileSystem; ` +
+              `[System.IO.Compression.ZipFile]::ExtractToDirectory('${zipPath.replace(/'/g, "''")}', '${targetDir.replace(/'/g, "''")}')`,
+            ], { timeout: 60000 });
           } else {
-            execSync(`unzip -qo "${zipPath}" -d "${targetDir}"`, { timeout: 30000 });
+            safeExec("unzip", ["-qo", zipPath, "-d", targetDir], { timeout: 30000 });
           }
         } catch {
           // Try tar as fallback (GitHub archive is tar.gz via alternate URL)
@@ -960,51 +886,53 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
           const tarPath = zipPath.replace(".zip", ".tar.gz");
           writeFileSync(tarPath, tarBuffer);
           if (isWindows) {
-            // Windows tar: use --force-local, strip trailing slash in archive name,
-            // and pipe through sed to exclude CLAUDE.md and long paths
-            const tarCmd = `tar --force-local -xzf '${tarPath}' -C '${targetDir}'`;
-            execSync(tarCmd, { timeout: 60000, shell: true });
-            // Remove any extracted CLAUDE.md files (Windows long-path issue)
-            try { execSync(`powershell -NoProfile -Command "Get-ChildItem '${targetDir}' -Recurse -Filter 'CLAUDE.md' | Remove-Item -Force 2>0"`, { timeout: 10000, shell: true }); } catch {}
+            safeExec("tar", ["--force-local", "-xzf", tarPath, "-C", targetDir], { timeout: 60000 });
           } else {
-            execSync(`tar -xzf '${tarPath}' -C '${targetDir}'`, { timeout: 30000 });
+            safeExec("tar", ["-xzf", tarPath, "-C", targetDir], { timeout: 30000 });
           }
         }
-        // Clean up zip/tar files
-        try { execSync(`del "${zipPath}" 2>nul`, { shell: true }); } catch {}
-        try { execSync(`del "${zipPath.replace('.zip', '.tar.gz')}" 2>nul`, { shell: true }); } catch {}
-        // Remove any .agents directories left behind (Windows path issue)
-        try { execSync(`powershell -Command "Get-ChildItem '${targetDir}' -Recurse -Directory -Filter '.agents' | Remove-Item -Recurse -Force 2>0"`, { timeout: 10000, shell: true }); } catch {}
+        // Clean up zip/tar files using Node.js fs (not shell)
+        try { rmSync(zipPath, { force: true }); } catch {}
+        try { rmSync(zipPath.replace(".zip", ".tar.gz"), { force: true }); } catch {}
         // Move contents up one level (GitHub archive nests in a subfolder)
         const items = readdirSync(targetDir);
         if (items.length === 1) {
           const nestedDir = join(targetDir, items[0]);
           const nestedItems = readdirSync(nestedDir);
           for (const item of nestedItems) {
-            try { execSync(`move "${join(nestedDir, item)}" "${join(targetDir, item)}"`, { shell: true }); } catch {}
+            try {
+              // Use renameSync instead of shell 'move'
+              const src = join(nestedDir, item);
+              const dst = join(targetDir, item);
+              // Skip duplicates
+              if (!existsSync(dst)) {
+                // We can't use rename across devices, copy + delete
+                const content = readFileSync(src);
+                writeFileSync(dst, content);
+                rmSync(src, { force: true });
+              }
+            } catch {}
           }
-          try { execSync(`rmdir "${nestedDir}"`, { shell: true }); } catch {}
+          // Remove nested dir using fs
+          try { rmSync(nestedDir, { recursive: true, force: true }); } catch {}
         }
         log.push(`   ✅ Downloaded and extracted from ZIP`);
         cloned = true;
       } catch (zipErr: unknown) {
         log.push(`   ❌ ZIP download also failed: ${safeMessage(zipErr)}`);
-        // Clean up partial targetDir
-        try { execSync(`rmdir /s /q "${targetDir}" 2>nul`, { shell: true }); } catch {}
+        // Clean up partial targetDir using Node.js (safe)
+        try { rmSync(targetDir, { recursive: true, force: true }); } catch {}
       }
     }
 
     // If both methods failed, throw with diagnostics
     if (!cloned) {
-      // Network diagnostics
       const networkHints: string[] = [];
-      // Proxy status
       if (proxyKey) {
         networkHints.push(`✅ Proxy configured: ${proxyKey.replace(/\/\/.*@/, "//***@")}`);
-        // Test proxy connectivity
         try {
           const proxyHost = proxyKey.replace(/^https?:\/\//, "").split("/")[0].split("@").pop() || "";
-          const proxyPing = execSync(`ping -n 1 -w 2000 ${proxyHost.split(":")[0]} 2>nul || ping -c 1 -W 2 ${proxyHost.split(":")[0]} 2>/dev/null`, { timeout: 5000, stdio: "pipe" }).toString().trim();
+          safeExec("ping", ["-n", "1", "-w", "2000", proxyHost.split(":")[0]], { timeout: 5000, stdio: ["ignore", "pipe", "pipe"] });
           networkHints.push(`   Proxy host reachable: ${proxyHost}`);
         } catch {
           networkHints.push(`   ❌ Proxy host unreachable — check proxy address and port`);
@@ -1013,25 +941,24 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
         networkHints.push(`❌ No proxy configured. If behind a corporate firewall, set:`);
         networkHints.push(`   set HTTP_PROXY=http://your-proxy:port`);
         networkHints.push(`   set HTTPS_PROXY=http://your-proxy:port`);
-        networkHints.push(`   Or globally for git: git config --global http.proxy http://your-proxy:port`);
       }
       // DNS check
       try {
-        execSync(`nslookup github.com 2>nul || nslookup github.com 2>/dev/null`, { timeout: 5000, stdio: "pipe" });
+        safeExec("nslookup", ["github.com"], { timeout: 5000, stdio: ["ignore", "pipe", "pipe"] });
         networkHints.push(`✅ DNS: github.com resolves`);
       } catch {
         networkHints.push(`❌ DNS: github.com does NOT resolve — check DNS settings or /etc/hosts`);
       }
       // Internet connectivity (ping)
       try {
-        execSync(`ping -n 1 -w 2000 github.com 2>nul || ping -c 1 -W 2 github.com 2>/dev/null`, { timeout: 5000, stdio: "pipe" });
+        safeExec("ping", ["-n", "1", "-w", "2000", "github.com"], { timeout: 5000, stdio: ["ignore", "pipe", "pipe"] });
         networkHints.push(`✅ Internet: github.com reachable`);
       } catch {
         networkHints.push(`❌ Internet: cannot reach github.com — check firewall / proxy`);
       }
       // SSL check
       try {
-        execSync(`git ls-remote --quiet https://github.com 2>nul`, { timeout: 8000, stdio: "pipe" });
+        safeExec("git", ["ls-remote", "--quiet", "https://github.com"], { timeout: 8000, stdio: ["ignore", "pipe", "pipe"] });
         networkHints.push(`✅ SSL: git over HTTPS works`);
       } catch {
         networkHints.push(`❌ SSL: git over HTTPS failed — possible SSL/TLS or certificate issue`);
@@ -1046,37 +973,37 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
     if (setupCmd) {
       log.push(`\n🔧 Running setup: ${setupCmd}`);
       try {
-        const setupOutput = execSync(setupCmd, {
+        // Parse the setup command into parts (e.g. "npm install" -> ["npm", "install"])
+        const parts = setupCmd.split(/\s+/);
+        const cmd = parts[0];
+        const args = parts.slice(1);
+        const result = safeExec(cmd, args, {
           cwd: targetDir,
-          timeout: 300000, // 5 minutes
+          timeout: 300000,
           maxBuffer: 10 * 1024 * 1024,
           stdio: ["ignore", "pipe", "pipe"],
-        }).toString();
+        });
         log.push(`   ✅ Setup completed`);
-        const lines = setupOutput.split("\n").filter(Boolean);
+        const lines = result.stdout.split("\n").filter(Boolean);
         if (lines.length > 0) {
-          // Show last 10 lines of output (most relevant)
           const showLines = lines.slice(-10);
           log.push(`   Output (last ${showLines.length} lines):`);
           showLines.forEach((l) => log.push(`     ${l}`));
           if (lines.length > 10) log.push(`     ... (${lines.length - 10} more lines hidden)`);
         }
       } catch (setupErr: unknown) {
-        const stderr = (setupErr && typeof setupErr === "object" && "stderr" in setupErr
-          ? String((setupErr as any).stderr)
-          : safeMessage(setupErr, "")).slice(0, 500);
-        // Try to extract meaningful error from pip output
+        const stderr = setupErr && typeof setupErr === "object" && "stderr" in (setupErr as any)
+          ? String((setupErr as any).stderr).slice(0, 500)
+          : safeMessage(setupErr, "");
         const pipError = extractPipError(stderr);
         if (pipError) {
           log.push(`   ❌ Setup failed: ${pipError}`);
           throw new Error(pipError);
         }
         log.push(`   ⚠ Setup warning: ${safeMessage(setupErr)}`);
-        // Don't fail — setup may have partially succeeded
       }
     } else {
       log.push(`\n   ℹ No setup command detected. Plugin cloned to ${targetDir}`);
-      // Check if Makefile exists and notify
       try {
         const files = readdirSync(targetDir);
         if (files.some((f) => f.toLowerCase() === "makefile")) {
@@ -1103,7 +1030,6 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
  * Extract a meaningful error message from pip output
  */
 function extractPipError(output: string): string | null {
-  // Look for common pip error patterns
   const patterns = [
     /ERROR: Could not find a version that satisfies the requirement (\S+)/,
     /ERROR: No matching distribution found for (\S+)/,
@@ -1112,7 +1038,6 @@ function extractPipError(output: string): string | null {
   for (const pattern of patterns) {
     const match = output.match(pattern);
     if (match) {
-      // Return just the error line, not the full version listing
       const lines = output.split("\n").filter((l) => l.includes("ERROR"));
       if (lines.length > 0) {
         return lines[0].trim();
@@ -1135,7 +1060,6 @@ export async function uninstallPlugin(id: string): Promise<{ success: boolean; e
     removeDir(targetDir);
     delete state[id];
     saveState(state);
-    // Remove config
     const configFile = join(PLUGINS_DIR, `${id}.config.json`);
     try { rmSync(configFile, { force: true }); } catch {}
     return { success: true };

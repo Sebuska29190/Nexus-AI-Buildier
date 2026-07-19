@@ -1,9 +1,9 @@
 import { useState, useEffect, lazy, Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { api } from "./lib/api";
 import { Sidebar } from "./lib/components/Sidebar";
 import { StatusBar } from "./lib/components/StatusBar";
 import { ToastProvider, useToast } from "./lib/components/ui/Toast";
-import { ErrorBoundary } from "./lib/ErrorBoundary";
 import { MobileNav } from "./lib/components/MobileNav";
 import { DashboardPage } from "./routes/DashboardPage"; // Keep as eager load (landing page)
 
@@ -20,6 +20,11 @@ const PromptPlaygroundPage = lazy(() => import("./routes/PromptPlaygroundPage").
 const MemoryPage = lazy(() => import("./routes/MemoryPage").then(m => ({ default: m.MemoryPage })));
 const CodeEditorPage = lazy(() => import("./routes/CodeEditorPage").then(m => ({ default: m.CodeEditorPage })));
 const AgentConfigPage = lazy(() => import("./routes/AgentConfigPage").then(m => ({ default: m.AgentConfigPage })));
+const ConfigPage = lazy(() => import("./routes/ConfigPage").then(m => ({ default: m.ConfigPage })));
+const SettingsPage = lazy(() => import("./routes/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const PluginsPage = lazy(() => import("./routes/PluginsPage").then(m => ({ default: m.PluginsPage })));
+const ChannelsPage = lazy(() => import("./routes/ChannelsPage").then(m => ({ default: m.ChannelsPage })));
+const ApiKeysPage = lazy(() => import("./routes/ApiKeysPage").then(m => ({ default: m.ApiKeysPage })));
 
 // Loading fallback
 function PageFallback() {
@@ -28,6 +33,35 @@ function PageFallback() {
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 rounded-full border-2 border-[rgba(124,58,237,0.3)] border-t-[#7C3AED] animate-spin" />
         <span className="text-[10px] text-[#475569] font-mono">Loading...</span>
+      </div>
+    </div>
+  );
+}
+
+// Error fallback for individual pages
+function PageErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
+  console.error("Page ErrorBoundary caught:", error);
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 p-8" role="alert">
+      <div className="w-12 h-12 rounded-xl bg-red-950/50 border border-red-500/30 flex items-center justify-center">
+        <svg className="w-6 h-6 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <h2 className="text-lg font-bold text-red-400">Page Error</h2>
+      <p className="text-xs text-slate-400 text-center max-w-md">
+        Something went wrong while rendering this page.
+      </p>
+      <pre className="text-xs text-slate-400 bg-slate-900/50 rounded-lg p-4 max-w-full overflow-auto font-mono">
+        {error.message || "Unknown error"}
+      </pre>
+      <div className="flex gap-2">
+        <button onClick={resetErrorBoundary} className="btn-premium px-4 py-2 rounded-lg text-xs">
+          Reload Page
+        </button>
+        <button onClick={() => window.location.reload()} className="btn-glass px-4 py-2 rounded-lg text-xs">
+          Full Reload
+        </button>
       </div>
     </div>
   );
@@ -48,6 +82,11 @@ const pages: Record<string, React.ComponentType<any>> = {
   memory: MemoryPage,
   code: CodeEditorPage,
   agentconfig: AgentConfigPage,
+  config: ConfigPage,
+  settings: SettingsPage,
+  plugins: PluginsPage,
+  channels: ChannelsPage,
+  apikeys: ApiKeysPage,
 };
 
 function AppContent() {
@@ -151,7 +190,7 @@ function AppContent() {
           )}
 
           <main className="flex-1 overflow-y-auto relative z-10 animate-fade-in" id="main-content">
-            <ErrorBoundary>
+            <ErrorBoundary FallbackComponent={PageErrorFallback} onError={(err) => console.error("Page error:", err)}>
               <Suspense fallback={<PageFallback />}>
               {PageComponent ? (
                 <PageComponent
@@ -192,7 +231,31 @@ function AppContent() {
 export default function App() {
   return (
     <ToastProvider>
-      <AppContent />
+      <ErrorBoundary FallbackComponent={({ error, resetErrorBoundary }) => {
+        console.error("Global error:", error);
+        return (
+          <div className="h-screen flex flex-col items-center justify-center gap-4 p-8 bg-[#0a0a0f] text-[#f1f5f9]" role="alert">
+            <div className="w-16 h-16 rounded-2xl bg-red-950/50 border border-red-500/30 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <h1 className="text-xl font-bold text-red-400">Application Error</h1>
+            <p className="text-sm text-slate-400">Something went wrong. Please reload the application.</p>
+            <pre className="text-xs text-slate-500 bg-slate-900/50 rounded-lg p-4 max-w-xl font-mono">{error.message}</pre>
+            <div className="flex gap-2">
+              <button onClick={resetErrorBoundary} className="btn-premium px-6 py-2 rounded-lg text-sm">
+                Retry
+              </button>
+              <button onClick={() => window.location.reload()} className="btn-glass px-6 py-2 rounded-lg text-sm">
+                Reload
+              </button>
+            </div>
+          </div>
+        );
+      }}>
+        <AppContent />
+      </ErrorBoundary>
     </ToastProvider>
   );
 }

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { registerRoutes } from "./routes/middleware.ts";
+import { registerAuth } from "./routes/auth.ts";
 import { register as registerModels } from "./routes/models.routes.ts";
 import { register as registerChat } from "./routes/chat.routes.ts";
 import { register as registerSessions } from "./routes/sessions.routes.ts";
@@ -38,6 +39,9 @@ export function createRouter(): Hono {
   app.use("*", cors({
     origin: process.env.NOVA_CORS_ORIGIN || "http://localhost:4123",
   }));
+
+  // Auth middleware (checks API key for all /api/* and /v1/* routes)
+  registerAuth(app);
 
   // Register middleware (auth, security headers)
   registerRoutes(app);

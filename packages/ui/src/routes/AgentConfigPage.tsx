@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Save, RotateCcw, Check, X, Terminal, FileCode, Search, Globe, Clock } from "lucide-react";
+import { agentConfigSchema } from "../lib/validation";
 
 interface AgentConfigPageProps {
   agents?: any[];
@@ -18,33 +19,71 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
   const [agent, setAgent] = useState<any>(null);
   const [prompt, setPrompt] = useState("");
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!selectedId) return;
-    fetch(`/api/agents/${selectedId}`)
-      .then(r => r.ok ? r.json() : null)
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    fetch(`/api/agents/${selectedId}`, { signal: controller.signal })
+      .then(r => {
+        if (r.status === 404) throw new Error("Agent not found");
+        if (r.status === 500) throw new Error("Server error");
+        return r.ok ? r.json() : null;
+      })
       .then(d => {
         if (d?.agent) {
           setAgent(d.agent);
           setPrompt(d.agent.systemPrompt || "");
+          setError(null);
         }
       })
-      .catch(() => {});
+      .catch(err => {
+        if (err.name === "AbortError") return;
+        setError(err.message || "Failed to load agent");
+      });
+
+    return () => {
+      controller.abort();
+      abortRef.current = null;
+    };
   }, [selectedId]);
 
   async function savePrompt() {
     if (!agent) return;
+    setError(null);
+
+    // Validate with zod
+    const validationResult = agentConfigSchema.safeParse({
+      name: agent.name,
+      systemPrompt: prompt,
+      modelRef: agent.modelRef || "",
+    });
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      setError(firstError.message);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/agents/${agent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ systemPrompt: prompt }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Save failed (${res.status})`);
+      }
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       }
-    } catch {}
+    } catch (e: any) {
+      setError(e.message || "Failed to save");
+    }
   }
 
   // List view
@@ -82,13 +121,31 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
   }
 
   // Detail view
-  if (!agent) {
+  if (!agent && !error) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-xs text-[#475569]">Loading...</div>
       </div>
     );
   }
+
+  if (error && !agent) {
+    return (
+      <div className="max-w-5xl mx-auto w-full p-6">
+        <button onClick={() => setSelectedId(null)} className="flex items-center gap-1 text-xs text-[#475569] hover:text-[#f1f5f9] transition-colors mb-4">
+          <ArrowLeft size={14} /> Powrót do listy
+        </button>
+        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-2xl p-5 text-center">
+          <p className="text-sm text-[#ef4444]">{error}</p>
+          <button onClick={() => setSelectedId(selectedId)} className="btn-premium px-4 py-2 rounded-lg text-xs mt-4">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const finalAgent = agent!;
 
   return (
     <div className="max-w-5xl mx-auto w-full p-6 space-y-6">
@@ -100,23 +157,30 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
         <ArrowLeft size={14} /> Powrót do listy
       </button>
 
+      {/* Error banner */}
+      {error && (
+        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-2xl p-3" role="alert">
+          <p className="text-xs text-[#ef4444]">{error}</p>
+        </div>
+      )}
+
       {/* Agent header */}
       <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <span className="text-4xl">{agent.emoji || "🤖"}</span>
+            <span className="text-4xl">{finalAgent.emoji || "🤖"}</span>
             <div>
-              <h2 className="text-xl font-bold text-white">{agent.name}</h2>
-              <p className="text-sm text-[#64748B] mt-1">{agent.description || "Brak opisu"}</p>
+              <h2 className="text-xl font-bold text-white">{finalAgent.name}</h2>
+              <p className="text-sm text-[#64748B] mt-1">{finalAgent.description || "Brak opisu"}</p>
               <div className="flex items-center gap-3 mt-2">
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[rgba(124,58,237,0.08)] text-[#7C3AED] border border-[rgba(124,58,237,0.15)]">
-                  {agent.modelRef}
+                  {finalAgent.modelRef}
                 </span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-lg ${
-                  agent.status === "ready" ? "bg-[rgba(34,197,94,0.08)] text-[#22C55E]"
+                  finalAgent.status === "ready" ? "bg-[rgba(34,197,94,0.08)] text-[#22C55E]"
                   : "bg-[rgba(234,179,8,0.08)] text-[#EAB308]"
                 }`}>
-                  {agent.status}
+                  {finalAgent.status}
                 </span>
               </div>
             </div>
@@ -130,7 +194,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
           <h3 className="text-sm font-bold text-white">System Prompt</h3>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setPrompt(agent.systemPrompt || "")}
+              onClick={() => setPrompt(finalAgent.systemPrompt || "")}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)] transition-all"
             >
               <RotateCcw size={12} /> Reset
@@ -159,10 +223,10 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
       <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
         <h3 className="text-sm font-bold text-white mb-3">🔧 Przypisane narzędzia</h3>
         <div className="flex flex-wrap gap-2">
-          {(agent.skills || []).length === 0 ? (
+          {(finalAgent.skills || []).length === 0 ? (
             <span className="text-xs text-[#475569]">Brak przypisanych narzędzi</span>
           ) : (
-            (agent.skills || []).map((skill: string) => {
+            (finalAgent.skills || []).map((skill: string) => {
               const Icon = TOOL_ICONS[skill] || Terminal;
               return (
                 <span
@@ -202,15 +266,15 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-[#64748B]">ID</span>
-              <span className="text-white font-mono text-[10px]">{agent.id}</span>
+              <span className="text-white font-mono text-[10px]">{finalAgent.id}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-[#64748B]">Model</span>
-              <span className="text-white font-mono text-[10px]">{agent.modelRef}</span>
+              <span className="text-white font-mono text-[10px]">{finalAgent.modelRef}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-[#64748B]">Status</span>
-              <span className={`text-[10px] font-mono ${agent.status === "ready" ? "text-[#22C55E]" : "text-[#EAB308]"}`}>{agent.status}</span>
+              <span className={`text-[10px] font-mono ${finalAgent.status === "ready" ? "text-[#22C55E]" : "text-[#EAB308]"}`}>{finalAgent.status}</span>
             </div>
           </div>
         </div>

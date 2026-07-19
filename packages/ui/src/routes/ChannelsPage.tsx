@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../lib/api";
 
 const SENSITIVE_KEYS = /token|api[_-]?key|secret|password|pass|auth/i;
@@ -53,7 +53,7 @@ const channelDefs: ChannelDef[] = [
     ] },
   { type: "signal", icon: "phone", color: "blue-400", title: "Signal Messenger",
     desc: "End-to-end encrypted messaging via Signal CLI. Requires signal-cli and a registered phone number.",
-    configFields: [{ key: "phoneNumber", label: "Phone Number (+1234567890)", type: "text" }, { key: "signalCliPath", label: "signal-cli path (optional)", type: "text" }] },
+    configFields: [{ key: "phoneNumber", label: "Phone Number (+123****7890)", type: "text" }, { key: "signalCliPath", label: "signal-cli path (optional)", type: "text" }] },
   { type: "matrix", icon: "message-square", color: "green-400", title: "Matrix (Element)",
     desc: "Decentralized, open-source messaging protocol. Connect to any Matrix homeserver.",
     configFields: [{ key: "homeserver", label: "Homeserver URL", type: "text" }, { key: "userId", label: "User ID", type: "text" }, { key: "accessToken", label: "Access Token", type: "password" }, { key: "roomId", label: "Room ID", type: "text" }] },
@@ -69,19 +69,33 @@ export function ChannelsPage() {
   const [configs, setConfigs] = useState<Record<string, string>>({});
   const [testing, setTesting] = useState<Record<string, boolean>>({});
   const [testResults, setTestResults] = useState<Record<string, string>>({});
+  const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => { loadChannels(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    loadChannels(controller.signal);
+    return () => {
+      controller.abort();
+      abortRef.current = null;
+    };
+  }, []);
 
-  async function loadChannels() {
+  async function loadChannels(signal?: AbortSignal) {
     setLoading(true);
     try {
-      setChannels(await api.channels());
-      const res = await fetch("/api/channels/configs");
+      const res = await fetch("/api/channels", { signal });
       if (res.ok) {
         const data = await res.json();
+        setChannels(data.channels || []);
+      }
+      const configRes = await fetch("/api/channels/configs", { signal });
+      if (configRes.ok) {
+        const data = await configRes.json();
         setSavedConfigs(data.configs || {});
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === "AbortError") return;
       console.error("Failed to load channels", e);
     } finally {
       setLoading(false);
@@ -145,7 +159,7 @@ export function ChannelsPage() {
           <span className="text-[10px] text-slate-500">
             {channels.filter((c) => c.connected).length} connected · {Object.keys(savedConfigs).length} configured
           </span>
-          <button onClick={loadChannels} className="bg-[#0e1117] hover:bg-slate-800 text-slate-400 border border-slate-800 px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5">
+          <button onClick={() => loadChannels()} className="bg-[#0e1117] hover:bg-slate-800 text-slate-400 border border-slate-800 px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5" aria-label="Refresh channels">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
