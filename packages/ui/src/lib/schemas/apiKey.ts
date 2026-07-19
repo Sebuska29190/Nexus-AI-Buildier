@@ -9,6 +9,7 @@ export const apiKeySchema = z.object({
   provider: z.enum(["openai", "anthropic", "google", "deepseek", "grok", "qwen", "openrouter", "custom"], {
     errorMap: () => ({ message: "Wybierz dostawcę API" }),
   }),
+  baseUrl: z.string().optional(),
 });
 
 export type ApiKeyFormData = z.infer<typeof apiKeySchema>;

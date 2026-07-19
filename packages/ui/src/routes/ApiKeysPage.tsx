@@ -43,6 +43,7 @@ function ApiKeysPage() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ApiKeyFormData>({
     resolver: zodResolver(apiKeySchema),
@@ -94,9 +95,16 @@ function ApiKeysPage() {
     setSaving(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/config/providers/${data.provider}`, {
+      // Use /update endpoint if baseUrl is provided, otherwise /key
+      const hasBaseUrl = !!data.baseUrl?.trim();
+      const endpoint = hasBaseUrl
+        ? `/api/config/provider/${data.provider}/update`
+        : `/api/config/provider/${data.provider}/key`;
+      const res = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: data.key, enabled: true, name: data.name }),
+        body: hasBaseUrl
+          ? JSON.stringify({ apiKey: data.key, baseUrl: data.baseUrl.trim(), enabled: true, name: data.name })
+          : JSON.stringify({ apiKey: data.key, enabled: true, name: data.name }),
       });
       const result = await res.json();
       if (result.status === "saved" || res.ok) {
@@ -192,6 +200,21 @@ function ApiKeysPage() {
                 </p>
               )}
             </div>
+            {watch("provider") === "custom" && (
+              <div className="flex-[2] min-w-[200px]">
+                <input
+                  type="text"
+                  {...register("baseUrl")}
+                  placeholder="Base URL (np. https://api.example.com/v1)"
+                  className="glass-input w-full px-3 py-2 text-sm"
+                />
+                {errors.baseUrl && (
+                  <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.baseUrl.message}
+                  </p>
+                )}
+              </div>
+            )}
             <button type="submit" disabled={saving} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 shrink-0 disabled:opacity-50">
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
               {saving ? "Saving..." : "Add & Encrypt"}
