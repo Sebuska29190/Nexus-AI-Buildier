@@ -5,7 +5,9 @@
   "type": "module",
   "dependencies": {
     "@nova/sdk": "workspace:*",
+    "dotenv": "^16.4.0",
     "hono": "^4.7.0",
-    "dotenv": "^16.4.0"
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3"
   }
 }
