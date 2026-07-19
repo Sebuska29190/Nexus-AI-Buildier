@@ -11,6 +11,11 @@ export default defineConfig({
         branches: 70,
         statements: 70
       }
-    }
+    },
+    // Map bun:test imports to vitest globals
+    alias: {
+      'bun:test': 'vitest'
+    },
+    globals: true
   }
 });
