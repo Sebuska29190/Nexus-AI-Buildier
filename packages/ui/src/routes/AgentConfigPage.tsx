@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Save, RotateCcw, Check, X, Terminal, FileCode, Search, Globe, Clock } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, Save, RotateCcw, Check, X, Terminal, FileCode, Search, Globe, Clock, AlertCircle } from "lucide-react";
+import { agentConfigSchema, type AgentConfigFormData } from "../lib/validation";
 
 interface AgentConfigPageProps {
   agents?: any[];
@@ -16,35 +19,88 @@ const TOOL_ICONS: Record<string, React.ElementType> = {
 export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [agent, setAgent] = useState<any>(null);
-  const [prompt, setPrompt] = useState("");
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // React Hook Form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<AgentConfigFormData>({
+    resolver: zodResolver(agentConfigSchema),
+    defaultValues: {
+      name: "",
+      systemPrompt: "",
+      model: "",
+    },
+  });
 
   useEffect(() => {
     if (!selectedId) return;
-    fetch(`/api/agents/${selectedId}`)
-      .then(r => r.ok ? r.json() : null)
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    fetch(`/api/agents/${selectedId}`, { signal: controller.signal })
+      .then(r => {
+        if (r.status === 404) throw new Error("Agent not found");
+        if (r.status === 500) throw new Error("Server error");
+        return r.ok ? r.json() : null;
+      })
       .then(d => {
         if (d?.agent) {
           setAgent(d.agent);
-          setPrompt(d.agent.systemPrompt || "");
+          reset({
+            name: d.agent.name || "",
+            systemPrompt: d.agent.systemPrompt || "",
+            model: d.agent.modelRef || "",
+          });
+          setError(null);
         }
       })
-      .catch(() => {});
-  }, [selectedId]);
+      .catch(err => {
+        if (err.name === "AbortError") return;
+        setError(err.message || "Failed to load agent");
+      });
 
-  async function savePrompt() {
+    return () => {
+      controller.abort();
+      abortRef.current = null;
+    };
+  }, [selectedId, reset]);
+
+  async function onSave(data: AgentConfigFormData) {
     if (!agent) return;
+    setError(null);
+
     try {
       const res = await fetch(`/api/agents/${agent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ systemPrompt: prompt }),
+        body: JSON.stringify({ systemPrompt: data.systemPrompt, name: data.name }),
       });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Save failed (${res.status})`);
       }
-    } catch {}
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e: any) {
+      setError(e.message || "Failed to save");
+    }
+  }
+
+  function handleReset() {
+    if (agent) {
+      reset({
+        name: agent.name || "",
+        systemPrompt: agent.systemPrompt || "",
+        model: agent.modelRef || "",
+      });
+    }
   }
 
   // List view
@@ -53,19 +109,19 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
       <div className="max-w-6xl mx-auto w-full p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-lg font-bold text-white">🤖 Konfiguracja agentów</h1>
-          <span className="text-xs text-[#475569]">{agents.length} agentów</span>
+          <span className="text-xs text-[#71717A]">{agents.length} agentów</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {agents.map((a: any) => (
             <button
               key={a.id}
               onClick={() => setSelectedId(a.id)}
-              className="flex items-center gap-3 p-4 rounded-2xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.1)] transition-all duration-200 text-left"
+              className="flex items-center gap-3 p-4 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.1)] transition-all duration-200 text-left"
             >
               <span className="text-2xl">{a.emoji || "🤖"}</span>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-white truncate">{a.name}</div>
-                <div className="text-[10px] text-[#475569] mt-0.5 truncate">{a.modelRef}</div>
+                <div className="text-[10px] text-[#71717A] mt-0.5 truncate">{a.modelRef}</div>
               </div>
               <div className={`text-[9px] px-2 py-0.5 rounded-full font-mono ${
                 (a.strikes || 0) >= 3 ? "bg-[rgba(239,68,68,0.1)] text-[#EF4444]"
@@ -82,41 +138,66 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
   }
 
   // Detail view
-  if (!agent) {
+  if (!agent && !error) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-xs text-[#475569]">Loading...</div>
+        <div className="text-xs text-[#71717A]">Loading...</div>
       </div>
     );
   }
+
+  if (error && !agent) {
+    return (
+      <div className="max-w-5xl mx-auto w-full p-6">
+        <button onClick={() => setSelectedId(null)} className="flex items-center gap-1 text-xs text-[#71717A] hover:text-[#E4E4E7] transition-colors mb-4">
+          <ArrowLeft size={14} /> Powrót do listy
+        </button>
+        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-lg p-5 text-center">
+          <p className="text-sm text-[#ef4444]">{error}</p>
+          <button onClick={() => setSelectedId(selectedId)} className="btn-premium px-4 py-2 rounded-lg text-xs mt-4">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const finalAgent = agent!;
 
   return (
     <div className="max-w-5xl mx-auto w-full p-6 space-y-6">
       {/* Back button */}
       <button
         onClick={() => setSelectedId(null)}
-        className="flex items-center gap-1 text-xs text-[#475569] hover:text-[#f1f5f9] transition-colors"
+        className="flex items-center gap-1 text-xs text-[#71717A] hover:text-[#E4E4E7] transition-colors"
       >
         <ArrowLeft size={14} /> Powrót do listy
       </button>
 
+      {/* Error banner */}
+      {error && (
+        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-lg p-3" role="alert">
+          <p className="text-xs text-[#ef4444]">{error}</p>
+        </div>
+      )}
+
       {/* Agent header */}
-      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <span className="text-4xl">{agent.emoji || "🤖"}</span>
+            <span className="text-4xl">{finalAgent.emoji || "🤖"}</span>
             <div>
-              <h2 className="text-xl font-bold text-white">{agent.name}</h2>
-              <p className="text-sm text-[#64748B] mt-1">{agent.description || "Brak opisu"}</p>
+              <h2 className="text-xl font-bold text-white">{finalAgent.name}</h2>
+              <p className="text-sm text-[#64748B] mt-1">{finalAgent.description || "Brak opisu"}</p>
               <div className="flex items-center gap-3 mt-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[rgba(124,58,237,0.08)] text-[#7C3AED] border border-[rgba(124,58,237,0.15)]">
-                  {agent.modelRef}
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] text-[#F59E0B] border border-[rgba(245,158,11,0.15)]">
+                  {finalAgent.modelRef}
                 </span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-lg ${
-                  agent.status === "ready" ? "bg-[rgba(34,197,94,0.08)] text-[#22C55E]"
+                  finalAgent.status === "ready" ? "bg-[rgba(34,197,94,0.08)] text-[#22C55E]"
                   : "bg-[rgba(234,179,8,0.08)] text-[#EAB308]"
                 }`}>
-                  {agent.status}
+                  {finalAgent.status}
                 </span>
               </div>
             </div>
@@ -124,45 +205,54 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
         </div>
       </div>
 
-      {/* System Prompt Editor */}
-      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-white">System Prompt</h3>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPrompt(agent.systemPrompt || "")}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)] transition-all"
-            >
-              <RotateCcw size={12} /> Reset
-            </button>
-            <button
-              onClick={savePrompt}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
-                saved
-                  ? "bg-[rgba(34,197,94,0.1)] text-[#22C55E]"
-                  : "bg-[rgba(124,58,237,0.1)] text-[#7C3AED] hover:bg-[rgba(124,58,237,0.15)]"
-              }`}
-            >
-              {saved ? <><Check size={12} /> Saved</> : <><Save size={12} /> Save</>}
-            </button>
+      {/* System Prompt Editor with react-hook-form */}
+      <form onSubmit={handleSubmit(onSave)}>
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-white">System Prompt</h3>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] text-[#71717A] hover:text-[#E4E4E7] hover:bg-[rgba(255,255,255,0.04)] transition-all"
+              >
+                <RotateCcw size={12} /> Reset
+              </button>
+              <button
+                type="submit"
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                  saved
+                    ? "bg-[rgba(34,197,94,0.1)] text-[#22C55E]"
+                    : "bg-[rgba(245,158,11,0.1)] text-[#F59E0B] hover:bg-[rgba(245,158,11,0.15)]"
+                }`}
+              >
+                {saved ? <><Check size={12} /> Saved</> : <><Save size={12} /> Save</>}
+              </button>
+            </div>
           </div>
+          <textarea
+            {...register("systemPrompt")}
+            className={`w-full h-64 bg-[rgba(0,0,0,0.3)] border rounded-md p-4 text-[11px] font-mono text-[#A1A1AA] placeholder-[#71717A] focus:outline-none focus:border-[#F59E0B]/30 resize-y ${
+              errors.systemPrompt ? "border-[#ef4444]" : "border-[rgba(255,255,255,0.06)]"
+            }`}
+            placeholder="Enter system prompt (minimum 50 characters)..."
+          />
+          {errors.systemPrompt && (
+            <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-2">
+              <AlertCircle className="w-3 h-3" /> {errors.systemPrompt.message}
+            </p>
+          )}
         </div>
-        <textarea
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          className="w-full h-64 bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 text-[11px] font-mono text-[#94a3b8] placeholder-[#475569] focus:outline-none focus:border-[#7C3AED]/30 resize-y"
-          placeholder="Enter system prompt..."
-        />
-      </div>
+      </form>
 
       {/* Tools */}
-      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
         <h3 className="text-sm font-bold text-white mb-3">🔧 Przypisane narzędzia</h3>
         <div className="flex flex-wrap gap-2">
-          {(agent.skills || []).length === 0 ? (
-            <span className="text-xs text-[#475569]">Brak przypisanych narzędzi</span>
+          {(finalAgent.skills || []).length === 0 ? (
+            <span className="text-xs text-[#71717A]">Brak przypisanych narzędzi</span>
           ) : (
-            (agent.skills || []).map((skill: string) => {
+            (finalAgent.skills || []).map((skill: string) => {
               const Icon = TOOL_ICONS[skill] || Terminal;
               return (
                 <span
@@ -180,7 +270,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
 
       {/* Score */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
           <h3 className="text-sm font-bold text-white mb-3">📊 Quality Score</h3>
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
@@ -197,20 +287,20 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
             </div>
           </div>
         </div>
-        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
           <h3 className="text-sm font-bold text-white mb-3">🤖 Agent info</h3>
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-[#64748B]">ID</span>
-              <span className="text-white font-mono text-[10px]">{agent.id}</span>
+              <span className="text-white font-mono text-[10px]">{finalAgent.id}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-[#64748B]">Model</span>
-              <span className="text-white font-mono text-[10px]">{agent.modelRef}</span>
+              <span className="text-white font-mono text-[10px]">{finalAgent.modelRef}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-[#64748B]">Status</span>
-              <span className={`text-[10px] font-mono ${agent.status === "ready" ? "text-[#22C55E]" : "text-[#EAB308]"}`}>{agent.status}</span>
+              <span className={`text-[10px] font-mono ${finalAgent.status === "ready" ? "text-[#22C55E]" : "text-[#EAB308]"}`}>{finalAgent.status}</span>
             </div>
           </div>
         </div>

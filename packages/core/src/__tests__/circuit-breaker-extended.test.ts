@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "vitest";
 import { ToolCircuitBreaker } from "../safety/circuit-breaker-tools.ts";
 
 describe("Tool Circuit Breaker", () => {

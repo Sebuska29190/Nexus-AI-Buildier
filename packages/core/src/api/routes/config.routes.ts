@@ -37,7 +37,7 @@ export function register(app: Hono): void {
       const psScript = [
         'Add-Type -AssemblyName System.Windows.Forms',
         '$folder = New-Object System.Windows.Forms.FolderBrowserDialog',
-        '$folder.Description = "Select workspace folder for Nexus AI"',
+        '$folder.Description = "Select workspace folder for AgentForge"',
         '$folder.ShowNewFolderButton = $true',
         '$result = $folder.ShowDialog()',
         'if ($result -eq [System.Windows.Forms.DialogResult]::OK) {',

@@ -41,12 +41,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
+      <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2" role="log" aria-live="polite" aria-label="Notifications">
         {toasts.map((toast) => {
           const typeStyles: Record<string, string> = {
             success: "bg-[rgba(34,197,94,0.12)] text-[#22c55e] border border-[rgba(34,197,94,0.2)]",
             error: "bg-[rgba(239,68,68,0.12)] text-[#ef4444] border border-[rgba(239,68,68,0.2)]",
-            info: "bg-[rgba(99,102,241,0.12)] text-[#818cf8] border border-[rgba(99,102,241,0.2)]",
+            info: "bg-[rgba(245,158,11,0.12)] text-[#F59E0B] border border-[rgba(245,158,11,0.2)]",
             warning: "bg-[rgba(245,158,11,0.12)] text-[#f59e0b] border border-[rgba(245,158,11,0.2)]",
           };
           const icons: Record<string, string> = {
@@ -59,11 +59,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           return (
             <div
               key={toast.id}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm backdrop-blur-xl max-w-[400px] transition-all duration-300 ease-out shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${
+              role="alert"
+              aria-live="assertive"
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm max-w-[400px] transition-all duration-300 ease-out shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${
                 toast.visible ? "translate-x-0 opacity-100" : "translate-x-[120%] opacity-0"
               } ${typeStyles[toast.type] || typeStyles.info}`}
             >
-              <span className="text-xs shrink-0 font-bold">{icons[toast.type]}</span>
+              <span className="text-xs shrink-0 font-bold" aria-hidden="true">{icons[toast.type]}</span>
               <span className="flex-1">{toast.message}</span>
               <button
                 onClick={() => {
@@ -71,6 +73,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== toast.id)), 300);
                 }}
                 className="bg-none border-none text-inherit opacity-50 cursor-pointer text-xs p-0.5 shrink-0 hover:opacity-100 transition-opacity"
+                aria-label="Dismiss notification"
               >
                 ✕
               </button>

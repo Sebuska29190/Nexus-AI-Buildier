@@ -1,6 +1,6 @@
 /**
- * Voice Mode — continuous voice conversation with Nexus AI agent.
- * Uses browser Web Speech API for speech-to-text and Nexus AI's TTS for response.
+ * Voice Mode — continuous voice conversation with AgentForge agent.
+ * Uses browser Web Speech API for speech-to-text and AgentForge's TTS for response.
  *
  * Start voice mode from ChatPage with the 🎤 button.
  */

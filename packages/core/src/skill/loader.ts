@@ -12,8 +12,11 @@ export interface SkillDef {
   filePath: string;
 }
 
+// import.meta.dir is Bun-specific; fallback to process.cwd() for Node.js/Vitest
+const CORE_SRC_DIR = (import.meta as any).dir ?? process.cwd();
+
 const SKILL_DIRS = [
-  join(import.meta.dir, "..", "..", "..", "skills"),  // reliable: from <core>/src/skill/ up to project root
+  join(CORE_SRC_DIR, "..", "..", "..", "skills"),  // reliable: from <core>/src/skill/ up to project root
   join(process.cwd(), "skills"),                       // from project root
   join(process.cwd(), "..", "..", "skills"),           // from packages/core/
   join(process.cwd(), "..", "skills"),                 // from packages/

@@ -32,7 +32,7 @@ const WS_URL = import.meta.env.VITE_NOVA_WS_URL || `ws://${window.location.host}
 export function useChat() {
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: "welcome", role: "assistant", content: "## Welcome to Nexus AI\n\nI'm your coding assistant. I can:\n- Write and refactor code\n- Debug issues\n- Review code quality\n- Search documentation\n- Automate tasks\n\nTry asking me to build something!", timestamp: Date.now() },
+    { id: "welcome", role: "assistant", content: "## Welcome to AgentForge\n\nI'm your coding assistant. I can:\n- Write and refactor code\n- Debug issues\n- Review code quality\n- Search documentation\n- Automate tasks\n\nTry asking me to build something!", timestamp: Date.now() },
   ]);
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [thinking, setThinking] = useState("");
@@ -50,11 +50,20 @@ export function useChat() {
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectAttempts = useRef(0);
+  const mountedRef = useRef(true);
 
   // Sync activity ref
   useEffect(() => { activityRef.current = activity; }, [activity]);
 
-  // Clean up reconnect timer
+  // Track mounted state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Clean up reconnect timer and heartbeat
   useEffect(() => {
     return () => {
       if (reconnectRef.current) clearTimeout(reconnectRef.current);
@@ -64,22 +73,25 @@ export function useChat() {
 
   // Connect WebSocket with auto-reconnect
   const connect = useCallback(() => {
+    if (!mountedRef.current) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     try {
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
       ws.onopen = () => {
+        if (!mountedRef.current) { ws.close(); return; }
         setConnected(true);
         reconnectAttempts.current = 0;
         // Start heartbeat
         if (heartbeatRef.current) clearInterval(heartbeatRef.current);
         heartbeatRef.current = setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
+          if (ws.readyState === WebSocket.OPEN && mountedRef.current) {
             ws.send(JSON.stringify({ type: "ping" }));
           }
         }, 30000);
       };
       ws.onclose = () => {
+        if (!mountedRef.current) return;
         setConnected(false);
         wsRef.current = null;
         if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
@@ -89,6 +101,7 @@ export function useChat() {
         reconnectRef.current = setTimeout(() => connect(), delay);
       };
       ws.onmessage = (e) => {
+        if (!mountedRef.current) return;
         try {
           const msg = JSON.parse(e.data);
           if (msg.type === "pong") return; // Heartbeat response — ignore

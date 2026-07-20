@@ -1,5 +1,5 @@
 // Context compaction tests
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { estimateTokens, snipOldToolResults, maybeCompact } from "../compaction.ts";
 
 describe("Context Compaction", () => {

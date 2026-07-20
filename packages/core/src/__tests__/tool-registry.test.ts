@@ -1,5 +1,5 @@
 // Tool registry tests
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { listTools, getTool, registerTool } from "../plugin/tools.ts";
 
 describe("Tool Registry", () => {

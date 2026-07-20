@@ -1,9 +1,12 @@
 /**
  * AgentWorkPanel — Live agent execution viewer (like OpenClaw)
  * Shows tool calls, results, progress, and final output in real-time via SSE
+ * with resilient reconnect and connection status
  */
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Wrench, CheckCircle2, XCircle, Loader2, Brain, Terminal, ChevronDown, ChevronRight, Clock, BarChart3, Send, StopCircle } from "lucide-react";
+import { Wrench, CheckCircle2, XCircle, Loader2, Brain, Terminal, ChevronDown, ChevronRight, Clock, BarChart3, Send, StopCircle, RefreshCw } from "lucide-react";
+
+type ConnectionStatus = "connected" | "reconnecting" | "disconnected";
 
 interface ToolEvent {
   type: string;
@@ -58,6 +61,13 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
   const [expanded, setExpanded] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const [steerMsg, setSteerMsg] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+
+  const evSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+  const reconnectAttemptsRef = useRef(0);
 
   const sendSteer = useCallback(async () => {
     if (!steerMsg.trim() || !runId) return;
@@ -77,28 +87,43 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
       setState(prev => ({ ...prev, status: "done" }));
     } catch {}
   }, [runId]);
-  const evSourceRef = useRef<EventSource | null>(null);
 
-  // Connect to SSE
-  useEffect(() => {
-    if (!runId) return;
-    setState(prev => ({ ...prev, status: "running", startTime: Date.now() }));
+  const closeSSE = useCallback(() => {
+    if (evSourceRef.current) {
+      evSourceRef.current.close();
+      evSourceRef.current = null;
+    }
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  }, []);
+
+  const connectSSE = useCallback(() => {
+    if (!mountedRef.current) return;
+    closeSSE();
 
     const es = new EventSource(`/api/agents/runs/${runId}/events`);
     evSourceRef.current = es;
+    reconnectAttemptsRef.current = 0;
+    setConnectionStatus("connected");
+    setReconnectAttempts(0);
 
     es.onmessage = (e) => {
+      if (!mountedRef.current) return;
       try {
         const event: ToolEvent = JSON.parse(e.data);
 
         if (event.type === "done") {
           setState(prev => ({ ...prev, status: "done" }));
           es.close();
+          setConnectionStatus("disconnected");
           return;
         }
         if (event.type === "error") {
           setState(prev => ({ ...prev, status: "error", error: event.data.error || "Unknown error" }));
           es.close();
+          setConnectionStatus("disconnected");
           return;
         }
         if (event.type === "thinking") {
@@ -145,20 +170,46 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
     };
 
     es.onerror = () => {
-      // SSE connection lost — poll for status
-      setTimeout(() => {
-        fetch(`/api/agents/runs/${runId}/status`)
-          .then(r => r.json())
-          .then(data => {
-            if (data.status === "done" || data.status === "error" || data.status === "completed") {
-              setState(prev => ({ ...prev, status: data.status }));
-            }
-          }).catch(() => {});
-      }, 1000);
-    };
+      if (!mountedRef.current) return;
+      es.close();
 
-    return () => { es.close(); };
-  }, [runId]);
+      const attempts = reconnectAttemptsRef.current;
+      if (attempts >= 5) {
+        // Max attempts reached — show "Connection lost"
+        setConnectionStatus("disconnected");
+        setState(prev => ({ ...prev, status: "error", error: "Connection lost. Click Retry to reconnect." }));
+        return;
+      }
+
+      const delay = Math.min(1000 * Math.pow(2, attempts), 30000);
+      reconnectAttemptsRef.current = attempts + 1;
+      setConnectionStatus("reconnecting");
+      setReconnectAttempts(attempts + 1);
+
+      reconnectTimerRef.current = setTimeout(() => {
+        if (mountedRef.current) connectSSE();
+      }, delay);
+    };
+  }, [runId, closeSSE]);
+
+  const retryConnection = useCallback(() => {
+    reconnectAttemptsRef.current = 0;
+    setReconnectAttempts(0);
+    connectSSE();
+  }, [connectSSE]);
+
+  // Connect to SSE
+  useEffect(() => {
+    if (!runId) return;
+    mountedRef.current = true;
+    setState(prev => ({ ...prev, status: "running", startTime: Date.now() }));
+    connectSSE();
+
+    return () => {
+      mountedRef.current = false;
+      closeSSE();
+    };
+  }, [runId, connectSSE, closeSSE]);
 
   // Elapsed timer
   useEffect(() => {
@@ -182,21 +233,22 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
 
   if (state.status === "idle") return null;
 
+  const statusColor = connectionStatus === "connected" ? "bg-[#22c55e]" :
+    connectionStatus === "reconnecting" ? "bg-[#eab308]" : "bg-[#ef4444]";
+  const statusLabel = connectionStatus === "connected" ? "Live" :
+    connectionStatus === "reconnecting" ? `Reconnecting (${reconnectAttempts}/5)` : "Disconnected";
+
   return (
-    <div className={`glass-card rounded-2xl overflow-hidden ${className}`}>
+    <div className={`glass-card rounded-lg overflow-hidden ${className}`}>
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.03)] border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className={`w-2 h-2 rounded-full ${
-            state.status === "done" ? "bg-[#22c55e]" :
-            state.status === "error" ? "bg-[#ef4444]" :
-            "bg-[#6366f1] animate-pulse"
-          }`} />
+          <div className={`w-2 h-2 rounded-full ${statusColor} ${connectionStatus === "reconnecting" ? "animate-pulse" : ""}`} />
           <div className="flex items-center gap-2">
-            <Terminal size={14} className="text-[#6366f1]" />
+            <Terminal size={14} className="text-[#F59E0B]" />
             <span className="text-xs font-medium text-white">
               {agentName ? `${agentName} — ` : ""}
               {state.status === "done" ? "Completed" :
@@ -205,7 +257,15 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[9px] text-[#4a5068] font-mono">
+        <div className="flex items-center gap-3 text-[9px] text-[#71717A] font-mono">
+          {/* Connection status badge */}
+          {connectionStatus !== "connected" && (
+            <span className={`flex items-center gap-1 ${
+              connectionStatus === "reconnecting" ? "text-[#eab308]" : "text-[#ef4444]"
+            }`}>
+              {statusLabel}
+            </span>
+          )}
           {state.status === "running" && elapsed > 0 && (
             <span className="flex items-center gap-1"><Clock size={10} /> {elapsed}s</span>
           )}
@@ -218,8 +278,42 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
       {/* Body */}
       {expanded && (
         <div className="max-h-80 overflow-y-auto">
+          {/* Connection lost banner */}
+          {connectionStatus === "disconnected" && state.status === "running" && (
+            <div className="m-3 p-3 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] flex items-center justify-between">
+              <p className="text-xs text-[#ef4444]">Connection lost</p>
+              <button
+                onClick={retryConnection}
+                className="flex items-center gap-1 px-3 py-1 rounded-lg bg-[rgba(239,68,68,0.2)] text-[#ef4444] hover:bg-[rgba(239,68,68,0.3)] text-[10px] transition-all"
+              >
+                <RefreshCw size={10} /> Retry
+              </button>
+            </div>
+          )}
+
+          {/* Reconnecting banner */}
+          {connectionStatus === "reconnecting" && (
+            <div className="m-3 p-3 rounded-lg bg-[rgba(234,179,8,0.1)] border border-[rgba(234,179,8,0.2)] flex items-center gap-2">
+              <Loader2 size={10} className="text-[#eab308] animate-spin" />
+              <p className="text-xs text-[#eab308]">Reconnecting… ({reconnectAttempts}/5)</p>
+            </div>
+          )}
+
           {/* Error banner */}
-          {state.error && (
+          {state.error && connectionStatus === "disconnected" && reconnectAttempts >= 5 && (
+            <div className="m-3 p-3 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)]">
+              <p className="text-xs text-[#ef4444]">{state.error}</p>
+              <button
+                onClick={retryConnection}
+                className="mt-2 flex items-center gap-1 px-3 py-1 rounded-lg bg-[rgba(239,68,68,0.2)] text-[#ef4444] hover:bg-[rgba(239,68,68,0.3)] text-[10px] transition-all"
+              >
+                <RefreshCw size={10} /> Retry
+              </button>
+            </div>
+          )}
+
+          {/* Error banner (non-connection) */}
+          {state.error && connectionStatus !== "disconnected" && (
             <div className="m-3 p-3 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)]">
               <p className="text-xs text-[#ef4444]">{state.error}</p>
             </div>
@@ -228,10 +322,10 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
           {/* Thinking */}
           {state.thinking && (
             <div className="px-4 py-2 border-b border-[rgba(255,255,255,0.04)]">
-              <div className="flex items-center gap-2 text-[9px] text-[#4a5068] mb-1">
+              <div className="flex items-center gap-2 text-[9px] text-[#71717A] mb-1">
                 <Brain size={10} /> Thinking…
               </div>
-              <p className="text-[10px] text-[#8892a8] line-clamp-3">{state.thinking}</p>
+              <p className="text-[10px] text-[#A1A1AA] line-clamp-3">{state.thinking}</p>
             </div>
           )}
 
@@ -247,8 +341,8 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
           {/* Live indicator */}
           {runningTools > 0 && (
             <div className="px-4 py-2 flex items-center gap-2">
-              <Loader2 size={12} className="text-[#6366f1] animate-spin" />
-              <span className="text-[9px] text-[#6366f1]">
+              <Loader2 size={12} className="text-[#F59E0B] animate-spin" />
+              <span className="text-[9px] text-[#F59E0B]">
                 Working… {doneTools}/{state.tools.length} completed
               </span>
             </div>
@@ -256,11 +350,11 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
 
           {/* Final output */}
           {state.finalOutput && (
-            <div className="px-4 py-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(99,102,241,0.04)]">
+            <div className="px-4 py-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(245,158,11,0.04)]">
               <div className="flex items-center gap-2 text-[9px] text-[#22c55e] mb-1">
                 <CheckCircle2 size={10} /> Output
               </div>
-              <p className="text-[10px] text-[#e2e8f0] whitespace-pre-wrap">{state.finalOutput.slice(0, 500)}</p>
+              <p className="text-[10px] text-[#E4E4E7] whitespace-pre-wrap">{state.finalOutput.slice(0, 500)}</p>
             </div>
           )}
 
@@ -272,12 +366,13 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
                 onChange={e => setSteerMsg(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendSteer()}
                 placeholder="Tell agent what to focus on…"
-                className="flex-1 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] rounded-lg px-2 py-1 text-[10px] text-white outline-none focus:border-[#6366f1] placeholder:text-[#4a5068]"
+                className="flex-1 bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-lg px-2 py-1 text-[10px] text-white outline-none focus:border-[#F59E0B] placeholder:text-[#71717A]"
               />
               <button
                 onClick={sendSteer}
                 disabled={!steerMsg.trim()}
-                className="p-1.5 rounded-lg bg-[rgba(99,102,241,0.1)] text-[#6366f1] hover:bg-[rgba(99,102,241,0.2)] disabled:opacity-30 transition-all"
+                className="p-1.5 rounded-lg bg-[rgba(245,158,11,0.1)] text-[#F59E0B] hover:bg-[rgba(245,158,11,0.2)] disabled:opacity-30 transition-all"
+                aria-label="Send steering message"
               >
                 <Send size={12} />
               </button>
@@ -285,6 +380,7 @@ export function AgentWorkPanel({ runId, agentName, className = "", onComplete }:
                 onClick={stopRun}
                 className="p-1.5 rounded-lg bg-[rgba(239,68,68,0.1)] text-[#ef4444] hover:bg-[rgba(239,68,68,0.2)] transition-all"
                 title="Stop agent"
+                aria-label="Stop agent execution"
               >
                 <StopCircle size={12} />
               </button>
@@ -305,33 +401,34 @@ function ToolEntry({ tool, index }: { tool: AgentWorkState["tools"][0]; index: n
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 w-full text-left"
+        aria-label={`${tool.name}: ${tool.status}`}
       >
         {tool.status === "running" ? (
-          <Loader2 size={10} className="text-[#6366f1] animate-spin shrink-0" />
+          <Loader2 size={10} className="text-[#F59E0B] animate-spin shrink-0" />
         ) : tool.status === "error" ? (
           <XCircle size={10} className="text-[#ef4444] shrink-0" />
         ) : (
           <CheckCircle2 size={10} className="text-[#22c55e] shrink-0" />
         )}
-        <span className="text-[10px] font-mono text-[#6366f1]">{tool.name}</span>
+        <span className="text-[10px] font-mono text-[#F59E0B]">{tool.name}</span>
         {tool.durationMs && (
-          <span className="text-[8px] text-[#4a5068]">{(tool.durationMs / 1000).toFixed(1)}s</span>
+          <span className="text-[8px] text-[#71717A]">{(tool.durationMs / 1000).toFixed(1)}s</span>
         )}
         {tool.status !== "running" && (
           <span className="ml-auto">
-            {open ? <ChevronDown size={10} className="text-[#4a5068]" /> : <ChevronRight size={10} className="text-[#4a5068]" />}
+            {open ? <ChevronDown size={10} className="text-[#71717A]" /> : <ChevronRight size={10} className="text-[#71717A]" />}
           </span>
         )}
       </button>
       {open && (
         <div className="mt-1 ml-5 pl-2 border-l border-[rgba(255,255,255,0.06)]">
           {Object.keys(tool.args).length > 0 && (
-            <p className="text-[8px] text-[#4a5068] mb-1 font-mono">
+            <p className="text-[8px] text-[#71717A] mb-1 font-mono">
               {JSON.stringify(tool.args, null, 2).slice(0, 200)}
             </p>
           )}
           {tool.resultPreview && (
-            <p className="text-[9px] text-[#8892a8]">{tool.resultPreview}</p>
+            <p className="text-[9px] text-[#A1A1AA]">{tool.resultPreview}</p>
           )}
           {tool.error && (
             <p className="text-[9px] text-[#ef4444]">{tool.error}</p>

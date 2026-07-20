@@ -1,10 +1,10 @@
-import { create } from 'zustand';
+import type { StoreHealth } from "../types/api";
 
 // ─── Types ───────────────────────────────────
 export interface Message {
   id: string; role: 'user' | 'assistant' | 'system'; content: string;
   timestamp: number; files?: { name: string; size: number; type: string }[];
-  toolCalls?: Array<{ tool: string; args: any; result?: string; success?: boolean; duration?: number }>;
+  toolCalls?: Array<{ tool: string; args: Record<string, unknown>; result?: string; success?: boolean; duration?: number }>;
   thinking?: string; duration?: number; tokens?: { input: number; output: number };
 }
 export interface AgentStatus {
@@ -31,8 +31,8 @@ interface AppState {
   updateAgentStatus: (id: string, status: Partial<AgentStatus>) => void;
   
   // System
-  connected: boolean; version: string; health: any;
-  setConnected: (c: boolean) => void; setVersion: (v: string) => void; setHealth: (h: any) => void;
+  connected: boolean; version: string; health: Record<string, unknown> | null;
+  setConnected: (c: boolean) => void; setVersion: (v: string) => void; setHealth: (h: Record<string, unknown> | null) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -44,7 +44,7 @@ export const useStore = create<AppState>((set, get) => ({
   
   // Chat
   messages: [], activeSession: null, streamingMessage: null,
-  activeAgent: 'main', activeModel: 'nexus-4',
+  activeAgent: 'main', activeModel: 'agentforge-1',
   contextUsed: 0, contextLimit: 200000,
   sendMessage: async (_content, _files) => {}, // Implemented in ChatPage
   clearChat: () => set({ messages: [], streamingMessage: null }),

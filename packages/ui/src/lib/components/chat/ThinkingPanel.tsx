@@ -20,12 +20,12 @@ export function ThinkingPanel({ content, isStreaming = false }: ThinkingPanelPro
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[rgba(139,92,246,0.05)] transition-colors"
       >
-        <Brain size={12} className="text-[#8b5cf6]" />
+        <Brain size={12} className="text-[#F59E0B]" />
         <span className="text-[11px] text-[#94a3b8] font-medium">
           {isStreaming ? "Thinking..." : "Thinking"}
         </span>
         {isStreaming && (
-          <span className="w-1.5 h-1.5 rounded-full bg-[#8b5cf6] animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-pulse" />
         )}
         <span className="ml-auto text-[#475569]">
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}

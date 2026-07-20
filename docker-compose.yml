@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  nexus-ai:
+    build: .
+    ports:
+      - "4123:4123"
+    environment:
+      - NODE_ENV=production
+      - NEXUS_API_KEY=${NEXUS_API_KEY}
+      - NEXUS_ENCRYPTION_SECRET=${NEXUS_ENCRYPTION_SECRET}
+      # Add other env vars from .env.example
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

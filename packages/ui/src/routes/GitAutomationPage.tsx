@@ -107,12 +107,12 @@ export function GitAutomationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+          <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#F59E0B] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
             <GitBranch size={20} className="text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Git Automation</h1>
-            <p className="text-xs text-[#475569]">Manage repositories and create PRs</p>
+            <p className="text-xs text-[#71717A]">Manage repositories and create PRs</p>
           </div>
         </div>
         <GlassButton variant="ghost" icon={<RefreshCw size={14} />} onClick={() => { refreshStatus(); refreshLog(); }}>
@@ -124,25 +124,25 @@ export function GitAutomationPage() {
       {gitInfo && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <GlassCard padding="sm">
-            <p className="text-[9px] text-[#475569] uppercase tracking-wider mb-1">Branch</p>
+            <p className="text-[9px] text-[#71717A] uppercase tracking-wider mb-1">Branch</p>
             <p className="text-sm text-white font-mono font-bold">{gitInfo.branch}</p>
           </GlassCard>
           <GlassCard padding="sm">
-            <p className="text-[9px] text-[#475569] uppercase tracking-wider mb-1">Ahead</p>
+            <p className="text-[9px] text-[#71717A] uppercase tracking-wider mb-1">Ahead</p>
             <p className="text-sm font-bold flex items-center gap-1">
               <ArrowUp size={12} className="text-[#22c55e]" />
               <span className="text-[#22c55e]">{gitInfo.ahead}</span>
             </p>
           </GlassCard>
           <GlassCard padding="sm">
-            <p className="text-[9px] text-[#475569] uppercase tracking-wider mb-1">Behind</p>
+            <p className="text-[9px] text-[#71717A] uppercase tracking-wider mb-1">Behind</p>
             <p className="text-sm font-bold flex items-center gap-1">
               <ArrowDown size={12} className="text-[#f59e0b]" />
               <span className="text-[#f59e0b]">{gitInfo.behind}</span>
             </p>
           </GlassCard>
           <GlassCard padding="sm">
-            <p className="text-[9px] text-[#475569] uppercase tracking-wider mb-1">Changes</p>
+            <p className="text-[9px] text-[#71717A] uppercase tracking-wider mb-1">Changes</p>
             <p className="text-sm font-bold text-white">
               {gitInfo.staged.length + gitInfo.modified.length + gitInfo.untracked.length} files
             </p>
@@ -166,24 +166,24 @@ export function GitAutomationPage() {
       {/* Working Tree */}
       {gitInfo && (gitInfo.staged.length > 0 || gitInfo.modified.length > 0 || gitInfo.untracked.length > 0) && (
         <GlassCard padding="md">
-          <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-3">Working Tree</h3>
+          <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-3">Working Tree</h3>
           <div className="space-y-1">
             {gitInfo.staged.map((f) => (
               <div key={f} className="flex items-center gap-2 py-1 text-xs">
                 <GlassBadge variant="success">staged</GlassBadge>
-                <span className="text-[#94a3b8] font-mono truncate">{f}</span>
+                <span className="text-[#A1A1AA] font-mono truncate">{f}</span>
               </div>
             ))}
             {gitInfo.modified.map((f) => (
               <div key={f} className="flex items-center gap-2 py-1 text-xs">
                 <GlassBadge variant="warning">modified</GlassBadge>
-                <span className="text-[#94a3b8] font-mono truncate">{f}</span>
+                <span className="text-[#A1A1AA] font-mono truncate">{f}</span>
               </div>
             ))}
             {gitInfo.untracked.map((f) => (
               <div key={f} className="flex items-center gap-2 py-1 text-xs">
                 <GlassBadge variant="default">untracked</GlassBadge>
-                <span className="text-[#94a3b8] font-mono truncate">{f}</span>
+                <span className="text-[#A1A1AA] font-mono truncate">{f}</span>
               </div>
             ))}
           </div>
@@ -192,7 +192,7 @@ export function GitAutomationPage() {
 
       {/* Commit Input */}
       <GlassCard padding="md">
-        <label className="text-xs font-medium text-[#94a3b8] mb-2 block">Commit Message</label>
+        <label className="text-xs font-medium text-[#A1A1AA] mb-2 block">Commit Message</label>
         <div className="flex gap-2">
           <GlassInput
             value={commitMsg}
@@ -213,7 +213,7 @@ export function GitAutomationPage() {
         <div className="space-y-2">
           {commits.length === 0 ? (
             <GlassCard padding="md" className="text-center">
-              <p className="text-xs text-[#475569]">No commits found</p>
+              <p className="text-xs text-[#71717A]">No commits found</p>
             </GlassCard>
           ) : (
             commits.map((c) => (
@@ -221,13 +221,13 @@ export function GitAutomationPage() {
                 <div className="flex items-start justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-white font-medium truncate">{c.message}</p>
-                    <p className="text-[10px] text-[#475569] font-mono mt-0.5">
+                    <p className="text-[10px] text-[#71717A] font-mono mt-0.5">
                       {c.hash.slice(0, 7)} · {c.author} · {new Date(c.date).toLocaleDateString()}
                     </p>
                   </div>
                   <button
                     onClick={() => navigator.clipboard.writeText(c.hash)}
-                    className="text-[#475569] hover:text-[#6366f1] transition-colors ml-2"
+                    className="text-[#71717A] hover:text-[#F59E0B] transition-colors ml-2"
                     title="Copy hash"
                   >
                     <Copy size={12} />
@@ -242,11 +242,11 @@ export function GitAutomationPage() {
       {activeTab === "diff" && (
         <GlassCard padding="md">
           {diff ? (
-            <pre className="text-[11px] text-[#94a3b8] font-mono whitespace-pre-wrap overflow-x-auto max-h-[400px] overflow-y-auto">
+            <pre className="text-[11px] text-[#A1A1AA] font-mono whitespace-pre-wrap overflow-x-auto max-h-[400px] overflow-y-auto">
               {diff}
             </pre>
           ) : (
-            <p className="text-xs text-[#475569] text-center py-8">No changes to display</p>
+            <p className="text-xs text-[#71717A] text-center py-8">No changes to display</p>
           )}
         </GlassCard>
       )}
@@ -255,10 +255,10 @@ export function GitAutomationPage() {
       {result && (
         <GlassCard padding="md" className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-[#475569] uppercase tracking-wider">Output</span>
-            <button onClick={() => setResult("")} className="text-[10px] text-[#475569] hover:text-white">Clear</button>
+            <span className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider">Output</span>
+            <button onClick={() => setResult("")} className="text-[10px] text-[#71717A] hover:text-white">Clear</button>
           </div>
-          <pre className="text-xs text-[#94a3b8] font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">{result}</pre>
+          <pre className="text-xs text-[#A1A1AA] font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">{result}</pre>
         </GlassCard>
       )}
     </div>

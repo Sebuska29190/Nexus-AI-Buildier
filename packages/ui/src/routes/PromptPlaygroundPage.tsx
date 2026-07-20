@@ -122,12 +122,12 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+        <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#F59E0B] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
           <FlaskConical size={20} className="text-white" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">Prompt Playground</h1>
-          <p className="text-xs text-[#475569]">Test prompts with different models and parameters</p>
+          <p className="text-xs text-[#71717A]">Test prompts with different models and parameters</p>
         </div>
       </div>
 
@@ -136,7 +136,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
         <div className="space-y-4">
           {/* System Prompt */}
           <GlassCard padding="md">
-            <label className="text-xs font-medium text-[#94a3b8] mb-2 block">System Prompt</label>
+            <label className="text-xs font-medium text-[#A1A1AA] mb-2 block">System Prompt</label>
             <textarea
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
@@ -147,7 +147,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
 
           {/* User Prompt */}
           <GlassCard padding="md">
-            <label className="text-xs font-medium text-[#94a3b8] mb-2 block">User Prompt</label>
+            <label className="text-xs font-medium text-[#A1A1AA] mb-2 block">User Prompt</label>
             <textarea
               value={userPrompt}
               onChange={(e) => setUserPrompt(e.target.value)}
@@ -155,7 +155,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
               placeholder="Enter your prompt here... Use {{variable}} for dynamic values"
             />
             {foundVars.length > 0 && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-[#475569]">
+              <div className="mt-2 flex items-center gap-2 text-xs text-[#71717A]">
                 <span>Variables detected:</span>
                 {foundVars.map((v) => (
                   <GlassBadge key={v} variant="accent">{`{{${v}}}`}</GlassBadge>
@@ -189,17 +189,17 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
           {(currentResponse || running) && (
             <GlassCard padding="md" className="animate-fade-in-up">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-[#94a3b8]">Response</span>
+                <span className="text-xs font-medium text-[#A1A1AA]">Response</span>
                 {running && (
                   <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#6366f1] animate-glow-pulse" />
-                    <span className="text-[10px] text-[#475569]">Streaming...</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-glow-pulse" />
+                    <span className="text-[10px] text-[#71717A]">Streaming...</span>
                   </div>
                 )}
               </div>
               <div className="text-sm text-[#cbd5e1] font-mono whitespace-pre-wrap leading-relaxed">
                 {currentResponse || (
-                  <span className="text-[#475569] italic">Waiting for response...</span>
+                  <span className="text-[#71717A] italic">Waiting for response...</span>
                 )}
               </div>
             </GlassCard>
@@ -208,27 +208,27 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
           {/* History */}
           {results.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider">History</h3>
+              <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider">History</h3>
               {results.map((r) => (
                 <GlassCard key={r.id} padding="md" className="animate-slide-in">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <GlassBadge variant="accent">{r.model}</GlassBadge>
-                      <span className="text-[10px] text-[#475569]">{r.timestamp.toLocaleTimeString()}</span>
+                      <span className="text-[10px] text-[#71717A]">{r.timestamp.toLocaleTimeString()}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] text-[#475569]">
+                    <div className="flex items-center gap-3 text-[10px] text-[#71717A]">
                       <span className="flex items-center gap-1"><Zap size={10} />{r.tokens} tokens</span>
                       <span className="flex items-center gap-1"><Clock size={10} />{r.latency}s</span>
                       <button
                         onClick={() => navigator.clipboard.writeText(r.response)}
-                        className="text-[#475569] hover:text-[#6366f1] transition-colors"
+                        className="text-[#71717A] hover:text-[#F59E0B] transition-colors"
                         title="Copy response"
                       >
                         <Copy size={12} />
                       </button>
                     </div>
                   </div>
-                  <p className="text-xs text-[#94a3b8] line-clamp-3">{r.response}</p>
+                  <p className="text-xs text-[#A1A1AA] line-clamp-3">{r.response}</p>
                 </GlassCard>
               ))}
             </div>
@@ -238,11 +238,11 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
         {/* Right: Settings */}
         <div className="space-y-4">
           <GlassCard padding="md">
-            <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-4">Settings</h3>
+            <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-4">Settings</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-[#94a3b8] mb-1.5 block">Model</label>
+                <label className="text-xs font-medium text-[#A1A1AA] mb-1.5 block">Model</label>
                 <GlassDropdown
                   value={selectedModel}
                   options={modelOptions}
@@ -275,7 +275,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
           {/* Variables */}
           {foundVars.length > 0 && (
             <GlassCard padding="md" className="animate-fade-in-up">
-              <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-4">Variables</h3>
+              <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-4">Variables</h3>
               <div className="space-y-3">
                 {foundVars.map((v) => (
                   <GlassInput
@@ -292,7 +292,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
 
           {/* Quick Templates */}
           <GlassCard padding="md">
-            <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-4">Quick Templates</h3>
+            <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-4">Quick Templates</h3>
             <div className="space-y-2">
               {[
                 { label: "Code Review", system: "You are a senior code reviewer. Analyze code for bugs, security issues, and improvements.", user: "Review this code:\n\n```javascript\nfunction example() {\n  // review this\n}\n```" },
@@ -302,7 +302,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
                 <button
                   key={t.label}
                   onClick={() => { setSystemPrompt(t.system); setUserPrompt(t.user); }}
-                  className="w-full text-left px-3 py-2 rounded-xl text-xs text-[#94a3b8] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f1f5f9] transition-all duration-200 border border-transparent hover:border-[rgba(255,255,255,0.06)]"
+                  className="w-full text-left px-3 py-2 rounded-md text-xs text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#E4E4E7] transition-all duration-200 border border-transparent hover:border-[rgba(255,255,255,0.06)]"
                 >
                   {t.label}
                 </button>

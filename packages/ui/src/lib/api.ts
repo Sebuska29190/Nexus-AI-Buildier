@@ -1,3 +1,5 @@
+import type { SkillEntry, ToolCall } from "../types/api";
+
 const BASE = import.meta.env.VITE_NOVA_API_URL || "http://localhost:4123";
 
 async function get(path: string, timeoutMs = 15000) {
@@ -29,22 +31,22 @@ async function post(path: string, body?: unknown, timeoutMs = 15000) {
 }
 
 export const api = {
-  get: (path: string): Promise<any> => get(path),
+  get: (path: string): Promise<unknown> => get(path),
   health: () => get("/health"),
-  models: () => get("/v1/models").then((r) => r.data || []),
-  sessions: () => get("/api/sessions").then((r) => r.sessions || []),
+  models: () => get("/v1/models").then((r: any) => r.data || []),
+  sessions: () => get("/api/sessions").then((r: any) => r.sessions || []),
   sessionDetail: (id: string) => get(`/api/sessions/${id}`),
-  agents: () => get("/api/agents").then((r) => r.agents || []),
-  skills: () => get("/api/skills").then((r) => {
+  agents: () => get("/api/agents").then((r: any) => r.agents || []),
+  skills: () => get("/api/skills").then((r: any) => {
     if (!r || !r.skills) return [];
     // Transform backend SkillDef → UI expected format
-    return r.skills.map((s: any) => ({
-      name: s.name && s.name !== "SKILL" ? s.name : s.category || s.name || "Unknown",
+    return (r.skills as SkillEntry[]).map((s) => ({
+      name: s.name && s.name !== "SKILL" ? s.name : (s as any).category || s.name || "Unknown",
       description: s.description || "",
-      category: s.category || "uncategorized",
-      tags: (s.triggers || []).slice(0, 5),
-      parameters: (s.tools || []).map((t: string) => ({ name: t })),
-      source: s.filePath?.includes("community") ? "community" : "auto-generated",
+      category: (s as any).category || "uncategorized",
+      tags: ((s as any).triggers || []).slice(0, 5),
+      parameters: ((s as any).tools || []).map((t: string) => ({ name: t })),
+      source: (s as any).filePath?.includes("community") ? "community" : "auto-generated",
     }));
   }),
   agentSend: (message: string, model?: string, agentId?: string) =>

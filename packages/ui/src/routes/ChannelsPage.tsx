@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../lib/api";
 
 const SENSITIVE_KEYS = /token|api[_-]?key|secret|password|pass|auth/i;
@@ -27,7 +27,7 @@ interface ConfigEntry {
 }
 
 const channelDefs: ChannelDef[] = [
-  { type: "telegram", icon: "send", color: "#6366f1", title: "Telegram Gateway",
+  { type: "telegram", icon: "send", color: "#F59E0B", title: "Telegram Gateway",
     desc: "Empower your agent to monitor targeted groups, push urgent alerts, and execute queries from secure chats.",
     configFields: [{ key: "token", label: "Bot Token", type: "password" }, { key: "chatId", label: "Chat ID", type: "text" }] },
   { type: "discord", icon: "message-square", color: "indigo-400", title: "Discord Bridge",
@@ -53,7 +53,7 @@ const channelDefs: ChannelDef[] = [
     ] },
   { type: "signal", icon: "phone", color: "blue-400", title: "Signal Messenger",
     desc: "End-to-end encrypted messaging via Signal CLI. Requires signal-cli and a registered phone number.",
-    configFields: [{ key: "phoneNumber", label: "Phone Number (+1234567890)", type: "text" }, { key: "signalCliPath", label: "signal-cli path (optional)", type: "text" }] },
+    configFields: [{ key: "phoneNumber", label: "Phone Number (+123****7890)", type: "text" }, { key: "signalCliPath", label: "signal-cli path (optional)", type: "text" }] },
   { type: "matrix", icon: "message-square", color: "green-400", title: "Matrix (Element)",
     desc: "Decentralized, open-source messaging protocol. Connect to any Matrix homeserver.",
     configFields: [{ key: "homeserver", label: "Homeserver URL", type: "text" }, { key: "userId", label: "User ID", type: "text" }, { key: "accessToken", label: "Access Token", type: "password" }, { key: "roomId", label: "Room ID", type: "text" }] },
@@ -69,19 +69,33 @@ export function ChannelsPage() {
   const [configs, setConfigs] = useState<Record<string, string>>({});
   const [testing, setTesting] = useState<Record<string, boolean>>({});
   const [testResults, setTestResults] = useState<Record<string, string>>({});
+  const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => { loadChannels(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    loadChannels(controller.signal);
+    return () => {
+      controller.abort();
+      abortRef.current = null;
+    };
+  }, []);
 
-  async function loadChannels() {
+  async function loadChannels(signal?: AbortSignal) {
     setLoading(true);
     try {
-      setChannels(await api.channels());
-      const res = await fetch("/api/channels/configs");
+      const res = await fetch("/api/channels", { signal });
       if (res.ok) {
         const data = await res.json();
+        setChannels(data.channels || []);
+      }
+      const configRes = await fetch("/api/channels/configs", { signal });
+      if (configRes.ok) {
+        const data = await configRes.json();
         setSavedConfigs(data.configs || {});
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (e.name === "AbortError") return;
       console.error("Failed to load channels", e);
     } finally {
       setLoading(false);
@@ -139,13 +153,13 @@ export function ChannelsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-white">External Communication Pipelines</h2>
-          <p className="text-xs text-slate-400">Establish pathways between Nexus AI agents and third-party networks.</p>
+          <p className="text-xs text-slate-400">Establish pathways between AgentForge agents and third-party networks.</p>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-slate-500">
             {channels.filter((c) => c.connected).length} connected · {Object.keys(savedConfigs).length} configured
           </span>
-          <button onClick={loadChannels} className="bg-[#0e1117] hover:bg-slate-800 text-slate-400 border border-slate-800 px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5">
+          <button onClick={() => loadChannels()} className="bg-[#0e1117] hover:bg-slate-800 text-slate-400 border border-slate-800 px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5" aria-label="Refresh channels">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
@@ -166,7 +180,7 @@ export function ChannelsPage() {
             const savedCfg = savedConfigs[def.type] || {};
 
             return (
-              <div key={def.type} className="glass-panel rounded-xl p-5">
+              <div key={def.type} className="glass-panel rounded-md p-5">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -230,12 +244,12 @@ export function ChannelsPage() {
                             <span className="bg-[#020408]/60 border border-slate-800 rounded-l px-2.5 py-1.5 text-xs text-slate-500 font-mono">{field.prefix}</span>
                             <input type={field.type || "text"} placeholder={field.label}
                               value={val} onChange={(e) => setConfigs((prev) => ({ ...prev, [configKey]: e.target.value }))}
-                              className="flex-1 bg-[#020408]/60 border border-l-0 border-slate-800 rounded-r px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1]" />
+                              className="flex-1 bg-[#020408]/60 border border-l-0 border-slate-800 rounded-r px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#F59E0B]" />
                           </div>
                         ) : (
                           <input key={field.key} type={field.type || "text"} placeholder={field.label}
                             value={val} onChange={(e) => setConfigs((prev) => ({ ...prev, [configKey]: e.target.value }))}
-                            className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1]" />
+                            className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#F59E0B]" />
                         );
                       })}
                     </div>

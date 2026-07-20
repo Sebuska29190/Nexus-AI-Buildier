@@ -1,5 +1,5 @@
 // Event bus tests
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { emitEvent, onEvent, onEventKind } from "../event-bus/index.ts";
 
 describe("Event Bus", () => {

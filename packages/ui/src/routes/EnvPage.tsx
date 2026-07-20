@@ -137,7 +137,7 @@ export function EnvPage() {
                 {editingKey[provider.id] ? (
                   <input
                     type={showKey[provider.id] ? "text" : "password"}
-                    className="bg-[#020408]/60 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono w-56 focus:outline-none focus:border-[#6366f1]"
+                    className="bg-[#020408]/60 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono w-56 focus:outline-none focus:border-[#F59E0B]"
                     placeholder="Enter API key..."
                     value={editingKey[provider.id]}
                     onChange={(e) => setEditingKey((prev) => ({ ...prev, [provider.id]: e.target.value }))}

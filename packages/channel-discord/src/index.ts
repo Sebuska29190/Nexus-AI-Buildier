@@ -50,7 +50,7 @@ export function createDiscordPlugin(cfg: DiscordCfg): ChannelPlugin {
       const msgs: any = await api(cfg.token, "GET", `/channels/${cfg.channelId}/messages?limit=1`);
       if (Array.isArray(msgs) && msgs.length > 0) lastMessageId = msgs[0].id;
 
-      await bot.sendMessage(cfg.channelId, "🟢 Nexus AI is online!");
+      await bot.sendMessage(cfg.channelId, "🟢 AgentForge is online!");
 
       // Poll for new messages every 3 seconds
       pollTimer = setInterval(async () => {

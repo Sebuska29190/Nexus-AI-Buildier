@@ -1,27 +1,58 @@
 /**
  * ApiKeysPage — Real API key management with live testing
  * Uses backend /api/config/providers for real data
+ * Integrated with react-hook-form + zod validation
  */
 import { useState, useEffect } from "react";
-import { KeyRound, Eye, EyeOff, Copy, RotateCw, Trash2, Plus, Shield, CheckCircle, XCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { KeyRound, Eye, EyeOff, Copy, RotateCw, Trash2, Plus, Shield, CheckCircle, XCircle, AlertTriangle, Loader2, AlertCircle } from "lucide-react";
 import { api } from "../lib/api";
+import { ConfirmDialog } from "../lib/components/ui/ConfirmDialog";
+import { apiKeySchema, type ApiKeyFormData } from "../lib/validation";
 
 interface ProviderEntry {
   id: string; name: string; hasKey: boolean; enabled: boolean;
   models: number; lastTested?: string; status?: 'valid' | 'error' | 'untested';
 }
 
+const PROVIDER_OPTIONS = [
+  { value: "openai", label: "OpenAI" },
+  { value: "anthropic", label: "Anthropic" },
+  { value: "google", label: "Google" },
+  { value: "deepseek", label: "DeepSeek" },
+  { value: "grok", label: "Grok" },
+  { value: "qwen", label: "Qwen" },
+  { value: "openrouter", label: "OpenRouter" },
+  { value: "custom", label: "Custom" },
+] as const;
+
 function ApiKeysPage() {
   const [providers, setProviders] = useState<ProviderEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const [showAdd, setShowAdd] = useState(false);
-  const [newProvider, setNewProvider] = useState("openai");
-  const [newKey, setNewKey] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<Set<string>>(new Set());
   const [testResults, setTestResults] = useState<Record<string, { ok: boolean; error?: string }>>({});
   const [message, setMessage] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<{ providerId: string; name: string } | null>(null);
+
+  // React Hook Form with zod resolver
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<ApiKeyFormData>({
+    resolver: zodResolver(apiKeySchema),
+    defaultValues: {
+      name: "",
+      key: "",
+      provider: "openai",
+    },
+  });
 
   useEffect(() => { loadProviders(); }, []);
 
@@ -60,21 +91,29 @@ function ApiKeysPage() {
     }
   }
 
-  async function saveKey() {
-    if (!newKey.trim()) return;
+  async function onSave(data: ApiKeyFormData) {
     setSaving(true);
+    setMessage("");
     try {
-      const res = await fetch(`/api/config/providers/${newProvider}`, {
+      // Use /update endpoint if baseUrl is provided, otherwise /key
+      const hasBaseUrl = !!data.baseUrl?.trim();
+      const endpoint = hasBaseUrl
+        ? `/api/config/provider/${data.provider}/update`
+        : `/api/config/provider/${data.provider}/key`;
+      const res = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: newKey.trim(), enabled: true }),
+        body: hasBaseUrl
+          ? JSON.stringify({ apiKey: data.key, baseUrl: data.baseUrl.trim(), enabled: true, name: data.name })
+          : JSON.stringify({ apiKey: data.key, enabled: true, name: data.name }),
       });
-      const data = await res.json();
-      if (data.status === "saved") {
-        setMessage(`✅ Key saved for ${newProvider}`);
-        setNewKey(""); setShowAdd(false);
+      const result = await res.json();
+      if (result.status === "saved" || res.ok) {
+        setMessage(`✅ Key saved for ${data.provider}`);
+        reset();
+        setShowAdd(false);
         loadProviders();
       } else {
-        setMessage(`❌ ${data.error || "Failed"}`);
+        setMessage(`❌ ${result.error || "Failed"}`);
       }
     } catch (e: any) {
       setMessage(`❌ ${e.message}`);
@@ -84,12 +123,7 @@ function ApiKeysPage() {
   }
 
   async function deleteKey(providerId: string) {
-    if (!confirm(`Remove API key for ${providerId}?`)) return;
-    try {
-      await fetch(`/api/config/providers/${providerId}`, { method: "DELETE" });
-      loadProviders();
-      setMessage(`Key removed for ${providerId}`);
-    } catch {}
+    setConfirmDelete({ providerId, name: providerId });
   }
 
   function toggleVisibility(id: string) {
@@ -102,8 +136,8 @@ function ApiKeysPage() {
       <div className="shrink-0 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center">
-              <KeyRound className="w-5 h-5 text-[#818cf8]" />
+            <div className="w-10 h-10 rounded-lg bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.15)] flex items-center justify-center">
+              <KeyRound className="w-5 h-5 text-[#F59E0B]" />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-white">API Keys</h1>
@@ -124,25 +158,69 @@ function ApiKeysPage() {
         </div>
       )}
 
-      {/* Add Key Form */}
+      {/* Add Key Form with react-hook-form */}
       {showAdd && (
-        <div className="shrink-0 mb-4 p-4 rounded-xl bg-[rgba(0,212,255,0.03)] border border-[rgba(0,212,255,0.1)]">
-          <div className="flex items-center gap-3">
-            <select value={newProvider} onChange={e => setNewProvider(e.target.value)} className="glass-input px-3 py-2 text-sm">
-              {providers.filter(p => !p.hasKey).map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-              {providers.filter(p => !p.hasKey).length === 0 && (
-                <option value="">All providers configured</option>
+        <form onSubmit={handleSubmit(onSave)} className="shrink-0 mb-4 p-4 rounded-lg bg-[rgba(245,158,11,0.03)] border border-[rgba(245,158,11,0.1)] space-y-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex-1 min-w-[120px]">
+              <select {...register("provider")} className="glass-input w-full px-3 py-2 text-sm">
+                {PROVIDER_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {errors.provider && (
+                <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.provider.message}
+                </p>
               )}
-            </select>
-            <input type="password" value={newKey} onChange={e => setNewKey(e.target.value)} placeholder="sk-..." className="glass-input flex-1 px-3 py-2 text-sm" />
-            <button onClick={saveKey} disabled={saving || !newKey.trim()} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 shrink-0 disabled:opacity-50">
+            </div>
+            <div className="flex-[2] min-w-[200px]">
+              <input
+                type="text"
+                {...register("name")}
+                placeholder="Nazwa klucza (np. Production)"
+                className="glass-input w-full px-3 py-2 text-sm"
+              />
+              {errors.name && (
+                <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.name.message}
+                </p>
+              )}
+            </div>
+            <div className="flex-[2] min-w-[200px]">
+              <input
+                type="password"
+                {...register("key")}
+                placeholder="sk-... (min. 10 znaków)"
+                className="glass-input w-full px-3 py-2 text-sm"
+              />
+              {errors.key && (
+                <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                  <AlertCircle className="w-3 h-3" /> {errors.key.message}
+                </p>
+              )}
+            </div>
+            {watch("provider") === "custom" && (
+              <div className="flex-[2] min-w-[200px]">
+                <input
+                  type="text"
+                  {...register("baseUrl")}
+                  placeholder="Base URL (np. https://api.example.com/v1)"
+                  className="glass-input w-full px-3 py-2 text-sm"
+                />
+                {errors.baseUrl && (
+                  <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.baseUrl.message}
+                  </p>
+                )}
+              </div>
+            )}
+            <button type="submit" disabled={saving} className="btn-nova px-4 py-2 text-sm flex items-center gap-2 shrink-0 disabled:opacity-50">
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
               {saving ? "Saving..." : "Add & Encrypt"}
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* Providers List */}
@@ -153,12 +231,12 @@ function ApiKeysPage() {
         </div>
 
         {loading ? (
-          <div className="glass-card rounded-2xl p-8 text-center">
-            <Loader2 className="w-5 h-5 text-[#818cf8] animate-spin mx-auto mb-2" />
+          <div className="glass-card rounded-lg p-8 text-center">
+            <Loader2 className="w-5 h-5 text-[#F59E0B] animate-spin mx-auto mb-2" />
             <p className="text-xs text-[#4a5068]">Loading providers...</p>
           </div>
         ) : providers.length === 0 ? (
-          <div className="glass-card rounded-2xl p-8 text-center">
+          <div className="glass-card rounded-lg p-8 text-center">
             <p className="text-sm text-[#4a5068]">No providers found. Start the server to detect providers.</p>
           </div>
         ) : (
@@ -166,9 +244,9 @@ function ApiKeysPage() {
             const testResult = testResults[p.id];
             const isTesting = testing.has(p.id);
             return (
-              <div key={p.id} className={`glass-card rounded-2xl p-4 flex items-center gap-4 ${p.status === 'error' ? 'border-[rgba(239,68,68,0.15)]' : ''}`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${p.hasKey ? "bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.15)]" : "bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)]"}`}>
-                  <span className={`text-sm font-bold ${p.hasKey ? "text-[#818cf8]" : "text-[#4a5068]"}`}>
+              <div key={p.id} className={`glass-card rounded-lg p-4 flex items-center gap-4 ${p.status === 'error' ? 'border-[rgba(239,68,68,0.15)]' : ''}`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${p.hasKey ? "bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.15)]" : "bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)]"}`}>
+                  <span className={`text-sm font-bold ${p.hasKey ? "text-[#F59E0B]" : "text-[#4a5068]"}`}>
                     {p.name.slice(0, 2).toUpperCase()}
                   </span>
                 </div>
@@ -203,14 +281,14 @@ function ApiKeysPage() {
                 <div className="flex items-center gap-1 shrink-0">
                   {p.hasKey && (
                     <>
-                      <button onClick={() => toggleVisibility(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Show/Hide">
+                      <button onClick={() => toggleVisibility(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Show/Hide" aria-label="Toggle key visibility">
                         {visibleKeys.has(p.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
-                      <button onClick={() => testProvider(p.id)} disabled={isTesting} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all disabled:opacity-50" title="Test connection">
+                      <button onClick={() => testProvider(p.id)} disabled={isTesting} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all disabled:opacity-50" title="Test connection" aria-label="Test connection">
                         {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
                       </button>
-                      <button onClick={() => navigator.clipboard.writeText(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Copy name"><Copy className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => deleteKey(p.id)} className="p-2 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#fca5a5] hover:bg-[rgba(239,68,68,0.2)] transition-all" title="Delete key">
+                      <button onClick={() => navigator.clipboard.writeText(p.id)} className="p-2 rounded-xl bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.08)] transition-all" title="Copy name" aria-label="Copy provider name"><Copy className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => deleteKey(p.id)} className="p-2 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#fca5a5] hover:bg-[rgba(239,68,68,0.2)] transition-all" title="Delete key" aria-label="Delete API key">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </>
@@ -221,6 +299,26 @@ function ApiKeysPage() {
           })
         )}
       </div>
+
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Remove API Key"
+        message={`Are you sure you want to remove the API key for ${confirmDelete?.name}? This action cannot be undone.`}
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={async () => {
+          if (!confirmDelete) return;
+          const { providerId } = confirmDelete;
+          setConfirmDelete(null);
+          try {
+            await fetch(`/api/config/providers/${providerId}`, { method: "DELETE" });
+            loadProviders();
+            setMessage(`Key removed for ${providerId}`);
+          } catch {}
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

@@ -1,75 +1,75 @@
 /* ────────────────────────────────────────────────────────────── */
-/* Nova AI Builder — Dark Glassmorphism Theme 2026              */
+/* AgentForge — Flat Dark Theme v3 (amber forge accent)         */
 /* ────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════ */
-/* NEXUS AI v2.0 — Premium Design Tokens (additive, non-breaking) */
+/* AGENTFORGE v2.0 — Premium Design Tokens (additive, non-breaking) */
 /* ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Premium background depth layers */
-  --nx-bg-deepest: #050510;
-  --nx-bg-primary: #0a0b1e;
-  --nx-bg-secondary: #11132b;
-  --nx-bg-tertiary: #1a1d3a;
-  --nx-bg-glass: rgba(255, 255, 255, 0.025);
-  --nx-bg-glass-hover: rgba(255, 255, 255, 0.05);
-  --nx-bg-glass-active: rgba(0, 212, 255, 0.06);
+  /* AgentForge v3 — flat dark surfaces, amber forge accent */
+  --nx-bg-deepest: #08080a;
+  --nx-bg-primary: #0a0a0b;
+  --nx-bg-secondary: #111113;
+  --nx-bg-tertiary: #161618;
+  --nx-bg-glass: rgba(255, 255, 255, 0.02);
+  --nx-bg-glass-hover: rgba(255, 255, 255, 0.04);
+  --nx-bg-glass-active: rgba(245, 158, 11, 0.06);
 
-  /* Premium accent spectrum */
-  --nx-cyan: #00d4ff;
-  --nx-blue: #3b82f6;
-  --nx-indigo: #6366f1;
-  --nx-violet: #8b5cf6;
-  --nx-purple: #a78bfa;
+  /* Forge accent spectrum — amber/orange */
+  --nx-cyan: #F59E0B;
+  --nx-blue: #3B82F6;
+  --nx-indigo: #F59E0B;
+  --nx-violet: #EA580C;
+  --nx-purple: #FCD34D;
 
-  /* Premium text hierarchy */
-  --nx-text-primary: #e8ecf2;
-  --nx-text-secondary: #8892a8;
-  --nx-text-muted: #4a5068;
-  --nx-text-accent: #00d4ff;
+  /* Text hierarchy — neutral zinc */
+  --nx-text-primary: #E4E4E7;
+  --nx-text-secondary: #A1A1AA;
+  --nx-text-muted: #71717A;
+  --nx-text-accent: #F59E0B;
 
-  /* Premium borders */
-  --nx-border-subtle: rgba(255, 255, 255, 0.04);
-  --nx-border-default: rgba(255, 255, 255, 0.08);
-  --nx-border-active: rgba(0, 212, 255, 0.25);
-  --nx-border-glow: rgba(99, 102, 241, 0.3);
+  /* Borders — subtler, amber on active */
+  --nx-border-subtle: rgba(255, 255, 255, 0.06);
+  --nx-border-default: rgba(255, 255, 255, 0.10);
+  --nx-border-active: rgba(245, 158, 11, 0.40);
+  --nx-border-glow: rgba(245, 158, 11, 0.25);
 
   /* Status */
-  --nx-success: #10b981;
-  --nx-warning: #f59e0b;
-  --nx-error: #ef4444;
-  --nx-info: #3b82f6;
+  --nx-success: #10B981;
+  --nx-warning: #F59E0B;
+  --nx-error: #EF4444;
+  --nx-info: #3B82F6;
 }
 
 @import "tailwindcss";
 
 @theme {
-  /* ── Core palette — Glassmorphism ── */
-  --color-nova-bg:       #0a0a0f;
-  --color-nova-panel:    #12121a;
-  --color-nova-card:     rgba(255, 255, 255, 0.03);
-  --color-nova-card-hover: rgba(255, 255, 255, 0.06);
-  --color-nova-foreground: #f1f5f9;
-  --color-nova-midground:  #94a3b8;
-  --color-nova-muted:    #475569;
-  --color-nova-muted-2:  #64748b;
+  /* ── Core palette — AgentForge flat dark ── */
+  --color-nova-bg:       #0a0a0b;
+  --color-nova-panel:    #111113;
+  --color-nova-card:     #161618;
+  --color-nova-card-hover: #1c1c1f;
+  --color-nova-foreground: #E4E4E7;
+  --color-nova-midground:  #A1A1AA;
+  --color-nova-muted:    #71717A;
+  --color-nova-muted-2:  #52525B;
   --color-nova-border:   rgba(255, 255, 255, 0.06);
-  --color-nova-border-2: rgba(255, 255, 255, 0.1);
-  --color-nova-border-3: rgba(99, 102, 241, 0.4);
+  --color-nova-border-2: rgba(255, 255, 255, 0.10);
+  --color-nova-border-3: rgba(245, 158, 11, 0.40);
 
-  /* ── Accent — indigo/violet gradient ── */
-  --color-nova-accent:      #6366f1;
-  --color-nova-purple:      #8b5cf6;
-  --color-nova-accent-dim:  rgba(99, 102, 241, 0.08);
-  --color-nova-accent-glow: rgba(99, 102, 241, 0.15);
-  --color-nova-accent-glow-2: rgba(99, 102, 241, 0.45);
-  --color-nova-violet:      #a78bfa;
+  /* ── Accent — amber forge ── */
+  --color-nova-accent:      #F59E0B;
+  --color-nova-purple:      #EA580C;
+  --color-nova-accent-dim:  rgba(245, 158, 11, 0.08);
+  --color-nova-accent-glow: rgba(245, 158, 11, 0.15);
+  --color-nova-accent-glow-2: rgba(245, 158, 11, 0.45);
+  --color-nova-violet:      #FCD34D;
 
   /* ── Semantic aliases ── */
   --color-bg-primary:    var(--color-nova-bg);
   --color-bg-secondary:  var(--color-nova-panel);
-  --color-bg-tertiary:   #1a1a2e;
+  --color-bg-tertiary:   #161618;
   --color-text-primary:  var(--color-nova-foreground);
   --color-text-secondary: var(--color-nova-midground);
   --color-text-muted:    var(--color-nova-muted);
@@ -540,7 +540,7 @@ select.glass-input,
 }
 
 /* ═════════════════════════════════════════════════════════════════ */
-/* NEXUS AI v2.0 — Premium Component Classes                        */
+/* AGENTFORGE v2.0 — Premium Component Classes                        */
 /* ═════════════════════════════════════════════════════════════════ */
 
 /* Premium card — deeper glass, cyan glow on hover */

@@ -55,11 +55,11 @@ function SystemLogsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[rgba(100,116,139,0.1)] border border-[rgba(100,116,139,0.2)] flex items-center justify-center">
-              <ScrollText className="w-5 h-5 text-[#94a3b8]" />
+              <ScrollText className="w-5 h-5 text-[#A1A1AA]" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-[#e8ecf2]">System Logs</h1>
-              <p className="text-xs text-[#4a5068]">
+              <h1 className="text-lg font-semibold text-[#E4E4E7]">System Logs</h1>
+              <p className="text-xs text-[#71717A]">
                 {filtered.length} entries · 🔴 {stats.error} · 🟡 {stats.warn} · 🔵 {stats.info} · 🟢 {stats.debug}
               </p>
             </div>
@@ -82,7 +82,7 @@ function SystemLogsPage() {
       {/* Filters */}
       <div className="shrink-0 px-6 py-3 border-b border-[rgba(255,255,255,0.04)] flex items-center gap-3 bg-[rgba(255,255,255,0.01)]">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#4a5068]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#71717A]" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search logs..."
@@ -98,14 +98,14 @@ function SystemLogsPage() {
             const active = levelFilter.has(level);
             return (
               <button key={level} onClick={() => toggleLevel(level)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider border transition-all ${active ? LEVEL_BG[level].split(' ')[0] + ' ' + LEVEL_COLOR[level] + ' border-current' : 'text-[#4a5068] border-[rgba(255,255,255,0.06)] hover:text-[#8892a8]'}`}>
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider border transition-all ${active ? LEVEL_BG[level].split(' ')[0] + ' ' + LEVEL_COLOR[level] + ' border-current' : 'text-[#71717A] border-[rgba(255,255,255,0.06)] hover:text-[#A1A1AA]'}`}>
                 <LIcon className="w-3 h-3" /> {level}
               </button>
             );
           })}
         </div>
-        <label className="flex items-center gap-2 text-[10px] text-[#4a5068] cursor-pointer ml-auto">
-          <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="accent-[#00d4ff]" />
+        <label className="flex items-center gap-2 text-[10px] text-[#71717A] cursor-pointer ml-auto">
+          <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="accent-[#F59E0B]" />
           Auto-scroll
         </label>
       </div>
@@ -117,19 +117,19 @@ function SystemLogsPage() {
           return (
             <div key={entry.id} className={`px-6 py-2.5 border-l-2 hover:bg-[rgba(255,255,255,0.01)] transition-colors ${LEVEL_BG[entry.level]}`}>
               <div className="flex items-start gap-3">
-                <span className="text-[#4a5068] shrink-0 w-16">{entry.time}</span>
+                <span className="text-[#71717A] shrink-0 w-16">{entry.time}</span>
                 <LIcon className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${LEVEL_COLOR[entry.level]}`} />
-                <span className="text-[#4a5068] shrink-0 w-14 uppercase text-[10px] tracking-wider font-semibold">[{entry.module}]</span>
-                <span className="text-[#8892a8] flex-1">{entry.message}</span>
+                <span className="text-[#71717A] shrink-0 w-14 uppercase text-[10px] tracking-wider font-semibold">[{entry.module}]</span>
+                <span className="text-[#A1A1AA] flex-1">{entry.message}</span>
               </div>
               {entry.detail && (
-                <div className="ml-[calc(7rem+2.75rem)] mt-0.5 text-[#4a5068]">{entry.detail}</div>
+                <div className="ml-[calc(7rem+2.75rem)] mt-0.5 text-[#71717A]">{entry.detail}</div>
               )}
             </div>
           );
         })}
         {filtered.length === 0 && (
-          <div className="flex items-center justify-center h-full text-[#4a5068] text-sm">No log entries match your filters</div>
+          <div className="flex items-center justify-center h-full text-[#71717A] text-sm">No log entries match your filters</div>
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 // Skill loader tests
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { loadSkills } from "../skill/loader.ts";
 
 describe("Skill Loader", () => {

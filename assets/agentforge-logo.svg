@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="forge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <!-- Anvil body -->
+  <path d="M14 24 L50 24 L46 30 L18 30 Z" fill="url(#forge)"/>
+  <path d="M18 30 L46 30 L44 34 L20 34 Z" fill="#EA580C"/>
+  <!-- Anvil horn (left point) -->
+  <path d="M14 24 L6 26 L6 28 L14 28 Z" fill="url(#forge)"/>
+  <!-- Base/stem -->
+  <rect x="28" y="34" width="8" height="14" fill="url(#forge)"/>
+  <rect x="22" y="48" width="20" height="6" rx="1" fill="#EA580C"/>
+  <!-- Spark -->
+  <path d="M32 8 L34 16 L32 14 L30 16 Z" fill="#FCD34D"/>
+  <path d="M38 12 L39 18 L37 17 L36 19 Z" fill="#F59E0B"/>
+  <path d="M26 12 L25 18 L27 17 L28 19 Z" fill="#F59E0B"/>
+</svg>

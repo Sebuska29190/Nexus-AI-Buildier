@@ -7,6 +7,9 @@ export function LogsPage() {
   const [autoScroll, setAutoScroll] = useState(true);
   const [connected, setConnected] = useState(false);
   const sseRef = useRef<EventSource | null>(null);
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const mountedRef = useRef(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const filteredLogs = useMemo(() => {
@@ -23,11 +26,16 @@ export function LogsPage() {
   }, [logs, filterLevel, filterComponent]);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadInitialLogs();
     connectSSE();
     return () => {
-      sseRef.current?.close();
-      sseRef.current = null;
+      mountedRef.current = false;
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
     };
   }, []);
 
@@ -46,10 +54,21 @@ export function LogsPage() {
   }
 
   function connectSSE() {
+    if (!mountedRef.current) return;
+    if (sseRef.current) sseRef.current.close();
+
     const sse = new EventSource("/api/logs/stream");
     sseRef.current = sse;
-    sse.onopen = () => setConnected(true);
+    reconnectAttemptsRef.current = 0;
+
+    sse.onopen = () => {
+      if (!mountedRef.current) { sse.close(); return; }
+      setConnected(true);
+      reconnectAttemptsRef.current = 0;
+    };
+
     sse.onmessage = (ev) => {
+      if (!mountedRef.current) return;
       try {
         const entry = JSON.parse(ev.data);
         setLogs((prev) => {
@@ -58,12 +77,20 @@ export function LogsPage() {
         });
       } catch { /* ignore */ }
     };
+
     sse.onerror = () => {
+      if (!mountedRef.current) return;
       setConnected(false);
-      setTimeout(() => {
-        sse.close();
-        connectSSE();
-      }, 3000);
+      sse.close();
+
+      // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
+      const attempt = reconnectAttemptsRef.current;
+      const delay = Math.min(1000 * Math.pow(2, attempt), 30000);
+      reconnectAttemptsRef.current++;
+
+      reconnectRef.current = setTimeout(() => {
+        if (mountedRef.current) connectSSE();
+      }, delay);
     };
   }
 
@@ -97,7 +124,7 @@ export function LogsPage() {
             <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-400" : "bg-slate-500"}`} />
             {connected ? "Live" : "Disconnected"}
           </span>
-          <button className="btn-premium px-3 py-1.5 rounded text-xs" onClick={() => setLogs([])}>Clear</button>
+          <button className="btn-premium px-3 py-1.5 rounded text-xs" onClick={() => setLogs([])} aria-label="Clear logs">Clear</button>
         </div>
       </div>
 
@@ -107,7 +134,7 @@ export function LogsPage() {
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-slate-500 font-medium">Level:</span>
             <select
-              className="bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-[#6366f1]"
+              className="bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-[#F59E0B]"
               value={filterLevel}
               onChange={(e) => setFilterLevel(e.target.value)}
             >
@@ -122,14 +149,14 @@ export function LogsPage() {
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-slate-500 font-medium">Component:</span>
             <input
-              className="bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 w-40 placeholder-slate-600 focus:outline-none focus:border-[#6366f1]"
+              className="bg-slate-900/50 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 w-40 placeholder-slate-600 focus:outline-none focus:border-[#F59E0B]"
               placeholder="Filter component..."
               value={filterComponent}
               onChange={(e) => setFilterComponent(e.target.value)}
             />
           </div>
           <label className="flex items-center gap-1.5 text-[10px] text-slate-500 cursor-pointer ml-auto">
-            <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} className="accent-[#6366f1]" />
+            <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} className="accent-[#F59E0B]" />
             Auto-scroll
           </label>
         </div>

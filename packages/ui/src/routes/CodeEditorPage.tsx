@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { FolderGit2, File, FilePlus, Save, Trash2, ChevronRight, ChevronDown, RefreshCw } from "lucide-react";
+import { ConfirmDialog } from "../lib/components/ui/ConfirmDialog";
 
 interface FileNode {
   path: string;
@@ -17,7 +18,9 @@ export function CodeEditorPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set(["/"]));
+  const [confirmDeletePath, setConfirmDeletePath] = useState<string | null>(null);
   const editorRef = useRef<any>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const loadTree = useCallback(async () => {
     try {
@@ -31,7 +34,15 @@ export function CodeEditorPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadTree(); }, [loadTree]);
+  useEffect(() => {
+    const controller = new AbortController();
+    abortRef.current = controller;
+    loadTree();
+    return () => {
+      controller.abort();
+      abortRef.current = null;
+    };
+  }, [loadTree]);
 
   function buildTree(paths: string[]): FileNode[] {
     const root: FileNode[] = [];
@@ -71,6 +82,13 @@ export function CodeEditorPage() {
 
   async function saveFile() {
     if (!selectedFile) return;
+
+    // Zadanie 4: Walidacja przed zapisem
+    if (content === null || content === undefined || content.trim() === "") {
+      setMessage({ text: "Cannot save empty file. Add some content first.", type: "error" });
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch("/api/workspace/write", {
@@ -78,14 +96,18 @@ export function CodeEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: selectedFile, content }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Save failed (${res.status})`);
+      }
       setOriginalContent(content);
       setMessage({ text: "✓ Saved", type: "success" });
       setTimeout(() => setMessage(null), 2000);
     } catch (e: any) {
       setMessage({ text: `Save failed: ${e.message}`, type: "error" });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function createFile() {
@@ -108,27 +130,7 @@ export function CodeEditorPage() {
   }
 
   async function deleteFile(path: string) {
-    if (!confirm(`Delete ${path}?`)) return;
-    try {
-      const res = await fetch("/api/workspace/write", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path, content: "__DELETE_MARKER__" }),
-      });
-      // Use workspace_delete_file tool via workspace_delete endpoint
-      const delRes = await fetch("/api/workspace/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path }),
-      });
-      if (!delRes.ok) throw new Error("Delete failed");
-      setMessage({ text: `Deleted ${path}`, type: "success" });
-      setTimeout(() => setMessage(null), 2000);
-      if (selectedFile === path) { setSelectedFile(null); setContent(""); }
-      loadTree();
-    } catch (e: any) {
-      setMessage({ text: `Delete failed: ${e.message}`, type: "error" });
-    }
+    setConfirmDeletePath(path);
   }
 
   const handleEditorMount: OnMount = (editor, monaco) => {
@@ -166,6 +168,7 @@ export function CodeEditorPage() {
                     return next;
                   });
                 }}
+                aria-label={expandedDirs.has(node.path) ? `Collapse ${node.path.split("/").pop()}` : `Expand ${node.path.split("/").pop()}`}
               >
                 {expandedDirs.has(node.path) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                 <FolderGit2 size={12} className="text-indigo-400 shrink-0" />
@@ -177,11 +180,12 @@ export function CodeEditorPage() {
             <button
               className={`flex items-center gap-1.5 w-full text-left px-2 py-0.5 rounded text-[11px] transition-all ${
                 selectedFile === node.path
-                  ? "bg-[rgba(99,102,241,0.12)] text-white"
+                  ? "bg-[rgba(245,158,11,0.12)] text-white"
                   : "text-slate-400 hover:text-white hover:bg-[rgba(255,255,255,0.04)]"
               }`}
               style={{ paddingLeft: `${(depth + 1) * 12}px` }}
               onClick={() => loadFile(node.path)}
+              aria-label={`Open ${node.path.split("/").pop()}`}
             >
               <File size={12} className="shrink-0" />
               <span className="truncate">{node.path.split("/").pop()}</span>
@@ -201,7 +205,7 @@ export function CodeEditorPage() {
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold text-white">Code Editor</h2>
           {message && (
-            <span className={`text-[10px] px-2 py-0.5 rounded ${
+            <span role="alert" className={`text-[10px] px-2 py-0.5 rounded ${
               message.type === "success" ? "bg-emerald-950/50 text-emerald-400" : "bg-red-950/50 text-red-400"
             }`}>
               {message.text}
@@ -209,10 +213,10 @@ export function CodeEditorPage() {
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <button onClick={createFile} className="btn-nova px-2 py-1 rounded text-[10px] flex items-center gap-1" title="New file">
+          <button onClick={createFile} className="btn-nova px-2 py-1 rounded text-[10px] flex items-center gap-1" title="New file" aria-label="Create new file">
             <FilePlus size={12} /> New
           </button>
-          <button onClick={loadTree} className="btn-nova px-2 py-1 rounded text-[10px] flex items-center gap-1" title="Refresh tree">
+          <button onClick={loadTree} className="btn-nova px-2 py-1 rounded text-[10px] flex items-center gap-1" title="Refresh tree" aria-label="Refresh file tree">
             <RefreshCw size={12} /> Refresh
           </button>
           {selectedFile && (
@@ -221,12 +225,13 @@ export function CodeEditorPage() {
                 isModified
                   ? "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30"
                   : "bg-slate-800/50 text-slate-600 cursor-not-allowed"
-              }`}>
+              }`}
+              aria-label="Save file">
               <Save size={12} /> {saving ? "Saving..." : "Save"}
             </button>
           )}
           {selectedFile && (
-            <button onClick={() => deleteFile(selectedFile)} className="px-2 py-1 rounded text-[10px] flex items-center gap-1 bg-red-950/40 text-red-400 hover:bg-red-900/40">
+            <button onClick={() => deleteFile(selectedFile)} className="px-2 py-1 rounded text-[10px] flex items-center gap-1 bg-red-950/40 text-red-400 hover:bg-red-900/40" aria-label="Delete file">
               <Trash2 size={12} /> Delete
             </button>
           )}
@@ -283,6 +288,35 @@ export function CodeEditorPage() {
           )}
         </div>
       </div>
+
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        open={!!confirmDeletePath}
+        title="Delete File"
+        message={`Are you sure you want to delete "${confirmDeletePath}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={async () => {
+          const path = confirmDeletePath;
+          setConfirmDeletePath(null);
+          if (!path) return;
+          try {
+            const delRes = await fetch("/api/workspace/delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ path }),
+            });
+            if (!delRes.ok) throw new Error("Delete failed");
+            setMessage({ text: `Deleted ${path}`, type: "success" });
+            setTimeout(() => setMessage(null), 2000);
+            if (selectedFile === path) { setSelectedFile(null); setContent(""); }
+            loadTree();
+          } catch (e: any) {
+            setMessage({ text: `Delete failed: ${e.message}`, type: "error" });
+          }
+        }}
+        onCancel={() => setConfirmDeletePath(null)}
+      />
     </div>
   );
 }

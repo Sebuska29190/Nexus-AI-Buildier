@@ -18,12 +18,12 @@ const VERB_MAP: Record<string, { icon: React.ElementType; color: string; label: 
   workspace_list_files: { icon: FolderOpen, color: "#3b82f6", label: "List" },
   workspace_write_file: { icon: FileText, color: "#22c55e", label: "Wrote" },
   workspace_edit_file: { icon: FileText, color: "#22c55e", label: "Edited" },
-  workspace_run_command: { icon: Terminal, color: "#8b5cf6", label: "Run" },
+  workspace_run_command: { icon: Terminal, color: "#F59E0B", label: "Run" },
   workspace_search_files: { icon: Search, color: "#f59e0b", label: "Searched" },
   workspace_get_state: { icon: FolderOpen, color: "#3b82f6", label: "Explored" },
   web_fetch: { icon: Globe, color: "#3b82f6", label: "Fetched" },
   web_search: { icon: Search, color: "#f59e0b", label: "Searched" },
-  spawn_sub_agent: { icon: Brain, color: "#a78bfa", label: "Delegated" },
+  spawn_sub_agent: { icon: Brain, color: "#FCD34D", label: "Delegated" },
 };
 
 function getVerbInfo(tool: string) {
@@ -68,7 +68,7 @@ export function ToolCallCard({ tool, args, result, success, duration, status = "
         <span className="text-[#ef4444] ml-auto flex-shrink-0">Failed</span>
       )}
       {status === "running" && (
-        <span className="text-[#8b5cf6] ml-auto flex-shrink-0 animate-pulse">...</span>
+        <span className="text-[#F59E0B] ml-auto flex-shrink-0 animate-pulse">...</span>
       )}
     </div>
   );

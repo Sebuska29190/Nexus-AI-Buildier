@@ -106,12 +106,12 @@ export function IntegrationsPage() {
     <div className="max-w-6xl mx-auto w-full">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366f1]/20 to-[#4facfe]/20 border border-[#6366f1]/30 flex items-center justify-center">
-            <svg className="w-4 h-4 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#F59E0B]/20 to-[#F59E0B]/20 border border-[#F59E0B]/30 flex items-center justify-center">
+            <svg className="w-4 h-4 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Integrations Hub</h2>
-            <p className="text-[10px] text-slate-500">Connect Nexus AI to 30+ services — Slack, GitHub, Notion, Google, Discord & more</p>
+            <p className="text-[10px] text-slate-500">Connect AgentForge to 30+ services — Slack, GitHub, Notion, Google, Discord & more</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -121,8 +121,8 @@ export function IntegrationsPage() {
         </div>
       </div>
 
-      {errorMsg && <div className="glass-panel rounded-xl p-3 mb-4 border border-red-500/30 bg-red-950/20"><p className="text-[11px] text-red-400">{errorMsg}</p></div>}
-      {successMsg && <div className="glass-panel rounded-xl p-3 mb-4 border border-emerald-500/30 bg-emerald-950/20"><p className="text-[11px] text-emerald-400">{successMsg}</p></div>}
+      {errorMsg && <div className="glass-panel rounded-md p-3 mb-4 border border-red-500/30 bg-red-950/20"><p className="text-[11px] text-red-400">{errorMsg}</p></div>}
+      {successMsg && <div className="glass-panel rounded-md p-3 mb-4 border border-emerald-500/30 bg-emerald-950/20"><p className="text-[11px] text-emerald-400">{successMsg}</p></div>}
 
       {/* Search + Categories */}
       <div className="flex items-center gap-3 mb-4">
@@ -131,7 +131,7 @@ export function IntegrationsPage() {
         <div className="flex gap-1 flex-wrap">
           {CATEGORIES.map((c) => (
             <button key={c} onClick={() => setCategory(c)}
-              className={`text-[10px] px-2 py-1 rounded-lg border transition-all ${category === c ? "border-[#6366f1] bg-[#6366f1]/10 text-[#6366f1]" : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600"}`}>
+              className={`text-[10px] px-2 py-1 rounded-lg border transition-all ${category === c ? "border-[#F59E0B] bg-[#F59E0B]/10 text-[#F59E0B]" : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-600"}`}>
               {c}
             </button>
           ))}
@@ -146,7 +146,7 @@ export function IntegrationsPage() {
             {accounts.map((acc) => {
               const svc = services.find((s) => s.id === acc.service);
               return (
-                <div key={acc.id} className="glass-panel rounded-xl p-3 border border-slate-800/60 flex items-center gap-2">
+                <div key={acc.id} className="glass-panel rounded-md p-3 border border-slate-800/60 flex items-center gap-2">
                   <span className="text-lg">{svc?.icon || "🔌"}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-white font-medium truncate">{acc.name}</p>
@@ -176,7 +176,7 @@ export function IntegrationsPage() {
         {filtered.map((svc) => {
           const connected = connectedIds.has(svc.id);
           return (
-            <div key={svc.id} className={`glass-panel rounded-xl p-3 border transition-all ${connected ? "border-emerald-900/40" : "border-slate-800/40 hover:border-slate-700"}`}>
+            <div key={svc.id} className={`glass-panel rounded-md p-3 border transition-all ${connected ? "border-emerald-900/40" : "border-slate-800/40 hover:border-slate-700"}`}>
               <div className="flex items-start justify-between mb-2">
                 <span className="text-xl">{svc.icon}</span>
                 {connected && <span className="text-[8px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/25">Connected</span>}
@@ -189,7 +189,7 @@ export function IntegrationsPage() {
                   <span className="text-[8px] text-emerald-500">✓</span>
                 ) : (
                   <button onClick={() => { setShowConnect(svc.id); setConnectName(""); setConnectConfig({}); }}
-                    className="text-[8px] text-[#6366f1] hover:underline">Connect</button>
+                    className="text-[8px] text-[#F59E0B] hover:underline">Connect</button>
                 )}
               </div>
             </div>
@@ -200,7 +200,7 @@ export function IntegrationsPage() {
       {/* Connect Modal */}
       {showConnect && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setShowConnect(null)}>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-[420px]" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 w-[420px]" onClick={(e) => e.stopPropagation()}>
             {(() => {
               const svc = services.find((s) => s.id === showConnect);
               if (!svc) return null;

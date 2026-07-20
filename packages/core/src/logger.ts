@@ -1,5 +1,5 @@
 /**
- * Structured Logger for Nexus AI
+ * Structured Logger for AgentForge
  *
  * Dodaje timestampy i poziomy logowania do konsoli.
  * Zachowuje formatowanie kolorów używane w projekcie.

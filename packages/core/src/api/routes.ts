@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { registerRoutes } from "./routes/middleware.ts";
+import { registerAuth } from "./routes/auth.ts";
 import { register as registerModels } from "./routes/models.routes.ts";
 import { register as registerChat } from "./routes/chat.routes.ts";
 import { register as registerSessions } from "./routes/sessions.routes.ts";
@@ -9,6 +10,8 @@ import { register as registerSystem } from "./routes/system.routes.ts";
 import { register as registerConfig } from "./routes/config.routes.ts";
 import { register as registerTasksSkills } from "./routes/tasks-skills.routes.ts";
 import { register as registerMemory } from "./routes/memory.routes.ts";
+import { register as registerSettings } from "./routes/settings.routes.ts";
+import { healthRouter } from "../monitoring/health.ts";
 
 export function createRouter(): Hono {
   const app = new Hono();
@@ -39,6 +42,9 @@ export function createRouter(): Hono {
     origin: process.env.NOVA_CORS_ORIGIN || "http://localhost:4123",
   }));
 
+  // Auth middleware (checks API key for all /api/* and /v1/* routes)
+  registerAuth(app);
+
   // Register middleware (auth, security headers)
   registerRoutes(app);
 
@@ -51,6 +57,10 @@ export function createRouter(): Hono {
   registerConfig(app);
   registerTasksSkills(app);
   registerMemory(app);
+  registerSettings(app);
+
+  // Health check routes (no auth required)
+  app.route('/', healthRouter);
 
   app.onError((err, c) => {
     console.error("Error:", err);

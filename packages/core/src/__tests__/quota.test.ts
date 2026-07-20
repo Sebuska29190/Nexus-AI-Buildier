@@ -1,5 +1,5 @@
 // Quota system tests
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { checkQuota, recordUsage, getUsage } from "../quota.ts";
 
 describe("Quota System", () => {
