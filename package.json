@@ -1,7 +1,8 @@
 {
-  "name": "nova-ai-builder",
+  "name": "agentforge",
   "private": true,
   "type": "module",
+  "version": "1.0.0",
   "workspaces": ["packages/*"],
   "scripts": {
     "dev": "bun run build:ui ; bun run packages/core/src/main.ts",
