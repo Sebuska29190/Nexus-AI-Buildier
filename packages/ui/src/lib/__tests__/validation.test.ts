@@ -68,7 +68,7 @@ describe('agentConfigSchema', () => {
 
 describe('settingsSchema', () => {
   const validSettings = {
-    appName: 'Nexus AI',
+    appName: 'AgentForge',
     theme: 'dark' as const,
     language: 'pl' as const,
     timezone: 'Europe/Warsaw',

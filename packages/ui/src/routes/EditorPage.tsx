@@ -149,7 +149,7 @@ export function EditorPage() {
           <div className="p-2 bg-[#020408]/40 rounded"><strong>5. Assemble</strong> — original video + new audio + subs</div>
         </div>
         <p className="text-[9px] text-slate-600 mt-2">
-          Powered by FFmpeg + Whisper + Nexus TTS.{' '}
+          Powered by FFmpeg + Whisper + AgentForge TTS.{' '}
           <a href="https://github.com/OmniVoice/OmniVoice-Studio" target="_blank" className="text-indigo-400 hover:underline">Inspired by OmniVoice-Studio</a>
           {' '}(Apache 2.0)
         </p>

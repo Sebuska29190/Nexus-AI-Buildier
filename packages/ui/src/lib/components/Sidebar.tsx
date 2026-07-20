@@ -106,7 +106,7 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
               <Orbit size={18} className="text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="font-extrabold text-sm tracking-wide text-white font-mono">NEXUS AI</h1>
+              <h1 className="font-extrabold text-sm tracking-wide text-white font-mono">AGENTFORGE</h1>
               <span className="text-[9px] text-[#06B6D4] tracking-widest uppercase font-mono font-semibold">v{version || "4.0"}</span>
             </div>
             <button
@@ -208,7 +208,7 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
               NX
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-white">Nexus AI</div>
+              <div className="text-[11px] font-semibold text-white">AgentForge</div>
               <div className="text-[9px] text-[#475569]">v{version || "4.0"}</div>
             </div>
           </div>

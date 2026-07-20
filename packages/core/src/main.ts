@@ -39,7 +39,7 @@ for (const p of [join(process.cwd(), ".env"), join(process.cwd(), ".env.local")]
 }
 
 console.log("\n  ╔═══════════════════════════════════════╗");
-console.log("  ║       Nexus AI v4.0 — Coding Agent     ║");
+console.log("  ║       AgentForge v4.0 — Coding Agent     ║");
 console.log("  ╚═══════════════════════════════════════╝\n");
 
 sessionManager.init(process.env.NOVA_DB_PATH);
@@ -59,7 +59,7 @@ console.log(`  ${registry.providers.size} providers, ${registry.listModels().len
 loadProviderConfigs();
 
 if (agentStore.list().length === 0) {
-  agentStore.create({ name: "default", description: "Default Nexus coding agent", modelRef: "deepseek/deepseek-chat", emoji: "◇" });
+  agentStore.create({ name: "default", description: "Default AgentForge coding agent", modelRef: "deepseek/deepseek-chat", emoji: "◇" });
 }
 
 

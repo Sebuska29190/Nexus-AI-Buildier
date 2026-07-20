@@ -32,7 +32,7 @@ beforeEach(() => {
       ok: true,
       json: async () => ({
         settings: {
-          appName: 'Nexus AI', language: 'en', timezone: 'Europe/Warsaw',
+          appName: 'AgentForge', language: 'en', timezone: 'Europe/Warsaw',
           animations: true, port: 4123, host: '127.0.0.1',
           authEnabled: false, defaultModel: 'deepseek/deepseek-chat',
           autoApprove: false, thinkingMode: true,

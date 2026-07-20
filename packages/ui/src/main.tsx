@@ -19,7 +19,7 @@ try {
   wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:1rem;color:#ef4444;font-family:'Inter',sans-serif;background:#0a0b1e";
   const h2 = document.createElement("h2");
   h2.style.color = "#00d4ff";
-  h2.textContent = "Nexus AI — Loading Error";
+  h2.textContent = "AgentForge — Loading Error";
   const pre = document.createElement("pre");
   pre.style.cssText = "font-size:0.8rem;max-width:80%;overflow:auto;color:#e8ecf2";
   pre.textContent = e instanceof Error ? e.message : String(e);

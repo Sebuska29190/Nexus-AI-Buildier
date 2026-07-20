@@ -125,7 +125,7 @@ export function ChatInput({
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Nexus anything..."
+          placeholder="Ask AgentForge anything..."
           rows={1}
           className="w-full bg-transparent border-none outline-none text-sm text-white resize-none px-3 py-2 placeholder-[#475569]"
           style={{ minHeight: "40px", maxHeight: "150px" }}

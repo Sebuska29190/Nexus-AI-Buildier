@@ -45,7 +45,7 @@ describe('useChat', () => {
     const { result } = renderHook(() => useChat());
     expect(result.current.messages.length).toBe(1);
     expect(result.current.messages[0].role).toBe('assistant');
-    expect(result.current.messages[0].content).toContain('Welcome to Nexus AI');
+    expect(result.current.messages[0].content).toContain('Welcome to AgentForge');
   });
 
   it('starts disconnected', () => {

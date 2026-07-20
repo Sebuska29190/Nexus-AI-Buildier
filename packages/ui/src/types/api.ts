@@ -1,5 +1,5 @@
 /**
- * Shared API types for Nexus AI UI
+ * Shared API types for AgentForge UI
  */
 
 // ─── API Response types ─────────────────────────────

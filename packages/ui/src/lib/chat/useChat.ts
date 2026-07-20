@@ -32,7 +32,7 @@ const WS_URL = import.meta.env.VITE_NOVA_WS_URL || `ws://${window.location.host}
 export function useChat() {
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: "welcome", role: "assistant", content: "## Welcome to Nexus AI\n\nI'm your coding assistant. I can:\n- Write and refactor code\n- Debug issues\n- Review code quality\n- Search documentation\n- Automate tasks\n\nTry asking me to build something!", timestamp: Date.now() },
+    { id: "welcome", role: "assistant", content: "## Welcome to AgentForge\n\nI'm your coding assistant. I can:\n- Write and refactor code\n- Debug issues\n- Review code quality\n- Search documentation\n- Automate tasks\n\nTry asking me to build something!", timestamp: Date.now() },
   ]);
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [thinking, setThinking] = useState("");

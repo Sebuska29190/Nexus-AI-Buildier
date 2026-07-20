@@ -40,7 +40,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  appName: "Nexus AI",
+  appName: "AgentForge",
   theme: "dark",
   language: "en",
   timezone: "Europe/Warsaw",

@@ -25,7 +25,7 @@ export function StatusBar({
         <div className={`w-2 h-2 rounded-full ${connected ? "bg-[#22c55e] active-dot" : "bg-[#475569]"}`} />
         <span className="text-xs font-mono text-[#475569]">
           {connected ? (
-            <><span className="text-[#00d4ff]">Nexus AI</span> v{version} · {modelLabel(selectedModel)}</>
+            <><span className="text-[#00d4ff]">AgentForge</span> v{version} · {modelLabel(selectedModel)}</>
           ) : (
             <span className="text-[#ef4444]">Disconnected</span>
           )}

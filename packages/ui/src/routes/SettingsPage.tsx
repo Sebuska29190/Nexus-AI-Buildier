@@ -35,7 +35,7 @@ function SettingsPage() {
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      appName: "Nexus AI",
+      appName: "AgentForge",
       theme: "dark",
       language: "en",
       timezone: "Europe/Warsaw",
@@ -65,7 +65,7 @@ function SettingsPage() {
       // Apply loaded settings
       if (settings) {
         reset({
-          appName: settings.appName || "Nexus AI",
+          appName: settings.appName || "AgentForge",
           theme: settings.theme || "dark",
           language: settings.language || "en",
           timezone: settings.timezone || "Europe/Warsaw",
@@ -112,7 +112,7 @@ function SettingsPage() {
       const res = await fetch("/api/settings/reset", { method: "POST" }).catch(() => null);
       if (res?.ok) {
         reset({
-          appName: "Nexus AI",
+          appName: "AgentForge",
           theme: "dark",
           language: "en",
           timezone: "Europe/Warsaw",

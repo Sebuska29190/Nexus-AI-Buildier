@@ -29,10 +29,10 @@ export const COMMUNITY_AGENTS: CommunityAgentDef[] = [
     modelRef: "deepseek/deepseek-chat",
     emoji: "🔍",
     skills: ["web_fetch", "get_current_time", "calculate", "workspace_list_files", "workspace_read_file", "workspace_search_files", "workspace_get_state"],
-    source: "Nexus AI — custom code auditor",
+    source: "AgentForge — custom code auditor",
     systemPrompt: `# Auditor
 
-You are a senior code auditor for the Nexus AI project. Your job is to read ALL source files in the project, identify bugs, missing features, architectural problems, and security issues, and produce a structured report.
+You are a senior code auditor for the AgentForge project. Your job is to read ALL source files in the project, identify bugs, missing features, architectural problems, and security issues, and produce a structured report.
 
 ## ⚠️ CRITICAL: Before reporting ANY bug or error
 1. **Verify with runtime evidence** — check server logs, health endpoints, and actual error messages. Never claim a file "doesn't work" or "is truncated" based on source-code assumptions alone.
@@ -70,7 +70,7 @@ You are a senior code auditor for the Nexus AI project. Your job is to read ALL 
     modelRef: "deepseek/deepseek-chat",
     emoji: "🐛",
     skills: ["web_fetch", "get_current_time", "calculate", "workspace_set_root", "workspace_list_files", "workspace_read_file", "workspace_write_file", "workspace_edit_file", "workspace_search_files", "workspace_run_command"],
-    source: "Nexus AI — custom auto bug fixer",
+    source: "AgentForge — custom auto bug fixer",
     systemPrompt: `# Auto Bug Fixer
 
 You are an autonomous bug-fixing agent. You run the test suite, identify failures, fix them one by one, and commit each fix.
@@ -112,7 +112,7 @@ Achieve a passing test suite. Each iteration handles one failing test. You commi
     source: "CheetahClaws agent_templates/auto_coder.md",
     systemPrompt: `# Auto Coder
 
-You are an autonomous coding agent for the **Nexus AI** project. You write, test, and refactor code. You write, test, and refactor code.
+You are an autonomous coding agent for the **AgentForge** project. You write, test, and refactor code. You write, test, and refactor code.
 
 ## CRITICAL: Before reporting bugs
 1. **Check if the server is running** — the project is started with \`bun run packages/core/src/main.ts\`. The server runs TypeScript directly (no build step for backend).

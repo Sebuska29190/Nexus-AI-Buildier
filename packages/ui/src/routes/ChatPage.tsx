@@ -1,5 +1,5 @@
 /**
- * ChatPage — Nexus AI Coding Agent Chat
+ * ChatPage — AgentForge Coding Agent Chat
  * Clean, modern design inspired by Claude Code / OpenCode
  * Fast streaming, tool visualization, sub-agent activity
  */
@@ -417,7 +417,7 @@ export function ChatPage({
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00d4ff] via-[#6366f1] to-[#8b5cf6] flex items-center justify-center shadow-[0_0_14px_rgba(0,212,255,0.25)]">
             <Zap size={14} className="text-white" />
           </div>
-          <span className="text-xs font-semibold text-white tracking-tight">Nexus</span>
+          <span className="text-xs font-semibold text-white tracking-tight">AgentForge</span>
           {chat.sessionId && (
             <span className="text-[9px] text-[#475569] font-mono">{chat.sessionId.slice(0, 8)}</span>
           )}

@@ -77,7 +77,7 @@ export function TerminalPage() {
         "\x1b[36m═══════════════════════════════════════\x1b[0m"
       );
       terminalRef.current?.writeln(
-        "\x1b[36m  Connected to nexus-ai terminal    \x1b[0m"
+        "\x1b[36m  Connected to agentforge terminal    \x1b[0m"
       );
       terminalRef.current?.writeln(
         "\x1b[36m  Type 'help' for available commands    \x1b[0m"
@@ -264,7 +264,7 @@ export function TerminalPage() {
             <span className="w-3 h-3 rounded-full bg-amber-500/80" />
             <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
             <span className="text-[11px] font-mono text-slate-500 ml-2">
-              bash — core@nexus-ai
+              bash — core@agentforge
             </span>
           </div>
           <div className="flex items-center gap-1.5">

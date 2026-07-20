@@ -48,7 +48,7 @@ export function DashboardPage({ agents = [], sessions = [], models = [], health,
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             <Orbit size={28} className="text-[#7C3AED]" />
-            Nexus AI
+            AgentForge
             <span className="text-sm font-mono text-[#475569] font-normal">v4.0</span>
           </h1>
           <p className="text-sm text-[#64748B] mt-1">

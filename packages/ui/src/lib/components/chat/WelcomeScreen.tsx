@@ -23,7 +23,7 @@ export function WelcomeScreen({ onSelectPrompt }: WelcomeScreenProps) {
           <Hexagon className="w-9 h-9 text-white" strokeWidth={2.5} />
         </div>
         <h1 className="text-2xl font-bold mb-2 font-[Clash_Display,Inter,sans-serif]">
-          <span className="bg-gradient-to-r from-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">Nexus AI</span>
+          <span className="bg-gradient-to-r from-[#00d4ff] to-[#a78bfa] bg-clip-text text-transparent">AgentForge</span>
         </h1>
         <p className="text-[#8892a8] text-sm mb-10">Connect. Create. Automate. — Your connected AI agent platform.</p>
 

@@ -1,8 +1,8 @@
 /**
- * Nexus AI — Premium Design Tokens v2
+ * AgentForge — Premium Design Tokens v2
  * Cyan → Indigo → Violet spectrum, dark glassmorphism
  */
-export const nexus = {
+export const forge = {
   colors: {
     bg: {
       deepest: '#050510',
@@ -87,10 +87,10 @@ export const nexus = {
 
 // Shorthand tw classes for quick use
 export const nx = {
-  card: `${nexus.glass.card} ${nexus.glass.cardHover}`,
-  btn: nexus.button.primary,
-  btnGhost: nexus.button.ghost,
-  input: nexus.glass.input,
+  card: `${forge.glass.card} ${forge.glass.cardHover}`,
+  btn: forge.button.primary,
+  btnGhost: forge.button.ghost,
+  input: forge.glass.input,
   heading: 'font-display font-semibold tracking-tight',
   badge: 'px-2 py-0.5 rounded-lg text-xs font-medium',
 } as const;

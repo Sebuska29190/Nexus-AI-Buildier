@@ -44,7 +44,7 @@ export const useStore = create<AppState>((set, get) => ({
   
   // Chat
   messages: [], activeSession: null, streamingMessage: null,
-  activeAgent: 'main', activeModel: 'nexus-4',
+  activeAgent: 'main', activeModel: 'agentforge-1',
   contextUsed: 0, contextLimit: 200000,
   sendMessage: async (_content, _files) => {}, // Implemented in ChatPage
   clearChat: () => set({ messages: [], streamingMessage: null }),
