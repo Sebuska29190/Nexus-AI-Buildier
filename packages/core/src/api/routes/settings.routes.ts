@@ -7,6 +7,8 @@
  * GET    /api/config/providers            — list providers with key status
  * POST   /api/config/provider/:id/key     — save provider API key
  * POST   /api/config/provider/:id/update  — update provider config (key, baseUrl, name)
+ * DELETE /api/config/provider/:id         — remove provider config
+ * POST   /api/config/provider/add         — create new dynamic custom provider
  */
 
 import { Hono } from "hono";
@@ -17,6 +19,8 @@ import {
   getAllProviderConfigs,
   saveProviderConfig,
   deleteProviderConfig,
+  createDynamicProvider,
+  type ModelConfig,
 } from "../../config/provider-config.ts";
 import { safeMessage } from "../../errors.ts";
 
@@ -95,6 +99,8 @@ interface ProviderInfo {
   modelCount: number;
   keySource: "env" | "saved" | "none";
   baseUrl?: string;
+  isDynamic?: boolean;
+  modelList?: ModelConfig[];
 }
 
 function getProviderList(): ProviderInfo[] {
@@ -102,12 +108,14 @@ function getProviderList(): ProviderInfo[] {
   return fullConfigs.map((p) => ({
     id: p.providerId,
     name: p.name,
-    hasKey: p.hasApiKey,
+    hasKey: p.hasKey,
     enabled: p.enabled,
     models: p.modelCount,
     modelCount: p.modelCount,
     keySource: p.keySource,
     baseUrl: p.baseUrl,
+    isDynamic: p.isDynamic,
+    modelList: p.models,
   }));
 }
 
@@ -161,11 +169,12 @@ export function register(app: Hono): void {
   app.post("/api/config/provider/:id/key", async (c) => {
     try {
       const id = c.req.param("id");
-      const body = await c.req.json<{ apiKey: string }>();
-      if (!body.apiKey || typeof body.apiKey !== "string" || body.apiKey.trim().length === 0) {
-        return c.json({ error: "apiKey is required" }, 400);
+      const body = await c.req.json<{ key?: string; apiKey?: *** }>();
+      const keyValue = body.key || body.apiKey;
+      if (!keyValue || typeof keyValue !== "string" || keyValue.trim().length === 0) {
+        return c.json({ error: "key is required" }, 400);
       }
-      saveProviderConfig(id, { apiKey: body.apiKey.trim() });
+      saveProviderConfig(id, { key: keyValue.trim() });
       return c.json({ success: true });
     } catch (e: unknown) {
       return c.json({ error: safeMessage(e) }, 500);
@@ -176,9 +185,10 @@ export function register(app: Hono): void {
   app.post("/api/config/provider/:id/update", async (c) => {
     try {
       const id = c.req.param("id");
-      const body = await c.req.json<{ apiKey?: string; baseUrl?: string; name?: string; enabled?: boolean }>();
+      const body = await c.req.json<{ key?: string; apiKey?: string; baseUrl?: string; name?: string; enabled?: boolean }>();
+      const keyValue = body.key || body.apiKey;
       saveProviderConfig(id, {
-        apiKey: body.apiKey?.trim() || undefined,
+        key: keyValue?.trim() || undefined,
         baseUrl: body.baseUrl?.trim() || undefined,
         enabled: body.enabled,
       });
@@ -189,7 +199,6 @@ export function register(app: Hono): void {
   });
 
   // ─── DELETE /api/config/provider/:id ───────────────────────────────────
-  // Support for delete (called by ApiKeysPage)
   app.delete("/api/config/provider/:id", (c) => {
     try {
       const id = c.req.param("id");
@@ -198,6 +207,66 @@ export function register(app: Hono): void {
         return c.json({ error: "Provider not found or not configured" }, 404);
       }
       return c.json({ success: true });
+    } catch (e: unknown) {
+      return c.json({ error: safeMessage(e) }, 500);
+    }
+  });
+
+  // ─── POST /api/config/provider/add ─────────────────────────────────────
+  // Create a new dynamic custom provider with user-defined models
+  app.post("/api/config/provider/add", async (c) => {
+    try {
+      const body = await c.req.json<{
+        providerId: string;
+        name: string;
+        baseUrl: string;
+        key: string;
+        models: ModelConfig[];
+      }>();
+
+      // Validate required fields
+      if (!body.providerId || typeof body.providerId !== "string") {
+        return c.json({ error: "providerId is required" }, 400);
+      }
+      if (!body.name || typeof body.name !== "string") {
+        return c.json({ error: "name is required" }, 400);
+      }
+      if (!body.baseUrl || typeof body.baseUrl !== "string") {
+        return c.json({ error: "baseUrl is required" }, 400);
+      }
+      if (!body.models || !Array.isArray(body.models) || body.models.length === 0) {
+        return c.json({ error: "At least one model is required" }, 400);
+      }
+
+      // Validate model structure
+      for (const model of body.models) {
+        if (!model.id || typeof model.id !== "string") {
+          return c.json({ error: "Each model must have an 'id' field" }, 400);
+        }
+      }
+
+      // Check if provider already exists
+      if (registry.getProvider(body.providerId)) {
+        return c.json({ error: `Provider '${body.providerId}' already exists` }, 409);
+      }
+
+      const entry = createDynamicProvider({
+        providerId: body.providerId,
+        name: body.name,
+        baseUrl: body.baseUrl.trim(),
+        key: body.key || "",
+        models: body.models,
+      });
+
+      return c.json({
+        success: true,
+        provider: {
+          id: entry.providerId,
+          name: body.name,
+          models: body.models.length,
+          baseUrl: body.baseUrl.trim(),
+        },
+      });
     } catch (e: unknown) {
       return c.json({ error: safeMessage(e) }, 500);
     }
