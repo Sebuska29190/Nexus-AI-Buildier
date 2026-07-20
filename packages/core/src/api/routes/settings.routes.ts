@@ -5,7 +5,7 @@
  * POST   /api/settings                    — update settings
  * POST   /api/settings/reset              — reset to defaults
  * GET    /api/config/providers            — list providers with key status
- * POST   /api/config/provider/:id/key     — save provider API key
+ * POST   /api/config/provider/:id/key     — save provider key
  * POST   /api/config/provider/:id/update  — update provider config (key, baseUrl, name)
  * DELETE /api/config/provider/:id         — remove provider config
  * POST   /api/config/provider/add         — create new dynamic custom provider
@@ -169,8 +169,8 @@ export function register(app: Hono): void {
   app.post("/api/config/provider/:id/key", async (c) => {
     try {
       const id = c.req.param("id");
-      const body = await c.req.json<{ key?: string; apiKey?: *** }>();
-      const keyValue = body.key || body.apiKey;
+      const body = await c.req.json<{ key?: string }>();
+      const keyValue = body.key;
       if (!keyValue || typeof keyValue !== "string" || keyValue.trim().length === 0) {
         return c.json({ error: "key is required" }, 400);
       }
@@ -185,10 +185,9 @@ export function register(app: Hono): void {
   app.post("/api/config/provider/:id/update", async (c) => {
     try {
       const id = c.req.param("id");
-      const body = await c.req.json<{ key?: string; apiKey?: string; baseUrl?: string; name?: string; enabled?: boolean }>();
-      const keyValue = body.key || body.apiKey;
+      const body = await c.req.json<{ key?: string; baseUrl?: string; name?: string; enabled?: boolean }>();
       saveProviderConfig(id, {
-        key: keyValue?.trim() || undefined,
+        key: body.key?.trim() || undefined,
         baseUrl: body.baseUrl?.trim() || undefined,
         enabled: body.enabled,
       });
@@ -213,7 +212,6 @@ export function register(app: Hono): void {
   });
 
   // ─── POST /api/config/provider/add ─────────────────────────────────────
-  // Create a new dynamic custom provider with user-defined models
   app.post("/api/config/provider/add", async (c) => {
     try {
       const body = await c.req.json<{
@@ -224,7 +222,6 @@ export function register(app: Hono): void {
         models: ModelConfig[];
       }>();
 
-      // Validate required fields
       if (!body.providerId || typeof body.providerId !== "string") {
         return c.json({ error: "providerId is required" }, 400);
       }
@@ -238,14 +235,12 @@ export function register(app: Hono): void {
         return c.json({ error: "At least one model is required" }, 400);
       }
 
-      // Validate model structure
       for (const model of body.models) {
         if (!model.id || typeof model.id !== "string") {
           return c.json({ error: "Each model must have an 'id' field" }, 400);
         }
       }
 
-      // Check if provider already exists
       if (registry.getProvider(body.providerId)) {
         return c.json({ error: `Provider '${body.providerId}' already exists` }, 409);
       }
