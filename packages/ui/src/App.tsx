@@ -5,6 +5,7 @@ import { Sidebar } from "./lib/components/Sidebar";
 import { StatusBar } from "./lib/components/StatusBar";
 import { ToastProvider, useToast } from "./lib/components/ui/Toast";
 import { MobileNav } from "./lib/components/MobileNav";
+import { CommandPalette } from "./lib/components/CommandPalette";
 import { DashboardPage } from "./routes/DashboardPage"; // Keep as eager load (landing page)
 
 // Lazy loaded pages — split into separate chunks
@@ -224,6 +225,7 @@ function AppContent() {
         </div>
       </div>
       <MobileNav route={route} onRoute={setRoute} />
+      <CommandPalette onNavigate={setRoute} onNewChat={handleNewChat} />
     </>
   );
 }

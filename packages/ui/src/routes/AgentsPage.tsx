@@ -10,6 +10,7 @@ export function AgentsPage() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formModel, setFormModel] = useState("deepseek/deepseek-chat");
+  const [codingOnly, setCodingOnly] = useState(false);
 
   useEffect(() => { loadAgents(); }, []);
 
@@ -46,17 +47,34 @@ export function AgentsPage() {
     window.dispatchEvent(new CustomEvent("nova-navigate", { detail: "chat" }));
   }
 
+  const codingKeywords = /code|dev|builder|engineer|architect|program|develop|build/i;
+  const filteredAgents = codingOnly
+    ? agents.filter(a => codingKeywords.test(a.name) || codingKeywords.test(a.description || ""))
+    : agents;
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users size={20} className="text-[#F59E0B]" />
           <h1 className="text-lg font-bold">Agents</h1>
-          <span className="text-xs text-[#475569]">{agents.length} agents</span>
+          <span className="text-xs text-[#475569]">{filteredAgents.length} agents</span>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-nova text-xs px-3 py-1.5">
-          <Plus size={14} /> New Agent
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCodingOnly(!codingOnly)}
+            className={`text-xs px-3 py-1.5 rounded-md transition-all ${
+              codingOnly
+                ? "bg-[#F59E0B] text-[#0a0a0b] font-semibold"
+                : "bg-[rgba(255,255,255,0.06)] text-[#71717A] hover:bg-[rgba(255,255,255,0.10)]"
+            }`}
+          >
+            Coding Only
+          </button>
+          <button onClick={() => setShowForm(!showForm)} className="btn-nova text-xs px-3 py-1.5">
+            <Plus size={14} /> New Agent
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -77,11 +95,13 @@ export function AgentsPage() {
 
       {loading ? (
         <div className="text-center text-[#475569] py-8">Loading agents...</div>
-      ) : agents.length === 0 ? (
-        <div className="text-center text-[#475569] py-8">No agents yet. Create one to get started.</div>
+      ) : filteredAgents.length === 0 ? (
+        <div className="text-center text-[#475569] py-8">
+          {codingOnly ? "No coding agents found." : "No agents yet. Create one to get started."}
+        </div>
       ) : (
         <div className="grid gap-3">
-          {agents.map((agent) => (
+          {filteredAgents.map((agent) => (
             <div
               key={agent.id}
               onClick={() => setSelectedAgent(selectedAgent?.id === agent.id ? null : agent)}
