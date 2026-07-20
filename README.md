@@ -1,21 +1,36 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.0.0-blue" alt="version">
-  <img src="https://img.shields.io/badge/agents-125-purple" alt="agents">
-  <img src="https://img.shields.io/badge/tools-20-orange" alt="tools">
-  <img src="https://img.shields.io/badge/providers-6-blue" alt="providers">
+  <img src="assets/agentforge-logo.svg" width="80" alt="AgentForge">
+</p>
+
+<p align="center">
+  <strong>AgentForge</strong> · Forge autonomous coding agents. Locally.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-F59E0B" alt="version">
+  <img src="https://img.shields.io/badge/agents-125-EA580C" alt="agents">
+  <img src="https://img.shields.io/badge/tools-66-71717A" alt="tools">
+  <img src="https://img.shields.io/badge/providers-12-F59E0B" alt="providers">
+  <img src="https://img.shields.io/badge/self--hosted-✓-10B981" alt="self-hosted">
 </p>
 
 ---
 
-## What is Nexus AI?
+## What is AgentForge?
 
-**Nexus AI v4.0** is a self-hosted, agent-first platform for orchestrating autonomous AI agents. 125 specialized agents — from code auditing to penetration testing, from API design to database administration.
+**AgentForge** is a self-hosted, agent-first platform for forging autonomous coding agents. Audit code, review PRs, write tests, debug, refactor, secure, and deploy — all on your machine, with your API keys never leaving your hardware.
 
-Built on **Bun + Hono + React 19 + SQLite**. Every agent has persistent memory, self-learning capabilities, and a trust-based reputation system. Runs 100% locally — your API keys never leave your machine.
+Built on **Bun + Hono + React 19 + SQLite**. 125 specialized agents with persistent memory, an Evidence Protocol that rejects reports without `file:line` proof, and a Learning Loop that auto-remediates agents that hallucinate.
 
-### Why Nexus AI?
+### Why AgentForge?
 
-> **Status:** 125 specialized agents | 20 built-in tools | 6 LLM providers | 200+ REST endpoints
+> **Status:** 125 coding agents | 66 tools | 12 LLM providers | 200+ REST endpoints | 100% local
+
+- **Coding-first** — agents for audit, review, test, debug, refactor, security, DevOps, not general chat
+- **Self-hosted** — your keys, your data, your machine. No telemetry, no cloud
+- **Evidence Protocol** — every claim validated against real tool output. No hallucinated reports
+- **Learning Loop** — degraded agents get their prompts auto-corrected from failure patterns
+- **Trust scoring** — 🟢 Verified → 🟡 Neutral → 🔴 Low → ⚠️ Degraded. Affects routing
 
 ---
 
@@ -23,8 +38,8 @@ Built on **Bun + Hono + React 19 + SQLite**. Every agent has persistent memory, 
 
 ```bash
 # 1. Clone
-git clone https://github.com/Sebuska29190/Nexus-AI-Buildier.git
-cd Nexus-AI-Buildier
+git clone https://github.com/Sebuska29190/agentforge.git
+cd agentforge
 
 # 2. Install
 bun install
@@ -41,10 +56,46 @@ bun run dev
 
 ---
 
+## Coding Agents
+
+126 specialized agents, organized by what they do to code:
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| **Native Forge** | 13 | auditor, auto-coder, code-reviewer, security-auditor, tester, auto-bug-fixer |
+| **Core Development** | 11 | api-designer, backend-developer, frontend-developer, fullstack-developer, graphql-architect |
+| **Language Specialists** | 30 | typescript-pro, python-pro, golang-pro, rust-engineer, java-architect, react-specialist |
+| **Infrastructure** | 16 | kubernetes-specialist, docker-expert, terraform-engineer, cloud-architect, sre-engineer |
+| **Quality & Security** | 17 | penetration-tester, chaos-engineer, compliance-auditor, performance-engineer, debugger |
+| **Data & AI** | 13 | data-engineer, ml-engineer, llm-architect, prompt-engineer, postgres-pro |
+| **Developer Experience** | 15 | refactoring-specialist, build-engineer, git-workflow-manager, mcp-developer |
+| **Meta-Orchestration** | 11 | multi-agent-coordinator, workflow-orchestrator, task-distributor |
+
+---
+
+## Core System
+
+### Evidence Protocol
+Every agent report is validated. Claims without `file:line` references and actual tool output are **rejected**. Reports with <30% evidence get a strike. 3 strikes → agent is auto-remediated by the Learning Loop.
+
+### Quality Scoring
+Trust-based reputation per agent: 🟢 Verified → 🟡 Neutral → 🔴 Low → ⚠️ Degraded. Score affects routing priority.
+
+### Smart Router
+Type a task → system auto-selects the best agent based on capability matching (domains + languages + keywords). Trust multiplier adjusts scores.
+
+### Learning Loop
+Degraded agents get their system prompt auto-corrected based on failure pattern analysis. Corrections persist to `AGENTS.md`.
+
+### Agent Work Viewer
+Live SSE streaming of agent execution: tool calls, results, thinking, progress. Stop or steer agents mid-execution.
+
+---
+
 ## Architecture
 
 ```
-nexus-ai/
+agentforge/
 ├── packages/
 │   ├── core/src/                    # Server — Bun + Hono
 │   │   ├── agent/                   # Agent lifecycle
@@ -57,97 +108,16 @@ nexus-ai/
 │   │   │   ├── router.ts            #   Smart Router — auto-select best agent
 │   │   │   ├── learning.ts          #   Learning Loop — self-correcting prompts
 │   │   │   └── community-agents.ts  #   125 agent definitions
-│   │   │
-│   │   ├── plugin/                  # Tool system
-│   │   │   ├── tools.ts             #   Core workspace + web tools
-│   │   │   ├── registry.ts          #   Provider + tool registry
-│   │   │   └── community-plugins.ts #   26 plugins
-│   │   │
-│   │   ├── safety/                  # Security middleware
-│   │   │   ├── circuit-breaker-tools.ts  # Loop detection + rate limits
-│   │   │   └── tool-audit.ts        #   Real-time audit logging
-│   │   │
-│   │   ├── session/                 # Session management + FTS5 transcripts
-│   │   ├── config/                  # Provider config with AES encryption
-│   │   ├── event-bus/               # Pub/sub event system
-│   │   ├── harness/                 # Provider harness (pi/)
-│   │   ├── api/                     # 200+ REST endpoints
-│   │   └── ...
-│   │
-│   └── ui/                          # Frontend — React 19 + Vite 6
-│       └── src/routes/              # 30+ pages
-│
-├── agents/                          # 126 agent definitions (AGENTS.md + SOUL.md + MEMORY.md)
-├── skills/                          # 46 community skills
-├── providers/                       # 12 LLM provider plugins
-└── data/                            # Runtime data (gitignored)
+│   │   ├── plugin/                  # 66 tools
+│   │   ├── safety/                  # Circuit breaker + tool audit
+│   │   ├── session/                 # FTS5 transcripts
+│   │   ├── config/                  # AES-encrypted provider config
+│   │   └── api/                     # 200+ REST endpoints
+│   └── ui/                          # React 19 + Vite — 30+ pages
+├── agents/                          # Agent definitions (AGENTS.md + SOUL.md + MEMORY.md)
+├── skills/                          # Community skills
+└── providers/                       # LLM provider plugins
 ```
-
----
-
-## Core System
-
-### Evidence Protocol
-Every agent report is validated. Claims without `file:line` references and actual tool output are **rejected**. Reports with <30% evidence get a strike. 3 strikes → agent is auto-remediated by the Learning Loop.
-
-### Quality Scoring
-Trust-based reputation system per agent: 🟢 Verified → 🟡 Neutral → 🔴 Low → ⚠️ Degraded. Score affects routing priority and user trust.
-
-### Smart Router
-Type a task → system auto-selects the best agent based on capability matching (domains + languages + keywords). Trust multiplier adjusts scores.
-
-### Learning Loop
-Degraded agents get their system prompt auto-corrected based on failure pattern analysis. Corrections persist to AGENTS.md.
-
-### Agent Work Viewer
-Live SSE streaming of agent execution: tool calls, results, thinking, progress. Stop or steer agents mid-execution.
-
----
-
-## Features
-
-### 126 Specialized Agents
-
-| Category | Count | Examples |
-|----------|-------|----------|
-| **Native Nexus** | 13 | auditor, auto-coder, code-reviewer, security-auditor, tester, data-analyst, devops-engineer, documentation-writer, project-manager, research-assistant, paper-writer, auto-bug-fixer, default |
-| **Core Development** | 11 | api-designer, backend-developer, frontend-developer, fullstack-developer, graphql-architect, microservices-architect, mobile-developer, ui-designer, websocket-engineer, electron-pro, design-bridge |
-| **Language Specialists** | 30 | typescript-pro, python-pro, golang-pro, rust-engineer, java-architect, cpp-pro, csharp-developer, javascript-pro, sql-pro, nextjs-developer, react-specialist, vue-expert, angular-architect, node-specialist, php-pro, and more |
-| **Infrastructure** | 16 | kubernetes-specialist, docker-expert, terraform-engineer, cloud-architect, sre-engineer, platform-engineer, network-engineer, windows-infra-admin, azure-infra-engineer, and more |
-| **Quality & Security** | 17 | penetration-tester, chaos-engineer, compliance-auditor, gdpr-ccpa-compliance, performance-engineer, accessibility-tester, qa-expert, test-automator, debugger, error-detective, and more |
-| **Data & AI** | 13 | data-scientist, data-engineer, ml-engineer, mlops-engineer, llm-architect, nlp-engineer, prompt-engineer, postgres-pro, ai-engineer, and more |
-| **Developer Experience** | 15 | refactoring-specialist, build-engineer, cli-developer, git-workflow-manager, legacy-modernizer, documentation-engineer, mcp-developer, and more |
-| **Meta-Orchestration** | 11 | multi-agent-coordinator, workflow-orchestrator, task-distributor, knowledge-synthesizer, context-manager, codebase-orchestrator, and more |
-
-### Persistent Memory
-Every agent remembers across sessions. Episodic (what happened) + semantic (what was learned). Auto-consolidation after each run. Deduplication prevents redundant memories.
-
-### Self-Improving Skills
-Complex agent tasks (4+ tool calls) are auto-analyzed and converted into reusable SKILL.md files.
-
-### Plugin Ecosystem
-26 community plugins with schema-driven configuration forms. Tools, agents, channels, providers, skills, and UI components — install with one click.
-
----
-
-## Tools
-
-66 registered tools across categories:
-
-| Category | Tools | Examples |
-|----------|-------|----------|
-| **Workspace** | 11 | read_file, write_file, edit_file, list_files, search_files, run_command |
-| **Agent Memory** | 4 | memory_save, memory_search, memory_forget, memory_summarize |
-| **Chambers** | 3 | chamber_list, chamber_status, chamber_run |
-| **Search** | 3 | web_search, web_fetch, arxiv_search |
-| **Code** | 3 | code_execute_python, code_execute_javascript, jupyter_list_kernels |
-| **Git** | 11 | github_create_issue, github_list_issues, github_create_pr, git_commit, etc. |
-| **Knowledge Graph** | 6 | kg_add_node, kg_add_edge, kg_query, kg_visualize |
-| **Goal Decomposition** | 4 | goal_decompose, goal_status, goal_assign, goal_complete |
-| **Analytics** | 4 | analytics_dashboard, analytics_usage, analytics_audit, analytics_tools |
-| **Communication** | 20+ | discord_send, telegram_send, slack_send, whatsapp_send, email_send |
-| **Integration** | 6 | integration_list, integration_add, integration_test, integration_execute |
-| **Other** | 10+ | session_search, cron_create, image_generate, obsidian_create_note, etc. |
 
 ---
 
@@ -161,9 +131,6 @@ Complex agent tasks (4+ tool calls) are auto-analyzed and converted into reusabl
 | **Google Gemini** | Gemini 2.5 Pro, 2.0 Flash |
 | **xAI Grok** | grok-3, grok-3-mini |
 | **Qwen** | Qwen-Plus, Qwen-Max, Qwen-Coder |
-| **Zhipu** | GLM-4, GLM-4-Flash |
-| **Kimi** | kimi-latest |
-| **MiniMax** | MiniMax-M1 |
 | **Ollama** | Any local model |
 | **LM Studio** | Any local model |
 | **Custom** | Any OpenAI-compatible endpoint |
@@ -196,6 +163,7 @@ POST   /api/agents/:id/learn          # Manually teach an agent
 ## Security
 
 - ✅ `.env` and `data/` — gitignored, never committed
+- ✅ API keys encrypted at rest (AES, derived from `NEXUS_ENCRYPTION_SECRET`)
 - ✅ **Dangerous command blocking** — `rm -rf /`, `format`, `diskpart`, registry edits
 - ✅ **Workspace path validation** — blocks system paths (`C:\Windows`, `/etc`)
 - ✅ **Workspace isolation** — file operations constrained to root
@@ -212,4 +180,4 @@ MIT with Attribution — see [LICENSE](LICENSE).
 
 ---
 
-> **Built for the agent-first era. Nexus AI v4.0.**
+> **Forge autonomous coding agents. Locally. — AgentForge v1.0**
