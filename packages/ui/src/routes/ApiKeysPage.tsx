@@ -497,7 +497,7 @@ function ProviderCard({
   return (
     <div className={`rounded-md p-4 flex items-center gap-4 ${
       provider.isDynamic
-        ? "bg-amber-500/3 border border-amber-500/10"
+        ? "bg-amber-500/5 border border-amber-500/10"
         : "bg-zinc-900/50 border border-zinc-700/30"
     }`}>
       <div className={`w-10 h-10 rounded-md flex items-center justify-center shrink-0 ${

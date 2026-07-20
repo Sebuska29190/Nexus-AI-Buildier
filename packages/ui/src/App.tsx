@@ -88,6 +88,7 @@ const pages: Record<string, React.ComponentType<any>> = {
   plugins: PluginsPage,
   channels: ChannelsPage,
   apikeys: ApiKeysPage,
+  "api-keys": ApiKeysPage,
 };
 
 function AppContent() {
@@ -99,14 +100,16 @@ function AppContent() {
   const [version, setVersion] = useState("");
   const [connected, setConnected] = useState(false);
   
-  // Initialize route from URL hash
+  // Initialize route from URL (supports both hash and pathname routing)
   const [route, setRoute] = useState(() => {
     const hash = window.location.hash.replace(/^#\/?/, '');
+    const pathname = window.location.pathname.replace(/^\//, '');
     // Convert URL format (api-keys) to route state (apikeys)
     const routeMap: Record<string, string> = {
       'api-keys': 'apikeys',
     };
-    return routeMap[hash] || hash || "dashboard";
+    const fromUrl = hash || pathname;
+    return routeMap[fromUrl] || fromUrl || "dashboard";
   });
   
   const [workspaceName, setWorkspaceName] = useState("");
