@@ -37,13 +37,13 @@ function GraphVisualization({ graph }: { graph: GraphData }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const nodeColors: Record<string, string> = {
-    person: "#818cf8",
+    person: "#FCD34D",
     project: "#22c55e",
     concept: "#f59e0b",
-    tool: "#6366f1",
+    tool: "#F59E0B",
     organization: "#ef4444",
     location: "#3b82f6",
-    custom: "#94a3b8",
+    custom: "#A1A1AA",
   };
 
   useEffect(() => {
@@ -57,7 +57,7 @@ function GraphVisualization({ graph }: { graph: GraphData }) {
     ctx.clearRect(0, 0, width, height);
 
     if (graph.nodes.length === 0) {
-      ctx.fillStyle = "#475569";
+      ctx.fillStyle = "#71717A";
       ctx.font = "14px sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("No entities yet. Extract from a session or add manually.", width / 2, height / 2);
@@ -93,7 +93,7 @@ function GraphVisualization({ graph }: { graph: GraphData }) {
     graph.nodes.forEach(node => {
       const pos = positions[node.id];
       if (!pos) return;
-      const color = nodeColors[node.type] || "#94a3b8";
+      const color = nodeColors[node.type] || "#A1A1AA";
       const isSelected = node.id === selectedNode;
 
       // Node circle
@@ -106,7 +106,7 @@ function GraphVisualization({ graph }: { graph: GraphData }) {
       ctx.stroke();
 
       // Node label
-      ctx.fillStyle = isSelected ? "#f1f5f9" : "#94a3b8";
+      ctx.fillStyle = isSelected ? "#E4E4E7" : "#A1A1AA";
       ctx.font = `${isSelected ? "bold " : ""}10px sans-serif`;
       ctx.textAlign = "center";
       ctx.fillText(node.name.slice(0, 12), pos.x, pos.y + 28);
@@ -228,7 +228,7 @@ export function KnowledgeGraphPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">Knowledge Graph</h1>
-          <p className="text-xs text-[#475569]">Entity extraction & relationship mapping from conversations</p>
+          <p className="text-xs text-[#71717A]">Entity extraction & relationship mapping from conversations</p>
         </div>
       </div>
 
@@ -236,15 +236,15 @@ export function KnowledgeGraphPage() {
       <div className="grid grid-cols-3 gap-3">
         <GlassCard padding="sm" className="text-center">
           <p className="text-2xl font-bold text-white font-mono">{stats.entities}</p>
-          <p className="text-[10px] text-[#475569] uppercase tracking-wider">Entities</p>
+          <p className="text-[10px] text-[#71717A] uppercase tracking-wider">Entities</p>
         </GlassCard>
         <GlassCard padding="sm" className="text-center">
           <p className="text-2xl font-bold text-white font-mono">{stats.relationships}</p>
-          <p className="text-[10px] text-[#475569] uppercase tracking-wider">Relationships</p>
+          <p className="text-[10px] text-[#71717A] uppercase tracking-wider">Relationships</p>
         </GlassCard>
         <GlassCard padding="sm" className="text-center">
           <p className="text-2xl font-bold text-white font-mono">{Object.keys(stats).length}</p>
-          <p className="text-[10px] text-[#475569] uppercase tracking-wider">Types</p>
+          <p className="text-[10px] text-[#71717A] uppercase tracking-wider">Types</p>
         </GlassCard>
       </div>
 
@@ -253,7 +253,7 @@ export function KnowledgeGraphPage() {
         <div className="space-y-4">
           {/* Graph Visualization */}
           <GlassCard padding="md">
-            <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-3">Graph Visualization</h3>
+            <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-3">Graph Visualization</h3>
             {loading ? (
               <div className="h-[400px] animate-pulse bg-[rgba(255,255,255,0.04)] rounded-xl" />
             ) : (
@@ -263,7 +263,7 @@ export function KnowledgeGraphPage() {
 
           {/* Extract from Text */}
           <GlassCard padding="md">
-            <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-3">Extract from Text</h3>
+            <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-3">Extract from Text</h3>
             <textarea
               value={extractText}
               onChange={e => setExtractText(e.target.value)}
@@ -288,7 +288,7 @@ export function KnowledgeGraphPage() {
 
           {/* Add Entity */}
           <GlassCard padding="md">
-            <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-3">Add Entity</h3>
+            <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-3">Add Entity</h3>
             <div className="space-y-2">
               <GlassInput value={newEntityName} onChange={e => setNewEntityName(e.target.value)} placeholder="Entity name..." />
               <select
@@ -308,24 +308,24 @@ export function KnowledgeGraphPage() {
 
           {/* Entity List */}
           <GlassCard padding="md">
-            <h3 className="text-xs font-bold text-[#475569] uppercase tracking-wider mb-3">Entities ({filteredEntities.length})</h3>
+            <h3 className="text-xs font-bold text-[#71717A] uppercase tracking-wider mb-3">Entities ({filteredEntities.length})</h3>
             <div className="space-y-1 max-h-[400px] overflow-y-auto">
               {filteredEntities.map(entity => (
                 <div key={entity.id} className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-[rgba(255,255,255,0.03)] group">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[#475569]">
+                    <span className="text-[#71717A]">
                       {entity.type === "person" ? <Users size={12} /> : entity.type === "tool" ? <Database size={12} /> : <Tag size={12} />}
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs text-white font-medium truncate">{entity.name}</p>
-                      <p className="text-[10px] text-[#475569]">{entity.type}</p>
+                      <p className="text-[10px] text-[#71717A]">{entity.type}</p>
                     </div>
                   </div>
                   <GlassBadge variant={typeColors[entity.type] as any || "default"}>{entity.type}</GlassBadge>
                 </div>
               ))}
               {filteredEntities.length === 0 && (
-                <p className="text-xs text-[#475569] text-center py-4">No entities found</p>
+                <p className="text-xs text-[#71717A] text-center py-4">No entities found</p>
               )}
             </div>
           </GlassCard>

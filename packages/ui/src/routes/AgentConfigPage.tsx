@@ -109,7 +109,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
       <div className="max-w-6xl mx-auto w-full p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-lg font-bold text-white">🤖 Konfiguracja agentów</h1>
-          <span className="text-xs text-[#475569]">{agents.length} agentów</span>
+          <span className="text-xs text-[#71717A]">{agents.length} agentów</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {agents.map((a: any) => (
@@ -121,7 +121,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
               <span className="text-2xl">{a.emoji || "🤖"}</span>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-white truncate">{a.name}</div>
-                <div className="text-[10px] text-[#475569] mt-0.5 truncate">{a.modelRef}</div>
+                <div className="text-[10px] text-[#71717A] mt-0.5 truncate">{a.modelRef}</div>
               </div>
               <div className={`text-[9px] px-2 py-0.5 rounded-full font-mono ${
                 (a.strikes || 0) >= 3 ? "bg-[rgba(239,68,68,0.1)] text-[#EF4444]"
@@ -141,7 +141,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
   if (!agent && !error) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-xs text-[#475569]">Loading...</div>
+        <div className="text-xs text-[#71717A]">Loading...</div>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
   if (error && !agent) {
     return (
       <div className="max-w-5xl mx-auto w-full p-6">
-        <button onClick={() => setSelectedId(null)} className="flex items-center gap-1 text-xs text-[#475569] hover:text-[#f1f5f9] transition-colors mb-4">
+        <button onClick={() => setSelectedId(null)} className="flex items-center gap-1 text-xs text-[#71717A] hover:text-[#E4E4E7] transition-colors mb-4">
           <ArrowLeft size={14} /> Powrót do listy
         </button>
         <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-2xl p-5 text-center">
@@ -169,7 +169,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
       {/* Back button */}
       <button
         onClick={() => setSelectedId(null)}
-        className="flex items-center gap-1 text-xs text-[#475569] hover:text-[#f1f5f9] transition-colors"
+        className="flex items-center gap-1 text-xs text-[#71717A] hover:text-[#E4E4E7] transition-colors"
       >
         <ArrowLeft size={14} /> Powrót do listy
       </button>
@@ -190,7 +190,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
               <h2 className="text-xl font-bold text-white">{finalAgent.name}</h2>
               <p className="text-sm text-[#64748B] mt-1">{finalAgent.description || "Brak opisu"}</p>
               <div className="flex items-center gap-3 mt-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[rgba(124,58,237,0.08)] text-[#7C3AED] border border-[rgba(124,58,237,0.15)]">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[rgba(124,58,237,0.08)] text-[#F59E0B] border border-[rgba(124,58,237,0.15)]">
                   {finalAgent.modelRef}
                 </span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-lg ${
@@ -214,7 +214,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
               <button
                 type="button"
                 onClick={handleReset}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] text-[#475569] hover:text-[#f1f5f9] hover:bg-[rgba(255,255,255,0.04)] transition-all"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] text-[#71717A] hover:text-[#E4E4E7] hover:bg-[rgba(255,255,255,0.04)] transition-all"
               >
                 <RotateCcw size={12} /> Reset
               </button>
@@ -223,7 +223,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
                   saved
                     ? "bg-[rgba(34,197,94,0.1)] text-[#22C55E]"
-                    : "bg-[rgba(124,58,237,0.1)] text-[#7C3AED] hover:bg-[rgba(124,58,237,0.15)]"
+                    : "bg-[rgba(124,58,237,0.1)] text-[#F59E0B] hover:bg-[rgba(124,58,237,0.15)]"
                 }`}
               >
                 {saved ? <><Check size={12} /> Saved</> : <><Save size={12} /> Save</>}
@@ -232,7 +232,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
           </div>
           <textarea
             {...register("systemPrompt")}
-            className={`w-full h-64 bg-[rgba(0,0,0,0.3)] border rounded-xl p-4 text-[11px] font-mono text-[#94a3b8] placeholder-[#475569] focus:outline-none focus:border-[#7C3AED]/30 resize-y ${
+            className={`w-full h-64 bg-[rgba(0,0,0,0.3)] border rounded-xl p-4 text-[11px] font-mono text-[#A1A1AA] placeholder-[#71717A] focus:outline-none focus:border-[#F59E0B]/30 resize-y ${
               errors.systemPrompt ? "border-[#ef4444]" : "border-[rgba(255,255,255,0.06)]"
             }`}
             placeholder="Enter system prompt (minimum 50 characters)..."
@@ -250,7 +250,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
         <h3 className="text-sm font-bold text-white mb-3">🔧 Przypisane narzędzia</h3>
         <div className="flex flex-wrap gap-2">
           {(finalAgent.skills || []).length === 0 ? (
-            <span className="text-xs text-[#475569]">Brak przypisanych narzędzi</span>
+            <span className="text-xs text-[#71717A]">Brak przypisanych narzędzi</span>
           ) : (
             (finalAgent.skills || []).map((skill: string) => {
               const Icon = TOOL_ICONS[skill] || Terminal;

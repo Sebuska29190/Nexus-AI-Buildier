@@ -31,8 +31,8 @@ function PageFallback() {
   return (
     <div className="flex items-center justify-center h-full">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-[rgba(124,58,237,0.3)] border-t-[#7C3AED] animate-spin" />
-        <span className="text-[10px] text-[#475569] font-mono">Loading...</span>
+        <div className="w-8 h-8 rounded-full border-2 border-[rgba(124,58,237,0.3)] border-t-[#F59E0B] animate-spin" />
+        <span className="text-[10px] text-[#71717A] font-mono">Loading...</span>
       </div>
     </div>
   );
@@ -172,7 +172,7 @@ function AppContent() {
   return (
     <>
       <div className="ambient-glow" />
-      <div className="h-dvh max-h-dvh flex bg-[#0a0a0f] text-[#f1f5f9] overflow-hidden relative z-10">
+      <div className="h-dvh max-h-dvh flex bg-[#0a0a0b] text-[#E4E4E7] overflow-hidden relative z-10">
         <Sidebar route={route} onRoute={setRoute} version={version} sessions={sessions} />
 
         <div className="flex-1 flex flex-col min-w-0">
@@ -208,14 +208,14 @@ function AppContent() {
                   onSessionKeyChange={(key: string) => setResumeSessionId(key)}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-[#475569] max-w-5xl mx-auto w-full">
+                <div className="flex flex-col items-center justify-center h-full gap-4 text-[#71717A] max-w-5xl mx-auto w-full">
                   <div className="w-16 h-16 rounded-2xl bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.1)]">
-                    <svg className="w-7 h-7 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-7 h-7 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
                     </svg>
                   </div>
                   <h2 className="text-lg font-bold text-white">W budowie</h2>
-                  <p className="text-xs text-[#475569]">Ta sekcja jest w trakcie tworzenia</p>
+                  <p className="text-xs text-[#71717A]">Ta sekcja jest w trakcie tworzenia</p>
                 </div>
               )}
               </Suspense>
@@ -234,7 +234,7 @@ export default function App() {
       <ErrorBoundary FallbackComponent={({ error, resetErrorBoundary }) => {
         console.error("Global error:", error);
         return (
-          <div className="h-screen flex flex-col items-center justify-center gap-4 p-8 bg-[#0a0a0f] text-[#f1f5f9]" role="alert">
+          <div className="h-screen flex flex-col items-center justify-center gap-4 p-8 bg-[#0a0a0b] text-[#E4E4E7]" role="alert">
             <div className="w-16 h-16 rounded-2xl bg-red-950/50 border border-red-500/30 flex items-center justify-center">
               <svg className="w-8 h-8 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>

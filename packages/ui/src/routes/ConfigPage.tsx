@@ -22,8 +22,8 @@ const FONT_SIZES = [
   { id: "large", label: "Large" },
 ];
 const ACCENT_COLORS = [
-  { value: "#6366f1", label: "Cyan" },
-  { value: "#8b5cf6", label: "Purple" },
+  { value: "#F59E0B", label: "Cyan" },
+  { value: "#F59E0B", label: "Purple" },
   { value: "#10b981", label: "Emerald" },
   { value: "#f59e0b", label: "Amber" },
   { value: "#ef4444", label: "Red" },
@@ -48,7 +48,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
   const [editingImageEngine, setEditingImageEngine] = useState("auto");
 
   // Appearance state
-  const [appearance, setAppearance] = useState({ theme: "dark", fontSize: "medium", accentColor: "#6366f1", compact: false });
+  const [appearance, setAppearance] = useState({ theme: "dark", fontSize: "medium", accentColor: "#F59E0B", compact: false });
   const [loadingAppearance, setLoadingAppearance] = useState(false);
 
   // Backup state
@@ -253,7 +253,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-white">Configuration Dashboard</h2>
-          <p className="text-xs text-[#94a3b8] mt-1">Tweak system values: provider preferences, API keys, system rules, appearance, and backups.</p>
+          <p className="text-xs text-[#A1A1AA] mt-1">Tweak system values: provider preferences, API keys, system rules, appearance, and backups.</p>
         </div>
         <button className="btn-nova px-3 py-1.5 rounded text-xs flex items-center gap-1.5" onClick={loadConfig}>
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -267,7 +267,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
       <div className="flex gap-1 mb-6 border-b border-[rgba(255,255,255,0.06)] pb-0 overflow-x-auto">
         {tabs.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 whitespace-nowrap ${tab === t.id ? "border-[#6366f1] text-white" : "border-transparent text-[#475569] hover:text-slate-300"}`}>
+            className={`px-4 py-2 text-xs font-semibold transition-all border-b-2 whitespace-nowrap ${tab === t.id ? "border-[#F59E0B] text-white" : "border-transparent text-[#71717A] hover:text-slate-300"}`}>
             {t.label}
           </button>
         ))}
@@ -290,8 +290,8 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
           {loading && (
             <div className="glass-panel rounded-xl p-8 flex items-center justify-center mb-6">
               <div className="flex items-center gap-3">
-                <span className="w-4 h-4 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-[#94a3b8]">Loading configuration...</span>
+                <span className="w-4 h-4 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-[#A1A1AA]">Loading configuration...</span>
               </div>
             </div>
           )}
@@ -299,14 +299,14 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
           {/* Providers */}
           <div className="glass-panel rounded-xl p-5 mb-6">
             <h3 className="font-bold text-sm text-white mb-4 flex items-center gap-2">
-              <svg className="w-4 h-4 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg className="w-4 h-4 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>
               </svg>
               LLM Providers
             </h3>
 
             {providers.length === 0 && !loading ? (
-              <p className="text-xs text-[#475569]">No providers configured.</p>
+              <p className="text-xs text-[#71717A]">No providers configured.</p>
             ) : (
               <div className="space-y-3">
                 {providers.map((provider) => (
@@ -314,14 +314,14 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
                     <div className="flex items-center justify-between p-3 bg-[#020408]/40 rounded-lg border border-[rgba(255,255,255,0.06)]/50">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <button
-                          className={`w-7 h-4 rounded-full transition-colors relative shrink-0 ${provider.enabled ? "bg-[#6366f1]" : "bg-slate-700"}`}
+                          className={`w-7 h-4 rounded-full transition-colors relative shrink-0 ${provider.enabled ? "bg-[#F59E0B]" : "bg-slate-700"}`}
                           onClick={() => toggleProvider(provider.id)}
                         >
                           <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${provider.enabled ? "left-3.5" : "left-0.5"}`} />
                         </button>
                         <div className="min-w-0">
                           <span className="text-sm text-white font-medium">{provider.name || provider.id}</span>
-                          {provider.model && <span className="text-[10px] text-[#475569] ml-2 font-mono">{provider.model}</span>}
+                          {provider.model && <span className="text-[10px] text-[#71717A] ml-2 font-mono">{provider.model}</span>}
                           <div className="flex flex-wrap gap-1 mt-1">
                             {provider.keySource === "env" ? (
                               <>
@@ -333,9 +333,9 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
                             ) : provider.keySource === "saved" ? (
                               <span className="text-[9px] bg-amber-900/40 text-amber-400 px-1.5 py-0.5 rounded border border-amber-700/30 font-mono">saved</span>
                             ) : (
-                              <span className="text-[9px] bg-slate-800 text-[#475569] px-1.5 py-0.5 rounded border border-slate-700/30 font-mono">no key</span>
+                              <span className="text-[9px] bg-slate-800 text-[#71717A] px-1.5 py-0.5 rounded border border-slate-700/30 font-mono">no key</span>
                             )}
-                            <span className="text-[9px] bg-slate-800/60 text-[#475569] px-1.5 py-0.5 rounded font-mono">{provider.modelCount} models</span>
+                            <span className="text-[9px] bg-slate-800/60 text-[#71717A] px-1.5 py-0.5 rounded font-mono">{provider.modelCount} models</span>
                           </div>
                         </div>
                       </div>
@@ -345,7 +345,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
                         <input
                           type="password"
                           placeholder="API Key..."
-                          className="w-full bg-[#020408]/60 border border-[rgba(255,255,255,0.06)] rounded px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1]"
+                          className="w-full bg-[#020408]/60 border border-[rgba(255,255,255,0.06)] rounded px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#F59E0B]"
                           onChange={(e) => updateApiKey(provider.id, e.target.value)}
                         />
                       </div>
@@ -367,7 +367,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {models.map((model) => (
-                  <span key={model.id} className="text-[10px] bg-[#020408]/60 text-[#94a3b8] border border-[rgba(255,255,255,0.06)] px-2 py-1 rounded font-mono">{model.id}</span>
+                  <span key={model.id} className="text-[10px] bg-[#020408]/60 text-[#A1A1AA] border border-[rgba(255,255,255,0.06)] px-2 py-1 rounded font-mono">{model.id}</span>
                 ))}
               </div>
             </div>
@@ -384,7 +384,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
             System Rules
           </h3>
           <textarea
-            className="w-full bg-[#020408]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none focus:border-[#6366f1] resize-y"
+            className="w-full bg-[#020408]/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none focus:border-[#F59E0B] resize-y"
             rows={8}
             placeholder="Define system behavior rules..."
             value={rules}
@@ -413,35 +413,35 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
           </h3>
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] text-[#94a3b8] uppercase tracking-wider block mb-1.5">Default TTS Engine</label>
+              <label className="text-[10px] text-[#A1A1AA] uppercase tracking-wider block mb-1.5">Default TTS Engine</label>
               <div className="flex gap-2 flex-wrap">
                 {["auto", "edge", "gTTS", "elevenlabs", "azure"].map((engine) => (
                   <button key={engine} onClick={() => setEditingTtsEngine(engine)}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${editingTtsEngine === engine ? "border-[#6366f1] text-white bg-[#6366f1]/10" : "border-[rgba(255,255,255,0.06)] text-[#475569] hover:text-white hover:border-slate-600"}`}>
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${editingTtsEngine === engine ? "border-[#F59E0B] text-white bg-[#F59E0B]/10" : "border-[rgba(255,255,255,0.06)] text-[#71717A] hover:text-white hover:border-slate-600"}`}>
                     {engine}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-[#94a3b8] uppercase tracking-wider block mb-1.5">Default Image Engine</label>
+              <label className="text-[10px] text-[#A1A1AA] uppercase tracking-wider block mb-1.5">Default Image Engine</label>
               <div className="flex gap-2 flex-wrap">
                 {["auto", "dalle3", "stable-diffusion", "imagen"].map((engine) => (
                   <button key={engine} onClick={() => setEditingImageEngine(engine)}
-                    className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${editingImageEngine === engine ? "border-[#6366f1] text-white bg-[#6366f1]/10" : "border-[rgba(255,255,255,0.06)] text-[#475569] hover:text-white hover:border-slate-600"}`}>
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${editingImageEngine === engine ? "border-[#F59E0B] text-white bg-[#F59E0B]/10" : "border-[rgba(255,255,255,0.06)] text-[#71717A] hover:text-white hover:border-slate-600"}`}>
                     {engine}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-[#94a3b8] uppercase tracking-wider block mb-1.5">Video Quality</label>
+              <label className="text-[10px] text-[#A1A1AA] uppercase tracking-wider block mb-1.5">Video Quality</label>
               <div className="flex gap-2">
                   {["low", "medium", "high"].map((q) => {
                     const qActive = editingVideoQuality === q;
                     return (
                     <button key={q} onClick={() => setEditingVideoQuality(q)}
-                      className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${qActive ? "border-[#6366f1] text-white bg-[#6366f1]/10" : "border-[rgba(255,255,255,0.06)] text-[#475569] hover:text-white hover:border-slate-600"}`}>
+                      className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${qActive ? "border-[#F59E0B] text-white bg-[#F59E0B]/10" : "border-[rgba(255,255,255,0.06)] text-[#71717A] hover:text-white hover:border-slate-600"}`}>
                       {q}
                     </button>
                     );
@@ -481,20 +481,20 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
 
           {loadingAppearance ? (
             <div className="flex items-center justify-center py-8">
-              <span className="w-4 h-4 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
+              <span className="w-4 h-4 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <div className="space-y-5">
               {/* Theme */}
               <div>
-                <label className="text-[10px] text-[#94a3b8] uppercase tracking-wider block mb-2">Theme</label>
+                <label className="text-[10px] text-[#A1A1AA] uppercase tracking-wider block mb-2">Theme</label>
                 <div className="flex gap-2">
                   {THEMES.map((t) => (
                     <button key={t} onClick={() => setAppearance({ ...appearance, theme: t })}
                       className={`px-4 py-2 text-xs rounded-lg border transition-all capitalize ${
                         appearance.theme === t
-                          ? "border-[#6366f1] text-white bg-[#6366f1]/10"
-                          : "border-[rgba(255,255,255,0.06)] text-[#475569] hover:text-white hover:border-slate-600"
+                          ? "border-[#F59E0B] text-white bg-[#F59E0B]/10"
+                          : "border-[rgba(255,255,255,0.06)] text-[#71717A] hover:text-white hover:border-slate-600"
                       }`}>
                       {t}
                     </button>
@@ -504,14 +504,14 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
 
               {/* Font Size */}
               <div>
-                <label className="text-[10px] text-[#94a3b8] uppercase tracking-wider block mb-2">Font Size</label>
+                <label className="text-[10px] text-[#A1A1AA] uppercase tracking-wider block mb-2">Font Size</label>
                 <div className="flex gap-2">
                   {FONT_SIZES.map((fs) => (
                     <button key={fs.id} onClick={() => setAppearance({ ...appearance, fontSize: fs.id })}
                       className={`px-4 py-2 text-xs rounded-lg border transition-all ${
                         appearance.fontSize === fs.id
-                          ? "border-[#6366f1] text-white bg-[#6366f1]/10"
-                          : "border-[rgba(255,255,255,0.06)] text-[#475569] hover:text-white hover:border-slate-600"
+                          ? "border-[#F59E0B] text-white bg-[#F59E0B]/10"
+                          : "border-[rgba(255,255,255,0.06)] text-[#71717A] hover:text-white hover:border-slate-600"
                       }`}>
                       {fs.label}
                     </button>
@@ -521,7 +521,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
 
               {/* Accent Color */}
               <div>
-                <label className="text-[10px] text-[#94a3b8] uppercase tracking-wider block mb-2">Accent Color</label>
+                <label className="text-[10px] text-[#A1A1AA] uppercase tracking-wider block mb-2">Accent Color</label>
                 <div className="flex gap-2">
                   {ACCENT_COLORS.map((c) => (
                     <button key={c.value} onClick={() => setAppearance({ ...appearance, accentColor: c.value })}
@@ -539,10 +539,10 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
               <div className="flex items-center justify-between py-2">
                 <div>
                   <p className="text-xs text-white font-medium">Compact Mode</p>
-                  <p className="text-[10px] text-[#475569] mt-0.5">Reduced spacing for denser layout</p>
+                  <p className="text-[10px] text-[#71717A] mt-0.5">Reduced spacing for denser layout</p>
                 </div>
                 <button
-                  className={`w-10 h-5 rounded-full transition-colors relative ${appearance.compact ? "bg-[#6366f1]" : "bg-slate-700"}`}
+                  className={`w-10 h-5 rounded-full transition-colors relative ${appearance.compact ? "bg-[#F59E0B]" : "bg-slate-700"}`}
                   onClick={() => setAppearance({ ...appearance, compact: !appearance.compact })}
                 >
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${appearance.compact ? "left-5.5" : "left-0.5"}`} />
@@ -570,7 +570,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
               </svg>
               Export Configuration
             </h3>
-            <p className="text-xs text-[#94a3b8] mb-4">Download all settings, rules, and defaults as a JSON file. API keys are NOT exported for security.</p>
+            <p className="text-xs text-[#A1A1AA] mb-4">Download all settings, rules, and defaults as a JSON file. API keys are NOT exported for security.</p>
             <button className="btn-nova px-4 py-2 rounded text-xs flex items-center gap-1.5 disabled:opacity-40" onClick={handleExport} disabled={exporting}>
               {exporting ? (
                 <span className="w-3 h-3 border-2 border-[#020408] border-t-transparent rounded-full animate-spin" />
@@ -589,7 +589,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
               </svg>
               Import Configuration
             </h3>
-            <p className="text-xs text-[#94a3b8] mb-4">Restore settings from a previously exported config file. Current rules, defaults, and appearance will be overwritten.</p>
+            <p className="text-xs text-[#A1A1AA] mb-4">Restore settings from a previously exported config file. Current rules, defaults, and appearance will be overwritten.</p>
             <div className="flex items-center gap-3">
               <button className="btn-nova px-4 py-2 rounded text-xs flex items-center gap-1.5 disabled:opacity-40" onClick={() => fileInputRef.current?.click()} disabled={importing}>
                 {importing ? (
@@ -600,7 +600,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
                 {importing ? "Importing..." : "Import Config"}
               </button>
               <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-              <span className="text-[10px] text-[#475569]">Select a .json config file</span>
+              <span className="text-[10px] text-[#71717A]">Select a .json config file</span>
             </div>
           </div>
 
@@ -612,7 +612,7 @@ export function ConfigPage({ models: _models = [] }: ConfigPageProps) {
               </svg>
               Quick Profile Access
             </h3>
-            <p className="text-xs text-[#94a3b8] mb-4">Manage user profiles and agent presets.</p>
+            <p className="text-xs text-[#A1A1AA] mb-4">Manage user profiles and agent presets.</p>
             <a href="#profiles" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent("nova-navigate", { detail: "profiles" })); }}
               className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
