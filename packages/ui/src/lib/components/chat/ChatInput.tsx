@@ -90,11 +90,11 @@ export function ChatInput({
       {files.length > 0 && (
         <div className="flex gap-2 mb-2 flex-wrap">
           {files.map((f, i) => (
-            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs">
+            <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs">
               <span>{getFileIcon(f)}</span>
-              <span className="text-[#94a3b8] truncate max-w-[120px]">{f.name}</span>
-              <span className="text-[10px] text-[#475569]">{(f.size / 1024).toFixed(0)}KB</span>
-              <button onClick={() => onFileRemove(i)} className="text-[#475569] hover:text-[#ef4444] ml-0.5"><X size={10} /></button>
+              <span className="text-[#A1A1AA] truncate max-w-[120px]">{f.name}</span>
+              <span className="text-[10px] text-[#71717A]">{(f.size / 1024).toFixed(0)}KB</span>
+              <button onClick={() => onFileRemove(i)} className="text-[#71717A] hover:text-[#ef4444] ml-0.5"><X size={10} /></button>
             </div>
           ))}
         </div>
@@ -102,24 +102,24 @@ export function ChatInput({
 
       {/* Slash Command Popover */}
       {showSlash && filtered.length > 0 && (
-        <div className="mb-2 bg-[#12121a] backdrop-blur-xl border border-[rgba(255,255,255,0.08)] rounded-xl shadow-xl overflow-hidden">
+        <div className="mb-2 bg-[#111113] border border-[rgba(255,255,255,0.08)] rounded-md shadow-xl overflow-hidden">
           {filtered.slice(0, 8).map((cmd, i) => (
             <button
               key={cmd.cmd}
               onClick={() => { onSlashSelect(cmd.cmd + " "); setShowSlash(false); setSlashFilter(""); }}
               className={`w-full px-3 py-2 text-left flex items-center gap-3 transition-colors ${
-                i === selectedIdx ? "bg-[rgba(99,102,241,0.1)]" : "hover:bg-[rgba(255,255,255,0.04)]"
+                i === selectedIdx ? "bg-[rgba(245,158,11,0.1)]" : "hover:bg-[rgba(255,255,255,0.04)]"
               }`}
             >
-              <span className="text-xs text-[#818cf8] font-mono w-24">{cmd.cmd}</span>
-              <span className="text-[10px] text-[#475569]">{cmd.desc}</span>
+              <span className="text-xs text-[#F59E0B] font-mono w-24">{cmd.cmd}</span>
+              <span className="text-[10px] text-[#71717A]">{cmd.desc}</span>
             </button>
           ))}
         </div>
       )}
 
       {/* Input Bar */}
-      <div className="glass-card rounded-2xl p-2">
+      <div className="bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-md p-2">
         <textarea
           ref={textareaRef}
           value={value}
@@ -127,19 +127,19 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           placeholder="Ask AgentForge anything..."
           rows={1}
-          className="w-full bg-transparent border-none outline-none text-sm text-white resize-none px-3 py-2 placeholder-[#475569]"
+          className="w-full bg-transparent border-none outline-none text-sm text-white resize-none px-3 py-2 placeholder-[#71717A]"
           style={{ minHeight: "40px", maxHeight: "150px" }}
         />
 
         <div className="flex items-center justify-between px-2 pb-1">
           <div className="flex items-center gap-1">
             <button onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-[#475569] hover:text-[#94a3b8] transition-colors rounded-lg hover:bg-[rgba(255,255,255,0.04)]">
+              className="p-2 text-[#71717A] hover:text-[#A1A1AA] transition-colors rounded-md hover:bg-[rgba(255,255,255,0.04)]">
               <Paperclip size={16} />
             </button>
             {onVoiceToggle && (
               <button onClick={onVoiceToggle}
-                className={`p-2 transition-colors rounded-lg ${voiceActive ? "text-[#ef4444] animate-pulse" : "text-[#475569] hover:text-[#94a3b8] hover:bg-[rgba(255,255,255,0.04)]"}`}>
+                className={`p-2 transition-colors rounded-md ${voiceActive ? "text-[#ef4444] animate-pulse" : "text-[#71717A] hover:text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.04)]"}`}>
                 <Mic size={16} />
               </button>
             )}
@@ -150,14 +150,14 @@ export function ChatInput({
           <div className="flex items-center gap-2">
             {streaming ? (
               <button onClick={onCancel}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#ef4444] text-xs font-medium hover:bg-[rgba(239,68,68,0.15)] transition-all">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#ef4444] text-xs font-medium hover:bg-[rgba(239,68,68,0.15)] transition-all">
                 <Square size={12} /> Stop
               </button>
             ) : (
               <button
                 onClick={onSend}
                 disabled={loading || (!value.trim() && files.length === 0)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white text-xs font-medium transition-all hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(99,102,241,0.35)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white text-xs font-medium transition-all hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(245,158,11,0.35)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
                 <Send size={12} /> Send
               </button>
@@ -169,7 +169,7 @@ export function ChatInput({
       {/* Hints */}
       <div className="flex items-center justify-between px-3 mt-1.5">
         <span className="text-[9px] text-[rgba(255,255,255,0.15)]">
-          {model && <span className="text-[#475569]">{model}</span>}
+          {model && <span className="text-[#71717A]">{model}</span>}
         </span>
         <span className="text-[9px] text-[rgba(255,255,255,0.15)]">
           Enter to send · Shift+Enter for newline
