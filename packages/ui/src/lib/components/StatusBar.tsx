@@ -20,12 +20,12 @@ export function StatusBar({
   };
 
   return (
-    <header className="h-14 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between px-6 z-10 bg-[rgba(18,18,26,0.7)] backdrop-blur-xl">
+    <header className="h-14 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between px-6 z-10 bg-[#111113]">
       <div className="flex items-center gap-3">
-        <div className={`w-2 h-2 rounded-full ${connected ? "bg-[#22c55e] active-dot" : "bg-[#475569]"}`} />
-        <span className="text-xs font-mono text-[#475569]">
+        <div className={`w-2 h-2 rounded-full ${connected ? "bg-[#22c55e] active-dot" : "bg-[#71717A]"}`} />
+        <span className="text-xs font-mono text-[#71717A]">
           {connected ? (
-            <><span className="text-[#00d4ff]">AgentForge</span> v{version} · {modelLabel(selectedModel)}</>
+            <><span className="text-[#F59E0B]">AgentForge</span> v{version} · {modelLabel(selectedModel)}</>
           ) : (
             <span className="text-[#ef4444]">Disconnected</span>
           )}
@@ -35,7 +35,7 @@ export function StatusBar({
       <div className="flex items-center gap-3">
         <select
           value={selectedModel}
-          className="glass-input px-3 py-1.5 text-xs cursor-pointer"
+          className="px-3 py-1.5 text-xs bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-md text-[#E4E4E7] cursor-pointer"
           onChange={(e) => onModelChange(e.target.value)}
         >
           {models.length > 0 ? (
@@ -52,15 +52,15 @@ export function StatusBar({
 
         <button
           onClick={onWorkspacePick}
-          className="btn-glass flex items-center gap-2 px-3.5 py-1.5 text-xs"
+          className="flex items-center gap-2 px-3.5 py-1.5 text-xs bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-md text-[#A1A1AA] hover:text-[#E4E4E7] hover:bg-[rgba(255,255,255,0.04)] transition-all"
         >
-          <Folder size={14} className="text-[#6366f1]" />
+          <Folder size={14} className="text-[#F59E0B]" />
           <span>{workspaceName || "No folder selected"}</span>
         </button>
 
         <button
           onClick={onNewChat}
-          className="btn-nova px-3.5 py-1.5 text-xs"
+          className="px-3.5 py-1.5 text-xs bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white rounded-md font-medium hover:shadow-[0_0_16px_rgba(245,158,11,0.3)] transition-all"
         >
           New Chat
         </button>
