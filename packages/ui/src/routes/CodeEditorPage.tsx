@@ -180,7 +180,7 @@ export function CodeEditorPage() {
             <button
               className={`flex items-center gap-1.5 w-full text-left px-2 py-0.5 rounded text-[11px] transition-all ${
                 selectedFile === node.path
-                  ? "bg-[rgba(99,102,241,0.12)] text-white"
+                  ? "bg-[rgba(245,158,11,0.12)] text-white"
                   : "text-slate-400 hover:text-white hover:bg-[rgba(255,255,255,0.04)]"
               }`}
               style={{ paddingLeft: `${(depth + 1) * 12}px` }}

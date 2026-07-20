@@ -150,8 +150,8 @@ function SettingsPage() {
       {/* Header */}
       <div className="shrink-0 px-6 py-4 border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[rgba(99,102,241,0.15)] border border-[rgba(99,102,241,0.2)] flex items-center justify-center">
-            <Settings className="w-5 h-5 text-[#818cf8]" />
+          <div className="w-10 h-10 rounded-lg bg-[rgba(245,158,11,0.15)] border border-[rgba(245,158,11,0.2)] flex items-center justify-center">
+            <Settings className="w-5 h-5 text-[#F59E0B]" />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-[#e8ecf2]">Settings</h1>
@@ -165,8 +165,8 @@ function SettingsPage() {
         <div className="flex gap-1 mt-4">
           {TABS.map(t => (
             <button key={t.id} type="button" onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                tab === t.id ? "bg-[rgba(99,102,241,0.12)] text-[#818cf8]" : "text-[#4a5068] hover:text-[#8892a8] hover:bg-[rgba(255,255,255,0.03)]"
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                tab === t.id ? "bg-[rgba(245,158,11,0.12)] text-[#F59E0B]" : "text-[#4a5068] hover:text-[#8892a8] hover:bg-[rgba(255,255,255,0.03)]"
               }`}>
               <t.icon className="w-4 h-4" /> {t.label}
             </button>
@@ -178,7 +178,7 @@ function SettingsPage() {
       <div className="flex-1 overflow-y-auto p-6">
         {loading ? (
           <div className="flex items-center justify-center h-48">
-            <Loader2 className="w-6 h-6 text-[#818cf8] animate-spin" />
+            <Loader2 className="w-6 h-6 text-[#F59E0B] animate-spin" />
           </div>
         ) : tab === "general" ? (
           <div className="space-y-6">
@@ -278,7 +278,7 @@ function SettingsPage() {
       </div>
 
       {/* Save bar */}
-      <div className="shrink-0 px-6 py-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)] flex items-center justify-between">
+      <div className="shrink-0 px-6 py-3 border-t border-[rgba(255,255,255,0.06)] bg-[#111113] flex items-center justify-between">
         <div className="flex items-center gap-2">
           {saved && !saveError && (
             <span className="text-xs text-[#10b981]" role="alert">✅ Settings saved</span>
@@ -307,7 +307,7 @@ function SettingsPage() {
 // ─── Sub-components ──────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="glass-card rounded-2xl p-5">
+    <div className="glass-card rounded-lg p-5">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-[#4a5068] mb-4">{title}</h3>
       <div className="space-y-4">{children}</div>
     </div>
@@ -345,7 +345,7 @@ function ToggleField({ label, checked, onChange }: {
       <span className="text-sm text-[#8892a8] font-medium">{label}</span>
       <button type="button" onClick={() => onChange(!checked)}
         className={`relative w-11 h-6 rounded-full transition-all duration-200 ${
-          checked ? 'bg-[#00d4ff] shadow-[0_0_12px_rgba(0,212,255,0.3)]' : 'bg-[rgba(255,255,255,0.1)]'
+          checked ? 'bg-[#F59E0B] shadow-[0_0_12px_rgba(245,158,11,0.3)]' : 'bg-[rgba(255,255,255,0.1)]'
         }`}>
         <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-200 ${
           checked ? 'left-[22px]' : 'left-[2px]'

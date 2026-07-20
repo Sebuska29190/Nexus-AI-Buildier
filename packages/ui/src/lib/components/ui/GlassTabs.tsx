@@ -17,7 +17,7 @@ export function GlassTabs({ tabs, activeTab: controlledTab, onChange, className 
   }
 
   return (
-    <div className={`flex gap-1 p-1 bg-[rgba(255,255,255,0.03)] rounded-xl border border-[rgba(255,255,255,0.06)] ${className}`}>
+    <div className={`flex gap-1 p-1 bg-[#111113] rounded-lg border border-[rgba(255,255,255,0.06)] ${className}`}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -25,10 +25,10 @@ export function GlassTabs({ tabs, activeTab: controlledTab, onChange, className 
             key={tab.id}
             type="button"
             onClick={() => handleChange(tab.id)}
-            className={`relative flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${
+            className={`relative flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
               isActive
-                ? "bg-[rgba(99,102,241,0.12)] text-[#818cf8] shadow-[0_0_12px_rgba(99,102,241,0.1)]"
-                : "text-[#475569] hover:text-[#94a3b8] hover:bg-[rgba(255,255,255,0.03)]"
+                ? "bg-[rgba(245,158,11,0.12)] text-[#F59E0B] shadow-[0_0_12px_rgba(245,158,11,0.1)]"
+                : "text-[#71717A] hover:text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.03)]"
             }`}
           >
             {tab.icon && <span className="flex-shrink-0">{tab.icon}</span>}
@@ -36,14 +36,14 @@ export function GlassTabs({ tabs, activeTab: controlledTab, onChange, className 
             {tab.count !== undefined && (
               <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${
                 isActive
-                  ? "bg-[rgba(99,102,241,0.15)] text-[#a5b4fc]"
-                  : "bg-[rgba(255,255,255,0.05)] text-[#475569]"
+                  ? "bg-[rgba(245,158,11,0.15)] text-[#FCD34D]"
+                  : "bg-[rgba(255,255,255,0.05)] text-[#71717A]"
               }`}>
                 {tab.count}
               </span>
             )}
             {isActive && (
-              <span className="absolute inset-0 rounded-lg border border-[rgba(99,102,241,0.2)] pointer-events-none" />
+              <span className="absolute inset-0 rounded-md border border-[rgba(245,158,11,0.2)] pointer-events-none" />
             )}
           </button>
         );

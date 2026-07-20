@@ -16,7 +16,7 @@ export function ApprovalBar({ tool, args, onApprove, onReject, onAlwaysAllow }: 
       <div className="flex items-center gap-2 mb-2">
         <Shield size={14} className="text-[#f59e0b]" />
         <span className="text-xs font-medium text-[#f59e0b]">{tool}</span>
-        {argsStr && <span className="text-[10px] text-[#475569] font-mono truncate">{argsStr}</span>}
+        {argsStr && <span className="text-[10px] text-[#71717A] font-mono truncate">{argsStr}</span>}
         <span className="text-[10px] text-[#f59e0b] ml-auto animate-pulse">Needs approval</span>
       </div>
       {args && (
@@ -31,7 +31,7 @@ export function ApprovalBar({ tool, args, onApprove, onReject, onAlwaysAllow }: 
         <button onClick={onReject} className="flex items-center gap-1 px-3 py-1 text-[10px] font-medium rounded-lg bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] text-[#ef4444] hover:bg-[rgba(239,68,68,0.2)] transition-all">
           <X size={10} /> Reject
         </button>
-        <button onClick={onAlwaysAllow} className="flex items-center gap-1 px-3 py-1 text-[10px] font-medium rounded-lg bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.2)] text-[#818cf8] hover:bg-[rgba(99,102,241,0.15)] transition-all">
+        <button onClick={onAlwaysAllow} className="flex items-center gap-1 px-3 py-1 text-[10px] font-medium rounded-lg bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.2)] text-[#F59E0B] hover:bg-[rgba(245,158,11,0.15)] transition-all">
           <CheckCheck size={10} /> Always allow
         </button>
       </div>

@@ -116,7 +116,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
             <button
               key={a.id}
               onClick={() => setSelectedId(a.id)}
-              className="flex items-center gap-3 p-4 rounded-2xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.1)] transition-all duration-200 text-left"
+              className="flex items-center gap-3 p-4 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(255,255,255,0.1)] transition-all duration-200 text-left"
             >
               <span className="text-2xl">{a.emoji || "🤖"}</span>
               <div className="min-w-0 flex-1">
@@ -152,7 +152,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
         <button onClick={() => setSelectedId(null)} className="flex items-center gap-1 text-xs text-[#71717A] hover:text-[#E4E4E7] transition-colors mb-4">
           <ArrowLeft size={14} /> Powrót do listy
         </button>
-        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-2xl p-5 text-center">
+        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-lg p-5 text-center">
           <p className="text-sm text-[#ef4444]">{error}</p>
           <button onClick={() => setSelectedId(selectedId)} className="btn-premium px-4 py-2 rounded-lg text-xs mt-4">
             Retry
@@ -176,13 +176,13 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
 
       {/* Error banner */}
       {error && (
-        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-2xl p-3" role="alert">
+        <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)] rounded-lg p-3" role="alert">
           <p className="text-xs text-[#ef4444]">{error}</p>
         </div>
       )}
 
       {/* Agent header */}
-      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <span className="text-4xl">{finalAgent.emoji || "🤖"}</span>
@@ -190,7 +190,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
               <h2 className="text-xl font-bold text-white">{finalAgent.name}</h2>
               <p className="text-sm text-[#64748B] mt-1">{finalAgent.description || "Brak opisu"}</p>
               <div className="flex items-center gap-3 mt-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[rgba(124,58,237,0.08)] text-[#F59E0B] border border-[rgba(124,58,237,0.15)]">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] text-[#F59E0B] border border-[rgba(245,158,11,0.15)]">
                   {finalAgent.modelRef}
                 </span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded-lg ${
@@ -207,7 +207,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
 
       {/* System Prompt Editor with react-hook-form */}
       <form onSubmit={handleSubmit(onSave)}>
-        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-white">System Prompt</h3>
             <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
                   saved
                     ? "bg-[rgba(34,197,94,0.1)] text-[#22C55E]"
-                    : "bg-[rgba(124,58,237,0.1)] text-[#F59E0B] hover:bg-[rgba(124,58,237,0.15)]"
+                    : "bg-[rgba(245,158,11,0.1)] text-[#F59E0B] hover:bg-[rgba(245,158,11,0.15)]"
                 }`}
               >
                 {saved ? <><Check size={12} /> Saved</> : <><Save size={12} /> Save</>}
@@ -232,7 +232,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
           </div>
           <textarea
             {...register("systemPrompt")}
-            className={`w-full h-64 bg-[rgba(0,0,0,0.3)] border rounded-xl p-4 text-[11px] font-mono text-[#A1A1AA] placeholder-[#71717A] focus:outline-none focus:border-[#F59E0B]/30 resize-y ${
+            className={`w-full h-64 bg-[rgba(0,0,0,0.3)] border rounded-md p-4 text-[11px] font-mono text-[#A1A1AA] placeholder-[#71717A] focus:outline-none focus:border-[#F59E0B]/30 resize-y ${
               errors.systemPrompt ? "border-[#ef4444]" : "border-[rgba(255,255,255,0.06)]"
             }`}
             placeholder="Enter system prompt (minimum 50 characters)..."
@@ -246,7 +246,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
       </form>
 
       {/* Tools */}
-      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+      <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
         <h3 className="text-sm font-bold text-white mb-3">🔧 Przypisane narzędzia</h3>
         <div className="flex flex-wrap gap-2">
           {(finalAgent.skills || []).length === 0 ? (
@@ -270,7 +270,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
 
       {/* Score */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
           <h3 className="text-sm font-bold text-white mb-3">📊 Quality Score</h3>
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
@@ -287,7 +287,7 @@ export function AgentConfigPage({ agents = [], onNavigate }: AgentConfigPageProp
             </div>
           </div>
         </div>
-        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-2xl p-5">
+        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-lg p-5">
           <h3 className="text-sm font-bold text-white mb-3">🤖 Agent info</h3>
           <div className="space-y-2">
             <div className="flex justify-between text-xs">

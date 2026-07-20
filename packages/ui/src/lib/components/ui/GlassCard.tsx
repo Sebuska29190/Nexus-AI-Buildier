@@ -22,7 +22,7 @@ export function GlassCard({
   return (
     <div
       className={`glass-card ${paddingMap[padding]} ${
-        hover ? "hover:border-[rgba(99,102,241,0.15)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_40px_rgba(99,102,241,0.04)]" : ""
+        hover ? "hover:border-[rgba(245,158,11,0.25)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_40px_rgba(245,158,11,0.06)]" : ""
       } transition-all duration-[250ms] ${className}`}
       {...props}
     >

@@ -41,9 +41,9 @@ export function SessionsPage() {
       ) : (
         <div className="space-y-2">
           {sorted.map((s) => (
-            <div key={s.id} className="glass-card p-3 rounded-xl flex items-center justify-between hover:border-[rgba(99,102,241,0.3)] transition-all cursor-pointer" onClick={() => resumeSession(s.id)}>
+            <div key={s.id} className="glass-card p-3 rounded-lg flex items-center justify-between hover:border-[rgba(245,158,11,0.30)] transition-all cursor-pointer" onClick={() => resumeSession(s.id)}>
               <div>
-                <div className="text-xs font-mono text-[#818cf8]">{s.id?.slice(0, 12)}...</div>
+                <div className="text-xs font-mono text-[#F59E0B]">{s.id?.slice(0, 12)}...</div>
                 <div className="text-[10px] text-[#475569]">{s.modelRef || s.model} · {new Date(s.createdAt || s.created_at || Date.now()).toLocaleString()}</div>
               </div>
               <div className="flex items-center gap-2">

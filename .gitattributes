@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.woff2 binary
+*.ico binary
+
+# SQLite WAL files (generated)
+nova.db-shm binary
+nova.db-wal binary

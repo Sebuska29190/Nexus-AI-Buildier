@@ -23,7 +23,7 @@ interface AgentActivityPanelProps {
 const STATUS_CONFIG = {
   idle: { label: "Idle", color: "#475569", bg: "rgba(71,85,105,0.1)" },
   thinking: { label: "Thinking...", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
-  acting: { label: "Working...", color: "#6366f1", bg: "rgba(99,102,241,0.1)" },
+  acting: { label: "Working...", color: "#F59E0B", bg: "rgba(245,158,11,0.1)" },
   done: { label: "Done", color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
   error: { label: "Error", color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
 };
@@ -76,11 +76,11 @@ export function AgentActivityPanel({ status, toolCalls, duration, tokens }: Agen
   }, [toolCalls.length]);
 
   return (
-    <div className="w-72 border-l border-[rgba(255,255,255,0.06)] bg-[rgba(18,18,26,0.95)] flex flex-col shrink-0 overflow-hidden">
+    <div className="w-72 border-l border-[rgba(255,255,255,0.06)] bg-[#111113] flex flex-col shrink-0 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Activity size={13} className="text-[#6366f1]" />
+          <Activity size={13} className="text-[#F59E0B]" />
           <span className="text-[11px] font-semibold text-white">Agent Activity</span>
         </div>
         <div
@@ -101,22 +101,22 @@ export function AgentActivityPanel({ status, toolCalls, duration, tokens }: Agen
       {/* Stats Row */}
       <div className="px-4 py-2.5 border-b border-[rgba(255,255,255,0.04)] grid grid-cols-2 gap-2">
         <div className="flex items-center gap-1.5">
-          <Zap size={10} className="text-[#6366f1]" />
-          <span className="text-[10px] text-[#8892a8]">{toolCalls.length} tools</span>
+          <Zap size={10} className="text-[#F59E0B]" />
+          <span className="text-[10px] text-[#A1A1AA]">{toolCalls.length} tools</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Clock size={10} className="text-[#475569]" />
-          <span className="text-[10px] text-[#8892a8]">{formatDuration(duration)}</span>
+          <Clock size={10} className="text-[#71717A]" />
+          <span className="text-[10px] text-[#A1A1AA]">{formatDuration(duration)}</span>
         </div>
         {tokens && (
           <>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-[#475569]">IN:</span>
-              <span className="text-[10px] text-[#8892a8]">{(tokens.input / 1000).toFixed(1)}K</span>
+              <span className="text-[10px] text-[#71717A]">IN:</span>
+              <span className="text-[10px] text-[#A1A1AA]">{(tokens.input / 1000).toFixed(1)}K</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-[#475569]">OUT:</span>
-              <span className="text-[10px] text-[#8892a8]">{(tokens.output / 1000).toFixed(1)}K</span>
+              <span className="text-[10px] text-[#71717A]">OUT:</span>
+              <span className="text-[10px] text-[#A1A1AA]">{(tokens.output / 1000).toFixed(1)}K</span>
             </div>
           </>
         )}
@@ -136,7 +136,7 @@ export function AgentActivityPanel({ status, toolCalls, duration, tokens }: Agen
             </span>
           )}
           {runCount > 0 && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(139,92,246,0.1)] text-[#8b5cf6] border border-[rgba(139,92,246,0.15)]">
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(139,92,246,0.1)] text-[#F59E0B] border border-[rgba(139,92,246,0.15)]">
               {runCount} run{runCount !== 1 ? "s" : ""}
             </span>
           )}
@@ -216,7 +216,7 @@ export function AgentActivityPanel({ status, toolCalls, duration, tokens }: Agen
         {toolCalls.length > 8 && !showAllTools && (
           <button
             onClick={() => setShowAllTools(true)}
-            className="px-4 py-1.5 text-[10px] text-[#6366f1] hover:text-[#818cf8] transition-colors border-t border-[rgba(255,255,255,0.04)]"
+            className="px-4 py-1.5 text-[10px] text-[#F59E0B] hover:text-[#818cf8] transition-colors border-t border-[rgba(255,255,255,0.04)]"
           >
             Show all {toolCalls.length} tool calls
           </button>

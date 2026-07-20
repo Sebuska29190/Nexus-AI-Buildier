@@ -50,7 +50,7 @@ export function AgentsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Users size={20} className="text-[#818cf8]" />
+          <Users size={20} className="text-[#F59E0B]" />
           <h1 className="text-lg font-bold">Agents</h1>
           <span className="text-xs text-[#475569]">{agents.length} agents</span>
         </div>
@@ -85,8 +85,8 @@ export function AgentsPage() {
             <div
               key={agent.id}
               onClick={() => setSelectedAgent(selectedAgent?.id === agent.id ? null : agent)}
-              className={`glass-card p-4 rounded-xl cursor-pointer transition-all hover:border-[rgba(99,102,241,0.3)] ${
-                selectedAgent?.id === agent.id ? "border-[rgba(99,102,241,0.4)]" : ""
+              className={`glass-card p-4 rounded-lg cursor-pointer transition-all hover:border-[rgba(245,158,11,0.30)] ${
+                selectedAgent?.id === agent.id ? "border-[rgba(245,158,11,0.40)]" : ""
               }`}
             >
               <div className="flex items-center justify-between">
@@ -99,8 +99,8 @@ export function AgentsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono text-[#475569]">{agent.modelRef}</span>
-                  <button onClick={(e) => { e.stopPropagation(); chatWithAgent(agent.id); }} className="p-1.5 hover:bg-[rgba(99,102,241,0.1)] rounded-lg" title="Chat">
-                    <Play size={14} className="text-[#818cf8]" />
+                  <button onClick={(e) => { e.stopPropagation(); chatWithAgent(agent.id); }} className="p-1.5 hover:bg-[rgba(245,158,11,0.1)] rounded-lg" title="Chat">
+                    <Play size={14} className="text-[#F59E0B]" />
                   </button>
                   {agent.id !== "default" && (
                     <button onClick={(e) => { e.stopPropagation(); deleteAgent(agent.id); }} className="p-1.5 hover:bg-[rgba(239,68,68,0.1)] rounded-lg" title="Delete">

@@ -27,7 +27,7 @@ interface ConfigEntry {
 }
 
 const channelDefs: ChannelDef[] = [
-  { type: "telegram", icon: "send", color: "#6366f1", title: "Telegram Gateway",
+  { type: "telegram", icon: "send", color: "#F59E0B", title: "Telegram Gateway",
     desc: "Empower your agent to monitor targeted groups, push urgent alerts, and execute queries from secure chats.",
     configFields: [{ key: "token", label: "Bot Token", type: "password" }, { key: "chatId", label: "Chat ID", type: "text" }] },
   { type: "discord", icon: "message-square", color: "indigo-400", title: "Discord Bridge",
@@ -180,7 +180,7 @@ export function ChannelsPage() {
             const savedCfg = savedConfigs[def.type] || {};
 
             return (
-              <div key={def.type} className="glass-panel rounded-xl p-5">
+              <div key={def.type} className="glass-panel rounded-md p-5">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -244,12 +244,12 @@ export function ChannelsPage() {
                             <span className="bg-[#020408]/60 border border-slate-800 rounded-l px-2.5 py-1.5 text-xs text-slate-500 font-mono">{field.prefix}</span>
                             <input type={field.type || "text"} placeholder={field.label}
                               value={val} onChange={(e) => setConfigs((prev) => ({ ...prev, [configKey]: e.target.value }))}
-                              className="flex-1 bg-[#020408]/60 border border-l-0 border-slate-800 rounded-r px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1]" />
+                              className="flex-1 bg-[#020408]/60 border border-l-0 border-slate-800 rounded-r px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#F59E0B]" />
                           </div>
                         ) : (
                           <input key={field.key} type={field.type || "text"} placeholder={field.label}
                             value={val} onChange={(e) => setConfigs((prev) => ({ ...prev, [configKey]: e.target.value }))}
-                            className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#6366f1]" />
+                            className="w-full bg-[#020408]/60 border border-slate-800 rounded px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#F59E0B]" />
                         );
                       })}
                     </div>

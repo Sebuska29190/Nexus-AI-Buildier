@@ -129,7 +129,7 @@ export function PluginsPage() {
       </div>
 
       {errorMsg && (
-        <div className="glass-panel rounded-xl p-3 mb-4 border border-red-500/30">
+        <div className="glass-panel rounded-md p-3 mb-4 border border-red-500/30">
           <p className="text-xs text-red-400">{errorMsg}</p>
         </div>
       )}
@@ -154,21 +154,21 @@ export function PluginsPage() {
       </div>
 
       {loading && plugins.length === 0 ? (
-        <div className="glass-panel rounded-xl p-8 flex items-center justify-center">
+        <div className="glass-panel rounded-md p-8 flex items-center justify-center">
           <p className="text-sm text-[#94a3b8]">Loading plugins...</p>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {list.map((plugin) => (
-              <div key={plugin.id || plugin.name} className="glass-panel rounded-xl p-5 flex flex-col justify-between transition-all hover:border-indigo-500/30">
+              <div key={plugin.id || plugin.name} className="glass-panel rounded-md p-5 flex flex-col justify-between transition-all hover:border-indigo-500/30">
                 <div>
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-9 h-9 rounded-lg bg-indigo-950/50 border border-indigo-500/30 flex items-center justify-center">
                       {plugin.icon ? (
                         <span className="text-base">{plugin.icon}</span>
                       ) : (
-                        <svg className="w-4.5 h-4.5 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+                        <svg className="w-4.5 h-4.5 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
                       )}
                     </div>
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${plugin.installed ? "bg-emerald-950 text-emerald-400 border-emerald-500/20" : "bg-slate-900 text-[#475569] border-[rgba(255,255,255,0.06)]"}`}>
@@ -217,7 +217,7 @@ export function PluginsPage() {
           </div>
 
           {list.length === 0 && !loading && (
-            <div className="glass-panel rounded-xl p-8 flex flex-col items-center justify-center gap-2 mt-4">
+            <div className="glass-panel rounded-md p-8 flex flex-col items-center justify-center gap-2 mt-4">
               <p className="text-sm text-[#94a3b8]">No plugins found</p>
               {(searchQuery || filterType !== "all") ? (
                 <p className="text-xs text-[#475569]">Try adjusting your search or filters</p>
@@ -232,7 +232,7 @@ export function PluginsPage() {
       {/* Configure Modal */}
       {configPlugin && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0b0f19] border border-[rgba(255,255,255,0.06)] max-w-lg w-full rounded-xl overflow-hidden shadow-2xl">
+          <div className="bg-[#0b0f19] border border-[rgba(255,255,255,0.06)] max-w-lg w-full rounded-md overflow-hidden shadow-2xl">
             <div className="bg-[#05080f] px-4 py-3 border-b border-slate-850 flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
                 <span className="text-sm font-bold">{configPlugin.name}</span>
@@ -244,7 +244,7 @@ export function PluginsPage() {
             </div>
             <div className="p-5 space-y-4">
               {configLoading ? (
-                <div className="flex items-center justify-center py-8"><span className="w-4 h-4 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin"></span></div>
+                <div className="flex items-center justify-center py-8"><span className="w-4 h-4 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></span></div>
               ) : configPlugin.configSchema && configPlugin.configSchema.length > 0 ? (
                 <>
                   <p className="text-[10px] text-[#94a3b8]">Configure {configPlugin.name}:</p>

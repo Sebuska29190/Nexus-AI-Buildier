@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   MessageSquare, Users, History, Terminal,
   Puzzle, Brain, BarChart3, BookOpen,
-  Settings, Search, Orbit, PanelLeftClose,
+  Settings, Search, PanelLeftClose,
   PanelLeft, Sparkles
 } from "lucide-react";
 
@@ -103,7 +103,15 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
         <div className="p-5 border-b border-[rgba(255,255,255,0.06)]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#EA580C] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.25)]">
-              <Orbit size={18} className="text-white" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M6 9L18 9L16.5 11.5L7.5 11.5Z" fill="#0a0a0b"/>
+                <path d="M5 9L2.5 9.8L2.5 11L5 11Z" fill="#0a0a0b"/>
+                <rect x="10.5" y="11.5" width="3" height="6" fill="#0a0a0b"/>
+                <rect x="8" y="17.5" width="8" height="2.5" rx="0.5" fill="#0a0a0b"/>
+                <path d="M12 3L13 6.5L12 6L11 6.5Z" fill="#FCD34D"/>
+                <path d="M15 4.5L15.5 7L14.5 6.5L14 7.5Z" fill="#FCD34D"/>
+                <path d="M9 4.5L8.5 7L9.5 6.5L10 7.5Z" fill="#FCD34D"/>
+              </svg>
             </div>
             <div className="flex-1">
               <h1 className="font-extrabold text-sm tracking-wide text-white font-mono">AGENTFORGE</h1>
@@ -204,8 +212,13 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
       <div className="p-3 border-t border-[rgba(255,255,255,0.06)] bg-[#111113]">
         <div className="flex items-center justify-between p-2 rounded-md hover:bg-[rgba(255,255,255,0.04)] transition-all duration-200 cursor-pointer">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#EA580C] flex items-center justify-center text-[9px] font-bold text-white shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-              NX
+            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#EA580C] flex items-center justify-center shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M6 9L18 9L16.5 11.5L7.5 11.5Z" fill="#0a0a0b"/>
+                <rect x="10.5" y="11.5" width="3" height="6" fill="#0a0a0b"/>
+                <rect x="8" y="17.5" width="8" height="2.5" rx="0.5" fill="#0a0a0b"/>
+                <path d="M12 3L13 6.5L12 6L11 6.5Z" fill="#FCD34D"/>
+              </svg>
             </div>
             <div>
               <div className="text-[11px] font-semibold text-white">AgentForge</div>

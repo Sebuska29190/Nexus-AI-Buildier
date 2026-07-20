@@ -50,12 +50,12 @@ export function ConfirmDialog({
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-300 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="panel-strong rounded-2xl shadow-[0_24px_48px_rgba(0,0,0,0.5)] w-[400px] max-h-[80vh] flex flex-col overflow-hidden animate-dialog-in">
+      <div className="panel-strong rounded-lg shadow-[0_24px_48px_rgba(0,0,0,0.5)] w-[400px] max-h-[80vh] flex flex-col overflow-hidden animate-dialog-in">
         <div className="flex items-center justify-between px-5 py-4 border-b border-nova-border">
           <h3 className="text-base font-semibold text-white">{title}</h3>
         </div>
         <div className="p-5">
-          <p className="text-sm text-[#8892a8]">{message}</p>
+          <p className="text-sm text-[#A1A1AA]">{message}</p>
         </div>
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-nova-border">
           <button
@@ -70,7 +70,7 @@ export function ConfirmDialog({
             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
               variant === "danger"
                 ? "bg-[rgba(239,68,68,0.15)] text-[#ef4444] hover:bg-[rgba(239,68,68,0.25)]"
-                : "bg-[rgba(99,102,241,0.15)] text-[#818cf8] hover:bg-[rgba(99,102,241,0.25)]"
+                : "bg-[rgba(245,158,11,0.15)] text-[#F59E0B] hover:bg-[rgba(245,158,11,0.25)]"
             }`}
           >
             {confirmLabel}

@@ -107,7 +107,7 @@ export function GitAutomationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59E0B] to-[#F59E0B] flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+          <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#F59E0B] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
             <GitBranch size={20} className="text-white" />
           </div>
           <div>

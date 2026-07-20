@@ -174,16 +174,16 @@ export function TerminalPage() {
       theme: {
         background: "#020408",
         foreground: "#34d399",
-        cursor: "#00f2fe",
+        cursor: "#FCD34D",
         cursorAccent: "#020408",
-        selectionBackground: "#00f2fe33",
+        selectionBackground: "#FCD34D33",
         black: "#020408",
         red: "#f43f5e",
         green: "#34d399",
         yellow: "#fbbf24",
-        blue: "#6366f1",
-        magenta: "#a78bfa",
-        cyan: "#00f2fe",
+        blue: "#F59E0B",
+        magenta: "#FCD34D",
+        cyan: "#FCD34D",
         white: "#e2e8f0",
         brightBlack: "#475569",
         brightRed: "#fb7185",
@@ -252,7 +252,7 @@ export function TerminalPage() {
       </div>
 
       {/* Terminal Panel */}
-      <div className="glass-panel rounded-xl overflow-hidden border border-slate-800">
+      <div className="glass-panel rounded-md overflow-hidden border border-slate-800">
         {/* Controls Bar — Mac-style dots */}
         <div className="bg-slate-950 px-4 py-2 border-b border-slate-850 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -308,7 +308,7 @@ export function TerminalPage() {
               }}
               data-terminal-search
               placeholder="Search terminal output..."
-              className="flex-1 bg-[#020408]/60 border border-slate-800 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-[#00f2fe]"
+              className="flex-1 bg-[#020408]/60 border border-slate-800 rounded px-2 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-[#FCD34D]"
             />
             <button
               onClick={() => doSearch("prev")}

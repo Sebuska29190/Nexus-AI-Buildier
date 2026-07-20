@@ -51,7 +51,7 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
       </div>
 
       {/* Search & Filter */}
-      <div className="glass-panel rounded-xl p-4 mb-6 border border-[#6366f1]/10">
+      <div className="glass-panel rounded-lg p-4 mb-6 border border-[rgba(245,158,11,0.10)]">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <svg className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[#475569]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -60,7 +60,7 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
             <input
               type="text"
               placeholder="Search skills by name, description, or tag..."
-              className="w-full bg-slate-950/60 border border-[rgba(255,255,255,0.06)] rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#6366f1] transition-all"
+              className="w-full bg-slate-950/60 border border-[rgba(255,255,255,0.06)] rounded-md pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#F59E0B] transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -68,7 +68,7 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="bg-slate-950/60 border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-[#6366f1] transition-all"
+            className="bg-slate-950/60 border border-[rgba(255,255,255,0.06)] rounded-md px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-[#F59E0B] transition-all"
           >
             <option value="all">All</option>
             <option value="auto-generated">AI Generated</option>
@@ -79,13 +79,13 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
       </div>
 
       {filteredSkills.length === 0 ? (
-        <div className="glass-panel rounded-xl p-8 flex flex-col items-center justify-center gap-2">
+        <div className="glass-panel rounded-lg p-8 flex flex-col items-center justify-center gap-2">
           <p className="text-sm text-[#94a3b8]">No skills found</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredSkills.map((skill: any) => (
-            <div key={skill.name} className="glass-panel rounded-xl p-5 flex flex-col transition-all hover:border-indigo-500/30">
+            <div key={skill.name} className="glass-panel rounded-lg p-5 flex flex-col transition-all hover:border-[rgba(245,158,11,0.30)]">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-bold text-sm text-white">{skill.name}</h3>
                 <div className="flex gap-1">

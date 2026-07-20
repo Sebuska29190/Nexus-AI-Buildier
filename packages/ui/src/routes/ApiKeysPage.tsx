@@ -136,8 +136,8 @@ function ApiKeysPage() {
       <div className="shrink-0 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.15)] flex items-center justify-center">
-              <KeyRound className="w-5 h-5 text-[#818cf8]" />
+            <div className="w-10 h-10 rounded-lg bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.15)] flex items-center justify-center">
+              <KeyRound className="w-5 h-5 text-[#F59E0B]" />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-white">API Keys</h1>
@@ -160,7 +160,7 @@ function ApiKeysPage() {
 
       {/* Add Key Form with react-hook-form */}
       {showAdd && (
-        <form onSubmit={handleSubmit(onSave)} className="shrink-0 mb-4 p-4 rounded-xl bg-[rgba(0,212,255,0.03)] border border-[rgba(0,212,255,0.1)] space-y-3">
+        <form onSubmit={handleSubmit(onSave)} className="shrink-0 mb-4 p-4 rounded-lg bg-[rgba(245,158,11,0.03)] border border-[rgba(245,158,11,0.1)] space-y-3">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex-1 min-w-[120px]">
               <select {...register("provider")} className="glass-input w-full px-3 py-2 text-sm">
@@ -231,12 +231,12 @@ function ApiKeysPage() {
         </div>
 
         {loading ? (
-          <div className="glass-card rounded-2xl p-8 text-center">
-            <Loader2 className="w-5 h-5 text-[#818cf8] animate-spin mx-auto mb-2" />
+          <div className="glass-card rounded-lg p-8 text-center">
+            <Loader2 className="w-5 h-5 text-[#F59E0B] animate-spin mx-auto mb-2" />
             <p className="text-xs text-[#4a5068]">Loading providers...</p>
           </div>
         ) : providers.length === 0 ? (
-          <div className="glass-card rounded-2xl p-8 text-center">
+          <div className="glass-card rounded-lg p-8 text-center">
             <p className="text-sm text-[#4a5068]">No providers found. Start the server to detect providers.</p>
           </div>
         ) : (
@@ -244,9 +244,9 @@ function ApiKeysPage() {
             const testResult = testResults[p.id];
             const isTesting = testing.has(p.id);
             return (
-              <div key={p.id} className={`glass-card rounded-2xl p-4 flex items-center gap-4 ${p.status === 'error' ? 'border-[rgba(239,68,68,0.15)]' : ''}`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${p.hasKey ? "bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.15)]" : "bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)]"}`}>
-                  <span className={`text-sm font-bold ${p.hasKey ? "text-[#818cf8]" : "text-[#4a5068]"}`}>
+              <div key={p.id} className={`glass-card rounded-lg p-4 flex items-center gap-4 ${p.status === 'error' ? 'border-[rgba(239,68,68,0.15)]' : ''}`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${p.hasKey ? "bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.15)]" : "bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)]"}`}>
+                  <span className={`text-sm font-bold ${p.hasKey ? "text-[#F59E0B]" : "text-[#4a5068]"}`}>
                     {p.name.slice(0, 2).toUpperCase()}
                   </span>
                 </div>

@@ -122,7 +122,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59E0B] to-[#F59E0B] flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+        <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#F59E0B] flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.3)]">
           <FlaskConical size={20} className="text-white" />
         </div>
         <div>
@@ -302,7 +302,7 @@ export function PromptPlaygroundPage({ models = [] }: PromptPlaygroundProps) {
                 <button
                   key={t.label}
                   onClick={() => { setSystemPrompt(t.system); setUserPrompt(t.user); }}
-                  className="w-full text-left px-3 py-2 rounded-xl text-xs text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#E4E4E7] transition-all duration-200 border border-transparent hover:border-[rgba(255,255,255,0.06)]"
+                  className="w-full text-left px-3 py-2 rounded-md text-xs text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#E4E4E7] transition-all duration-200 border border-transparent hover:border-[rgba(255,255,255,0.06)]"
                 >
                   {t.label}
                 </button>

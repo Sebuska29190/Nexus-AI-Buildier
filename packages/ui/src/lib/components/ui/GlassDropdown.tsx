@@ -34,7 +34,7 @@ export function GlassDropdown({ value, options, onChange, placeholder = "Select.
           <span className="truncate">{selected?.label || placeholder}</span>
         </span>
         <svg
-          className={`w-4 h-4 text-[#475569] transition-transform duration-200 flex-shrink-0 ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-[#71717A] transition-transform duration-200 flex-shrink-0 ${open ? "rotate-180" : ""}`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -45,7 +45,7 @@ export function GlassDropdown({ value, options, onChange, placeholder = "Select.
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-[#12121a] backdrop-blur-xl border border-[rgba(255,255,255,0.08)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden animate-fade-in-up">
+        <div className="absolute z-50 mt-1 w-full bg-[#111113] border border-[rgba(255,255,255,0.08)] rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden animate-fade-in-up">
           <div className="max-h-60 overflow-y-auto py-1">
             {options.map((opt) => (
               <button
@@ -57,14 +57,14 @@ export function GlassDropdown({ value, options, onChange, placeholder = "Select.
                 }}
                 className={`w-full px-4 py-2 text-sm text-left flex items-center gap-2 transition-colors ${
                   value === opt.value
-                    ? "bg-[rgba(99,102,241,0.1)] text-[#818cf8]"
-                    : "text-[#94a3b8] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f1f5f9]"
+                    ? "bg-[rgba(245,158,11,0.1)] text-[#F59E0B]"
+                    : "text-[#A1A1AA] hover:bg-[#161618] hover:text-[#E4E4E7]"
                 }`}
               >
                 {opt.icon && <span className="flex-shrink-0">{opt.icon}</span>}
                 <span className="truncate">{opt.label}</span>
                 {value === opt.value && (
-                  <svg className="w-3.5 h-3.5 ml-auto flex-shrink-0 text-[#6366f1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg className="w-3.5 h-3.5 ml-auto flex-shrink-0 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M5 13l4 4L19 7" />
                   </svg>
                 )}

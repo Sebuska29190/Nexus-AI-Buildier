@@ -15,11 +15,11 @@ const sizeStyles = {
 
 const variantStyles = {
   primary:
-    "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-semibold rounded-xl transition-all duration-[250ms] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(99,102,241,0.35)] hover:brightness-110 active:translate-y-0",
+    "bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-semibold rounded-lg transition-all duration-[250ms] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(245,158,11,0.35)] hover:brightness-110 active:translate-y-0",
   ghost:
-    "bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.1)] text-[#94a3b8] font-medium rounded-xl transition-all duration-200 hover:bg-[rgba(255,255,255,0.08)] hover:text-[#f1f5f9] hover:border-[rgba(255,255,255,0.15)]",
+    "bg-[#161618] border border-[rgba(255,255,255,0.1)] text-[#A1A1AA] font-medium rounded-lg transition-all duration-200 hover:bg-[rgba(255,255,255,0.06)] hover:text-[#E4E4E7] hover:border-[rgba(255,255,255,0.15)]",
   danger:
-    "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#ef4444] font-medium rounded-xl transition-all duration-200 hover:bg-[rgba(239,68,68,0.15)] hover:border-[rgba(239,68,68,0.3)]",
+    "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#ef4444] font-medium rounded-lg transition-all duration-200 hover:bg-[rgba(239,68,68,0.15)] hover:border-[rgba(239,68,68,0.3)]",
 };
 
 export function GlassButton({
