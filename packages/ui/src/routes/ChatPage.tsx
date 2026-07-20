@@ -51,9 +51,9 @@ interface ToolActivity {
 function ToolStatusIcon({ status }: { status: ToolActivity["status"] }) {
   switch (status) {
     case "pending":
-      return <Clock size={12} className="text-[#4a5068]" />;
+      return <Clock size={12} className="text-[#71717A]" />;
     case "running":
-      return <Loader2 size={12} className="text-[#00d4ff] animate-spin" />;
+      return <Loader2 size={12} className="text-[#F59E0B] animate-spin" />;
     case "done":
       return <CheckCircle size={12} className="text-[#22c55e]" />;
     case "error":
@@ -67,21 +67,21 @@ function ToolCallCard({ tool }: { tool: ToolActivity }) {
   const [expanded, setExpanded] = useState(false);
   
   return (
-    <div className="border border-[rgba(255,255,255,0.06)] rounded-lg overflow-hidden">
+    <div className="border border-[rgba(255,255,255,0.06)] rounded-md overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full px-3 py-2 flex items-center gap-2 hover:bg-[rgba(255,255,255,0.02)] transition-colors"
       >
         <ToolStatusIcon status={tool.status} />
-        <span className="text-[11px] font-mono text-[#8892a8]">{tool.tool}</span>
+        <span className="text-[11px] font-mono text-[#A1A1AA]">{tool.tool}</span>
         {tool.duration !== undefined && (
-          <span className="text-[9px] text-[#4a5068] ml-auto">{(tool.duration / 1000).toFixed(1)}s</span>
+          <span className="text-[9px] text-[#71717A] ml-auto">{(tool.duration / 1000).toFixed(1)}s</span>
         )}
-        <ChevronRight size={10} className={`text-[#4a5068] transition-transform ${expanded ? "rotate-90" : ""}`} />
+        <ChevronRight size={10} className={`text-[#71717A] transition-transform ${expanded ? "rotate-90" : ""}`} />
       </button>
       {expanded && tool.result && (
         <div className="px-3 pb-2 border-t border-[rgba(255,255,255,0.04)]">
-          <pre className="text-[10px] text-[#6b7280] font-mono mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
+          <pre className="text-[10px] text-[#71717A] font-mono mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
             {tool.result.slice(0, 1000)}
             {tool.result.length > 1000 && "..."}
           </pre>
@@ -107,15 +107,15 @@ function ActivityPanel({
   if (status === "idle") return null;
   
   return (
-    <div className="border-t border-[rgba(255,255,255,0.06)] bg-[rgba(10,11,30,0.8)] p-3">
+    <div className="border-t border-[rgba(255,255,255,0.06)] bg-[#111113] p-3">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-[10px] text-[#4a5068] hover:text-[#8892a8] transition-colors w-full"
+        className="flex items-center gap-2 text-[10px] text-[#71717A] hover:text-[#A1A1AA] transition-colors w-full"
       >
         {status === "thinking" ? (
-          <Loader2 size={10} className="text-[#7C3AED] animate-spin" />
+          <Loader2 size={10} className="text-[#F59E0B] animate-spin" />
         ) : status === "running" ? (
-          <Loader2 size={10} className="text-[#06B6D4] animate-spin" />
+          <Loader2 size={10} className="text-[#F59E0B] animate-spin" />
         ) : (
           <CheckCircle size={10} className="text-[#22c55e]" />
         )}
@@ -131,9 +131,9 @@ function ActivityPanel({
         <div className="mt-2 space-y-1">
           {/* Thinking block */}
           {thinking && (
-            <div className="bg-[rgba(124,58,237,0.06)] border border-[rgba(124,58,237,0.12)] rounded-lg p-2.5 mb-2">
-              <div className="text-[9px] text-[#7C3AED] font-mono mb-1">💭 THINKING</div>
-              <div className="text-[10px] text-[#6b7280] font-mono whitespace-pre-wrap max-h-24 overflow-y-auto">
+            <div className="bg-[rgba(245,158,11,0.06)] border border-[rgba(245,158,11,0.12)] rounded-md p-2.5 mb-2">
+              <div className="text-[9px] text-[#F59E0B] font-mono mb-1">💭 THINKING</div>
+              <div className="text-[10px] text-[#71717A] font-mono whitespace-pre-wrap max-h-24 overflow-y-auto">
                 {thinking}
               </div>
             </div>
@@ -156,8 +156,8 @@ function TimelineItem({ tool, index, isLast }: { tool: ToolActivity; index: numb
 
   const statusColor = tool.status === "done" ? "bg-[#22c55e]"
     : tool.status === "error" ? "bg-[#ef4444]"
-    : tool.status === "running" ? "bg-[#06B6D4]"
-    : "bg-[#4a5068]";
+    : tool.status === "running" ? "bg-[#F59E0B]"
+    : "bg-[#71717A]";
 
   const statusIcon = tool.status === "done" ? "✓"
     : tool.status === "error" ? "✗"
@@ -183,19 +183,19 @@ function TimelineItem({ tool, index, isLast }: { tool: ToolActivity; index: numb
         <span className={`text-[10px] font-mono ${
           tool.status === "done" ? "text-[#22c55e]"
           : tool.status === "error" ? "text-[#ef4444]"
-          : tool.status === "running" ? "text-[#06B6D4]"
-          : "text-[#4a5068]"
+          : tool.status === "running" ? "text-[#F59E0B]"
+          : "text-[#71717A]"
         }`}>
           {statusIcon}
         </span>
-        <span className="text-[10px] font-mono text-[#94a3b8] truncate flex-1">{tool.tool}</span>
+        <span className="text-[10px] font-mono text-[#A1A1AA] truncate flex-1">{tool.tool}</span>
         {tool.duration !== undefined && (
-          <span className="text-[9px] text-[#475569] font-mono shrink-0">
+          <span className="text-[9px] text-[#71717A] font-mono shrink-0">
             {(tool.duration / 1000).toFixed(1)}s
           </span>
         )}
         {tool.result && (
-          <ChevronRight size={10} className={`text-[#475569] transition-transform ${expanded ? "rotate-90" : ""}`} />
+          <ChevronRight size={10} className={`text-[#71717A] transition-transform ${expanded ? "rotate-90" : ""}`} />
         )}
       </button>
       
@@ -204,7 +204,7 @@ function TimelineItem({ tool, index, isLast }: { tool: ToolActivity; index: numb
         <div className="h-0.5 bg-[rgba(255,255,255,0.04)] rounded-full overflow-hidden ml-2 mr-2 mb-1">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              tool.status === "done" ? "bg-[#22c55e]" : "bg-[#06B6D4]"
+              tool.status === "done" ? "bg-[#22c55e]" : "bg-[#F59E0B]"
             }`}
             style={{ width: `${Math.min((tool.duration / 5000) * 100, 100)}%` }}
           />
@@ -212,8 +212,8 @@ function TimelineItem({ tool, index, isLast }: { tool: ToolActivity; index: numb
       )}
       
       {expanded && tool.result && (
-        <div className="ml-2 mb-2 p-2 bg-[rgba(0,0,0,0.2)] rounded-lg border border-[rgba(255,255,255,0.04)]">
-          <pre className="text-[9px] text-[#6b7280] font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
+        <div className="ml-2 mb-2 p-2 bg-[rgba(0,0,0,0.2)] rounded-md border border-[rgba(255,255,255,0.04)]">
+          <pre className="text-[9px] text-[#71717A] font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
             {tool.result.slice(0, 1500)}
             {tool.result.length > 1500 && "\n..."}
           </pre>
@@ -359,11 +359,11 @@ export function ChatPage({
     let html = marked.parse(content) as string;
     html = html.replace(
       /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
-      (_, lang, code) => `<div class="code-block-wrapper" data-lang="${lang}"><pre><code class="language-${lang}">${code}</code></pre></div>`
+      (_, lang, code) => `<div class=\"code-block-wrapper\" data-lang=\"${lang}\"><pre><code class=\"language-${lang}\">${code}</code></pre></div>`
     );
     html = html.replace(
       /<pre><code>([\s\S]*?)<\/code><\/pre>/g,
-      (_, code) => `<div class="code-block-wrapper" data-lang="text"><pre><code>${code}</code></pre></div>`
+      (_, code) => `<div class=\"code-block-wrapper\" data-lang=\"text\"><pre><code>${code}</code></pre></div>`
     );
     return html;
   }, []);
@@ -381,7 +381,7 @@ export function ChatPage({
     const pct = Math.min(100, Math.round((estimatedTokens / contextLimit) * 100));
 
     return (
-      <div className="shrink-0 px-6 py-1.5 border-t border-[rgba(255,255,255,0.04)] bg-[rgba(255,255,255,0.01)]">
+      <div className="shrink-0 px-6 py-1.5 border-t border-[rgba(255,255,255,0.04)] bg-[#111113]">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <div className="flex-1 h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
             <div
@@ -390,12 +390,12 @@ export function ChatPage({
                   ? "bg-[#ef4444]"
                   : pct > 70
                   ? "bg-[#f59e0b]"
-                  : "bg-gradient-to-r from-[#00d4ff] to-[#6366f1]"
+                  : "bg-gradient-to-r from-[#F59E0B] to-[#EA580C]"
               }`}
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-[9px] text-[#4a5068] font-mono shrink-0">
+          <span className="text-[9px] text-[#71717A] font-mono shrink-0">
             ~{estimatedTokens >= 1000000
               ? `${(estimatedTokens / 1000000).toFixed(1)}M`
               : `${(estimatedTokens / 1000).toFixed(0)}K`
@@ -412,14 +412,14 @@ export function ChatPage({
   return (
     <div className="flex flex-col h-full max-h-[calc(100dvh-3.5rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-2.5 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0b1e]/90 backdrop-blur-xl shrink-0">
+      <div className="flex items-center justify-between px-5 py-2.5 border-b border-[rgba(255,255,255,0.06)] bg-[#111113] shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00d4ff] via-[#6366f1] to-[#8b5cf6] flex items-center justify-center shadow-[0_0_14px_rgba(0,212,255,0.25)]">
+          <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#F59E0B] to-[#EA580C] flex items-center justify-center shadow-[0_0_14px_rgba(245,158,11,0.25)]">
             <Zap size={14} className="text-white" />
           </div>
           <span className="text-xs font-semibold text-white tracking-tight">AgentForge</span>
           {chat.sessionId && (
-            <span className="text-[9px] text-[#475569] font-mono">{chat.sessionId.slice(0, 8)}</span>
+            <span className="text-[9px] text-[#71717A] font-mono">{chat.sessionId.slice(0, 8)}</span>
           )}
           {chat.connected ? (
             <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
@@ -431,7 +431,7 @@ export function ChatPage({
           <div className="relative">
             <button
               onClick={() => setShowModelDropdown(!showModelDropdown)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] text-[11px] text-[#94a3b8] font-mono hover:border-[rgba(0,212,255,0.15)] transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#161618] border border-[rgba(255,255,255,0.06)] text-[11px] text-[#A1A1AA] font-mono hover:border-[rgba(245,158,11,0.15)] transition-all"
             >
               <Cpu size={12} />
               <span>{settings.model.split("/").pop()}</span>
@@ -439,7 +439,7 @@ export function ChatPage({
             </button>
 
             {showModelDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-72 bg-[#0d0f20] border border-[rgba(255,255,255,0.1)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden z-50">
+              <div className="absolute top-full left-0 mt-1 w-72 bg-[#111113] border border-[rgba(255,255,255,0.10)] rounded-md shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden z-50">
                 {Object.entries(groupedModels).map(([providerId, provider]) => (
                   <div key={providerId}>
                     <button
@@ -448,12 +448,12 @@ export function ChatPage({
                     >
                       <div className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
-                        <span className="text-xs text-[#e8ecf2] font-medium">{provider.name}</span>
-                        <span className="text-[9px] text-[#4a5068]">{provider.models.length}m</span>
+                        <span className="text-xs text-[#E4E4E7] font-medium">{provider.name}</span>
+                        <span className="text-[9px] text-[#71717A]">{provider.models.length}m</span>
                       </div>
                       <ChevronDown
                         size={12}
-                        className={`text-[#4a5068] transition-transform ${
+                        className={`text-[#71717A] transition-transform ${
                           expandedProvider === providerId ? "rotate-180" : ""
                         }`}
                       />
@@ -470,12 +470,12 @@ export function ChatPage({
                             }}
                             className={`w-full px-4 py-1.5 text-left text-[11px] flex items-center gap-2 transition-colors ${
                               settings.model === model.id
-                                ? "bg-[rgba(0,212,255,0.08)] text-[#00d4ff]"
-                                : "text-[#8892a8] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#e8ecf2]"
+                                ? "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"
+                                : "text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#E4E4E7]"
                             }`}
                           >
                             <span className="font-mono">{model.id.split("/").pop()}</span>
-                            {settings.model === model.id && <Check size={12} className="ml-auto text-[#00d4ff]" />}
+                            {settings.model === model.id && <Check size={12} className="ml-auto text-[#F59E0B]" />}
                           </button>
                         ))}
                       </div>
@@ -490,10 +490,10 @@ export function ChatPage({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSplitView(!showSplitView)}
-            className={`p-1.5 rounded-lg transition-all ${
+            className={`p-1.5 rounded-md transition-all ${
               showSplitView
-                ? "text-[#818cf8] bg-[rgba(99,102,241,0.08)]"
-                : "text-[#4a5068] hover:text-[#8892a8] hover:bg-[rgba(255,255,255,0.04)]"
+                ? "text-[#F59E0B] bg-[rgba(245,158,11,0.08)]"
+                : "text-[#71717A] hover:text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.04)]"
             }`}
             title={showSplitView ? "Hide thinking panel" : "Show thinking panel"}
           >
@@ -501,13 +501,13 @@ export function ChatPage({
           </button>
           <button
             onClick={() => chat.clearMessages()}
-            className="px-3 py-1 rounded-lg text-[10px] text-[#8892a8] hover:text-[#e8ecf2] hover:bg-[rgba(255,255,255,0.04)] transition-all flex items-center gap-1"
+            className="px-3 py-1 rounded-md text-[10px] text-[#A1A1AA] hover:text-[#E4E4E7] hover:bg-[rgba(255,255,255,0.04)] transition-all flex items-center gap-1"
           >
             <Plus size={12} /> New
           </button>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="p-1.5 text-[#4a5068] hover:text-[#8892a8] transition-colors rounded-lg hover:bg-[rgba(255,255,255,0.04)]"
+            className="p-1.5 text-[#71717A] hover:text-[#A1A1AA] transition-colors rounded-md hover:bg-[rgba(255,255,255,0.04)]"
           >
             <Settings size={15} />
           </button>
@@ -526,7 +526,7 @@ export function ChatPage({
                 {chat.messages.filter(m => m.role !== "system").map((msg) => (
                   <div key={msg.id} className={`animate-fade-in-up ${msg.role === "user" ? "flex justify-end" : ""}`}>
                     {msg.role === "assistant" ? (
-                      <div className="glass-card rounded-2xl p-4 max-w-[85%]">
+                      <div className="bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-md p-4 max-w-[85%]">
                         {msg.toolCalls && msg.toolCalls.length > 0 && (
                           <div className="mb-3 space-y-1">
                             {msg.toolCalls.map((tc, i) => (
@@ -549,12 +549,12 @@ export function ChatPage({
                           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderContent(msg.content)) }}
                         />
                         <div className="flex items-center gap-3 mt-3 pt-2 border-t border-[rgba(255,255,255,0.04)]">
-                          <span className="text-[9px] text-[#475569]">
+                          <span className="text-[9px] text-[#71717A]">
                             {msg.duration && `${(msg.duration / 1000).toFixed(1)}s`}
                           </span>
                           <button
                             onClick={() => navigator.clipboard.writeText(msg.content)}
-                            className="p-1.5 text-[#475569] hover:text-[#00d4ff] hover:bg-[rgba(0,212,255,0.08)] rounded-lg transition-all ml-auto"
+                            className="p-1.5 text-[#71717A] hover:text-[#F59E0B] hover:bg-[rgba(245,158,11,0.08)] rounded-md transition-all ml-auto"
                             title="Copy"
                           >
                             <Copy size={13} />
@@ -562,7 +562,7 @@ export function ChatPage({
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-gradient-to-r from-[#00d4ff] via-[#6366f1] to-[#8b5cf6] rounded-2xl px-4 py-3 max-w-[75%] ml-auto shadow-[0_4px_16px_rgba(0,212,255,0.12)]">
+                      <div className="bg-gradient-to-r from-[#F59E0B] to-[#EA580C] rounded-md px-4 py-3 max-w-[75%] ml-auto shadow-[0_4px_16px_rgba(245,158,11,0.12)]">
                         <p className="text-sm text-white whitespace-pre-wrap">{msg.content}</p>
                         <span className="text-[9px] text-[rgba(255,255,255,0.5)] mt-1 block text-right">
                           {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -576,24 +576,24 @@ export function ChatPage({
                 {(chat.isThinking || chat.isRunning) && (
                   <div className="animate-fade-in-up">
                     {chat.isThinking && chat.thinking && (
-                      <div className={`glass-card rounded-2xl p-4 ${showSplitView ? "max-w-full" : "max-w-[85%]"} mb-3`}>
+                      <div className={`bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-md p-4 ${showSplitView ? "max-w-full" : "max-w-[85%]"} mb-3`}>
                         <div className="flex items-center gap-2 mb-2">
-                          <Loader2 size={12} className="text-[#6366f1] animate-spin" />
-                          <span className="text-[10px] text-[#6366f1] font-mono">Thinking...</span>
+                          <Loader2 size={12} className="text-[#F59E0B] animate-spin" />
+                          <span className="text-[10px] text-[#F59E0B] font-mono">Thinking...</span>
                         </div>
-                        <div className="text-[11px] text-[#6b7280] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                        <div className="text-[11px] text-[#71717A] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
                           {chat.thinking}
                         </div>
                       </div>
                     )}
 
                     {chat.isRunning && chat.streamingContent && (
-                      <div className={`${showSplitView ? "max-w-full" : "max-w-[85%]"} glass-card rounded-2xl p-4`}>
+                      <div className={`${showSplitView ? "max-w-full" : "max-w-[85%]"} bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-md p-4`}>
                         <div
                           className="prose-nova text-sm leading-relaxed"
                           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderContent(chat.streamingContent)) }}
                         />
-                        <span className="inline-block w-1.5 h-4 bg-[#6366f1] animate-pulse ml-0.5" />
+                        <span className="inline-block w-1.5 h-4 bg-[#F59E0B] animate-pulse ml-0.5" />
                       </div>
                     )}
                   </div>
@@ -608,20 +608,20 @@ export function ChatPage({
 
         {/* Settings */}
         {showSettings && (
-          <div className="w-72 border-l border-[rgba(255,255,255,0.06)] bg-[rgba(18,18,26,0.95)] p-4 overflow-y-auto shrink-0 animate-slide-in">
+          <div className="w-72 border-l border-[rgba(255,255,255,0.06)] bg-[#111113] p-4 overflow-y-auto shrink-0 animate-slide-in">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-bold text-white">Settings</h3>
-              <button onClick={() => setShowSettings(false)} className="text-[#475569] hover:text-white">
+              <button onClick={() => setShowSettings(false)} className="text-[#71717A] hover:text-white">
                 <X size={14} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] text-[#475569] uppercase tracking-wider mb-1 block">Model</label>
+                <label className="text-[10px] text-[#71717A] uppercase tracking-wider mb-1 block">Model</label>
                 <select
                   value={settings.model}
                   onChange={e => setSettings(s => ({ ...s, model: e.target.value }))}
-                  className="glass-input w-full px-3 py-2 text-xs"
+                  className="w-full px-3 py-2 text-xs bg-[#161618] border border-[rgba(255,255,255,0.06)] rounded-md text-[#E4E4E7]"
                 >
                   {(models.length > 0 ? models : [{ id: "deepseek/deepseek-chat" }]).map(m => (
                     <option key={m.id} value={m.id}>{m.id}</option>
@@ -629,12 +629,12 @@ export function ChatPage({
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-[#475569] uppercase tracking-wider mb-1 block">Active Skills</label>
+                <label className="text-[10px] text-[#71717A] uppercase tracking-wider mb-1 block">Active Skills</label>
                 <div className="flex flex-wrap gap-1">
                   {skills.filter((s: any) => s.enabled !== false).slice(0, 8).map((s: any) => (
                     <span
                       key={s.id || s.name}
-                      className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(99,102,241,0.06)] text-[#818cf8] border border-[rgba(99,102,241,0.15)]"
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(245,158,11,0.06)] text-[#F59E0B] border border-[rgba(245,158,11,0.15)]"
                     >
                       {s.name || s.id}
                     </span>
