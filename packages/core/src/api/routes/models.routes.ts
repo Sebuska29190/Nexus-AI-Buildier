@@ -15,10 +15,9 @@ export function register(app: Hono): void {
     const grouped: Record<string, { name: string; hasApiKey: boolean; models: { id: string; name: string }[] }> = {};
     for (const [id, provider] of registry.providers) {
       const configEntry = configuredMap.get(id);
-      const hasApiKey = configEntry?.hasApiKey === true;
+      const hasApiKey = configEntry?.hasKey === true;
       const enabled = configEntry?.enabled !== false;
 
-      if (!hasApiKey && id !== "ollama" && id !== "lmstudio" && id !== "custom") continue;
       if (!enabled) continue;
 
       grouped[id] = {
