@@ -98,7 +98,17 @@ function AppContent() {
   const [agents, setAgents] = useState<any[]>([]);
   const [version, setVersion] = useState("");
   const [connected, setConnected] = useState(false);
-  const [route, setRoute] = useState("dashboard");
+  
+  // Initialize route from URL hash
+  const [route, setRoute] = useState(() => {
+    const hash = window.location.hash.replace(/^#\/?/, '');
+    // Convert URL format (api-keys) to route state (apikeys)
+    const routeMap: Record<string, string> = {
+      'api-keys': 'apikeys',
+    };
+    return routeMap[hash] || hash || "dashboard";
+  });
+  
   const [workspaceName, setWorkspaceName] = useState("");
   const [resumeSessionId, setResumeSessionId] = useState("");
   const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat");
