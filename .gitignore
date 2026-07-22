@@ -105,3 +105,5 @@ desktop.ini
 
 # ─── Provider Secrets ───────────────────────────────────────
 packages/provider-*/.env
+AUDIT_REPORT_2026-07-21.md
+REPAIR_PLAN.md
