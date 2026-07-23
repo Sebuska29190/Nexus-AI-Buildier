@@ -1,7 +1,7 @@
 {
     "name": "nexus-ai-ui",
     "private": true,
-    "version": "3.0.0",
+    "version": "1.0.0",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -47,10 +47,5 @@
         "typescript": "5.9.3",
         "vite": "6.4.3",
         "vitest": "^4.1.10"
-    },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "esbuild"
-        ]
     }
 }

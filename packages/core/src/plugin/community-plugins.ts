@@ -857,7 +857,7 @@ export async function installPlugin(id: string): Promise<{ success: boolean; pat
       try {
         const response = await fetch(zipUrl, {
           signal: AbortSignal.timeout(30000),
-          headers: { "User-Agent": "Nova/1.0" },
+          headers: { "User-Agent": "AgentForge/1.0" },
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         const buffer = Buffer.from(await response.arrayBuffer());

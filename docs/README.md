@@ -1,4 +1,4 @@
-# Nexus AI — Coding Agent
+# AgentForge — Coding Agent
 
 A TypeScript/Bun monorepo AI agent platform.
 

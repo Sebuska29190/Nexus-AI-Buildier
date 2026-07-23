@@ -1,5 +1,5 @@
 /**
- * Safety Module — Nova AI Safety Middleware
+ * Safety Module — AgentForge Safety Middleware
  * 
  * Warstwa bezpieczeństwa dla wywołań narzędzi (tool calls).
  * Implementuje rekomendacje:

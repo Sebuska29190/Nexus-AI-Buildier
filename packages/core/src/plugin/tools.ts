@@ -9,6 +9,19 @@ function checkDangerousCommand(cmd: string): string | null {
     [/\bformat\s+[cde]:/i, "Format of drives is blocked"],
     [/\bdd\s+if=\/dev\/sd/i, "Direct disk write is blocked"],
     [/\bkill\s+-9\s+1\b/i, "Killing PID 1 is blocked"],
+    [/\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+|--force)/i, "Force delete is blocked"],
+    [/\bshutdown\b/i, "System shutdown is blocked"],
+    [/\breboot\b/i, "System reboot is blocked"],
+    [/\bpoweroff\b/i, "System poweroff is blocked"],
+    [/\bchmod\s+(-[a-zA-Z]*R[a-zA-Z]*\s+)?777\b/i, "Setting permissions to 777 is blocked"],
+    [/\b(rm\s+.*~|rm\s+.*\$HOME|rm\s+.*\*)/i, "Recursive delete of home/wildcard is blocked"],
+    [/\b(curl|wget)\s.*\|\s*(bash|sh|zsh)/i, "Piping remote scripts to shell is blocked"],
+    [/\bdiskpart\b/i, "Diskpart is blocked"],
+    [/\bbcdedit\b/i, "BCDEdit is blocked"],
+    [/\bcertutil\s.*-urlcache/i, "Certutil URL cache is blocked"],
+    [/\bbitsadmin\s.*\/transfer/i, "Bitsadmin transfer is blocked"],
+    [/\breg\s+(add|delete)\b/i, "Registry modification is blocked"],
+    [/\bRemove-Item\s.*-Recurse.*-Force/i, "PowerShell force recursive delete is blocked"],
   ];
   for (const [pat, reason] of patterns) {
     if (pat.test(cmd)) return reason;
@@ -30,13 +43,41 @@ export function listTools(): ToolPlugin[] {
 
 // ─── Web Tools ──────────────────────────────────────────────────────────────
 
+function isPrivateOrReservedUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    const host = url.hostname;
+    // Block localhost variants
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "0.0.0.0") return true;
+    // Block AWS/GCP/Azure metadata endpoints
+    if (host === "169.254.169.254" || host === "metadata.google.internal") return true;
+    // Block RFC 1918 private ranges
+    const ipv4Match = host.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipv4Match) {
+      const [, a, b] = ipv4Match.map(Number);
+      if (a === 10) return true; // 10.0.0.0/8
+      if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+      if (a === 192 && b === 168) return true; // 192.168.0.0/16
+      if (a === 169 && b === 254) return true; // 169.254.0.0/16 link-local
+    }
+    // Block file:// protocol
+    if (url.protocol === "file:") return true;
+    return false;
+  } catch {
+    return true; // Invalid URL = blocked
+  }
+}
+
 registerTool({
   name: "web_fetch",
   description: "Fetch a URL and return text content",
   parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"], additionalProperties: false },
   async execute(args, ctx) {
     const { url } = args as { url: string };
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { "User-Agent": "Nova/1.0" } });
+    if (isPrivateOrReservedUrl(url)) {
+      return "❌ Security: Fetching private/internal/metadata URLs is blocked.";
+    }
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { "User-Agent": "AgentForge/1.0" } });
     return (await res.text()).slice(0, 15000);
   },
 });
@@ -59,15 +100,30 @@ registerTool({
     });
     const html = await res.text();
     const results: string[] = [];
-    // Match: <a ... class='result-link'>TITLE</a> followed by <td class='result-snippet'>SNIPPET
-    const regex = /<a[^>]*class='result-link'[^>]*>([^<]+)<\/a>\s*<td[^>]*class='result-snippet'[^>]*>([^<]*)<\/td>/gi;
+
+    // Strategy 1: Original class-based parsing
+    const regex1 = /<a[^>]*class='result-link'[^>]*>([^<]+)<\/a>\s*<td[^>]*class='result-snippet'[^>]*>([^<]*)<\/td>/gi;
     let m;
-    while ((m = regex.exec(html)) !== null) {
+    while ((m = regex1.exec(html)) !== null) {
       const title = m[1].trim().replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
       const snippet = m[2].trim().replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
-      results.push(`${title}: ${snippet}`);
+      if (title) results.push(`${title}: ${snippet}`);
       if (results.length >= 10) break;
     }
+
+    // Strategy 2: Generic link+text extraction fallback
+    if (results.length === 0) {
+      const regex2 = /<a[^>]*href="(https?:\/\/[^"]+)"[^>]*>([^<]+)<\/a>/gi;
+      while ((m = regex2.exec(html)) !== null) {
+        const url = m[1];
+        const title = m[2].trim().replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+        if (title && !url.includes("duckduckgo.com") && title.length > 10) {
+          results.push(title);
+        }
+        if (results.length >= 10) break;
+      }
+    }
+
     return results.length > 0 ? results.join("\n") : "No results found";
   },
 });

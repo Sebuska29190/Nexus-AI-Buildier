@@ -8,9 +8,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-F59E0B" alt="version">
-  <img src="https://img.shields.io/badge/agents-125-EA580C" alt="agents">
+  <img src="https://img.shields.io/badge/agents-129-EA580C" alt="agents">
   <img src="https://img.shields.io/badge/tools-66-71717A" alt="tools">
-  <img src="https://img.shields.io/badge/providers-12-F59E0B" alt="providers">
+  <img src="https://img.shields.io/badge/providers-8-F59E0B" alt="providers">
   <img src="https://img.shields.io/badge/self--hosted-✓-10B981" alt="self-hosted">
 </p>
 
@@ -20,11 +20,11 @@
 
 **AgentForge** is a self-hosted, agent-first platform for forging autonomous coding agents. Audit code, review PRs, write tests, debug, refactor, secure, and deploy — all on your machine, with your API keys never leaving your hardware.
 
-Built on **Bun + Hono + React 19 + SQLite**. 125 specialized agents with persistent memory, an Evidence Protocol that rejects reports without `file:line` proof, and a Learning Loop that auto-remediates agents that hallucinate.
+Built on **Bun + Hono + React 19 + SQLite**. 129 specialized agents with persistent memory, an Evidence Protocol that rejects reports without `file:line` proof, and a Learning Loop that auto-remediates agents that hallucinate.
 
 ### Why AgentForge?
 
-> **Status:** 125 coding agents | 66 tools | 12 LLM providers | 200+ REST endpoints | 100% local
+> **Status:** 129 coding agents | 66 tools | 8 LLM providers | 200+ REST endpoints | 100% local
 
 - **Coding-first** — agents for audit, review, test, debug, refactor, security, DevOps, not general chat
 - **Self-hosted** — your keys, your data, your machine. No telemetry, no cloud

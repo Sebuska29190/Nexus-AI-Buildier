@@ -1,4 +1,4 @@
-# Nexus AI API Reference
+# AgentForge API Reference
 
 ## Base URL
 

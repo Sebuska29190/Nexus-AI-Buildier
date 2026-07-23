@@ -7,9 +7,10 @@ services:
       - "4123:4123"
     environment:
       - NODE_ENV=production
-      - NEXUS_API_KEY=${NEXUS_API_KEY}
-      - NEXUS_ENCRYPTION_SECRET=${NEXUS_ENCRYPTION_SECRET}
-      # Add other env vars from .env.example
+      - NOVA_AUTH_TOKEN=${NOVA_AUTH_TOKEN}
+      - NOVA_ENCRYPTION_KEY=${NOVA_ENCRYPTION_KEY}
+      - NOVA_DB_PATH=/app/data/nova.db
+      - NOVA_HOST=0.0.0.0
     volumes:
       - ./data:/app/data
     restart: unless-stopped

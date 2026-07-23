@@ -1,8 +1,8 @@
-# Nexus AI Architecture
+# AgentForge Architecture
 
 ## Overview
 
-Nexus AI is a TypeScript/Bun monorepo AI agent platform. It follows a plugin-based architecture with a core engine that orchestrates agents, sessions, tools, and providers.
+AgentForge is a TypeScript/Bun monorepo AI agent platform. It follows a plugin-based architecture with a core engine that orchestrates agents, sessions, tools, and providers.
 
 ## Core Components
 
@@ -27,39 +27,16 @@ Each provider implements the `ProviderPlugin` interface:
 - `classifyError()` — Error classification
 - `thinkingProfile()` — Optional reasoning support
 
-12 providers: DeepSeek, Anthropic, OpenAI, Gemini, Ollama, Qwen, Zhipu, Kimi, MiniMax, LM Studio, Grok, Custom
+8 providers: DeepSeek, Anthropic, OpenAI, Gemini, Ollama, Qwen, Grok, Custom
 
-### 5. Knowledge Base (`packages/core/src/knowledge/`)
-- **`store.ts`**: File-based knowledge store with YAML frontmatter
-- Categories: bug-fix, feature, research, session, decision, learning, config, trading, video, agent, skill, error
-- Full-text search across all categories
-- Auto-saves sessions and bug fixes
-
-### 6. Kernel (`packages/core/src/kernel/`)
+### 5. Kernel (`packages/core/src/kernel/`)
 - **`agentfs.ts`**: Virtual file system for agents (private + shared global namespaces)
 - **`ledger.ts`**: Immutable event log in JSONL format (one file per day)
 - **`index.ts`**: Kernel initialization and orchestration
 
-### 7. Multi-Agent (`packages/core/src/multi-agent/`)
-- **`fanout.ts`**: Parallel delegation to multiple agents with knowledge sharing
-- **`subagent.ts`**: Sub-agent spawning
-
-### 8. Workspace (`packages/core/src/workspace/`)
+### 6. Workspace (`packages/core/src/workspace/`)
 - **`manager.ts`**: User-selectable folder for agent file operations
 - Read/write/create/delete/search/tree operations
-
-### 9. Research (`packages/core/src/research/`)
-- **`engine.ts`**: 22 research sources with parallel execution
-- Deduplication by URL, multi-source scoring
-
-### 10. Trading (`packages/core/src/trading/`)
-- **`analyzer.ts`**: Real-time market analysis via Yahoo Finance
-
-### 11. Video Pipeline (`packages/core/src/video/`)
-- Story generation, image search, TTS, FFmpeg assembly, subtitles
-
-### 12. Channel System (`packages/core/src/channel/`)
-- Slack, Telegram, WeChat, Discord bridges
 
 ## Data Flow
 

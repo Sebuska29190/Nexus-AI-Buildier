@@ -25,6 +25,8 @@ import openaiProvider from "../../provider-openai/src/index.ts";
 import geminiProvider from "../../provider-gemini/src/index.ts";
 import ollamaProvider from "../../provider-ollama-v2/src/index.ts";
 import grokProvider from "../../provider-grok/src/index.ts";
+import qwenProvider from "../../provider-qwen/src/index.ts";
+import customProvider from "../../provider-custom/src/index.ts";
 
 process.on("unhandledRejection", (r) => logger.error(`unhandledRejection: ${r instanceof Error ? r.message : String(r)}`));
 process.on("uncaughtException", (e) => logger.error(`uncaughtException: ${e instanceof Error ? e.message : String(e)}`));
@@ -39,7 +41,7 @@ for (const p of [join(process.cwd(), ".env"), join(process.cwd(), ".env.local")]
 }
 
 console.log("\n  ╔═══════════════════════════════════════╗");
-console.log("  ║       AgentForge v4.0 — Coding Agent     ║");
+console.log("  ║       AgentForge v1.0 — Coding Agent     ║");
 console.log("  ╚═══════════════════════════════════════╝\n");
 
 sessionManager.init(process.env.NOVA_DB_PATH);
@@ -52,7 +54,7 @@ if (!workspaceManager.isActive()) {
   console.log(`  ✓ Default workspace: ${process.cwd()}`);
 }
 
-for (const [name, plugin] of [["DeepSeek", deepseekPlugin], ["Anthropic", anthropicProvider], ["OpenAI", openaiProvider], ["Gemini", geminiProvider], ["Ollama", ollamaProvider], ["Grok", grokProvider]] as Array<[string, any]>) {
+for (const [name, plugin] of [["DeepSeek", deepseekPlugin], ["Anthropic", anthropicProvider], ["OpenAI", openaiProvider], ["Gemini", geminiProvider], ["Ollama", ollamaProvider], ["Grok", grokProvider], ["Qwen", qwenProvider], ["Custom", customProvider]] as Array<[string, any]>) {
   try { registry.registerProvider(plugin); console.log(`  ✓ ${name} (${plugin.models.length} models)`); } catch (e: unknown) { console.log(`  ⚠ ${name}: ${safeMessage(e)}`); }
 }
 console.log(`  ${registry.providers.size} providers, ${registry.listModels().length} models`);
@@ -225,6 +227,13 @@ const server = Bun.serve({
 
     // ─── Terminal WebSocket ──────────────────────────────────────
     if (path === "/terminal") {
+      // Terminal auth: same as /ws — require ?token= if NOVA_AUTH_TOKEN is set
+      if (WS_AUTH_TOKEN) {
+        const token = url.searchParams.get("token") || "";
+        if (token !== WS_AUTH_TOKEN) {
+          return new Response("Unauthorized — valid ?token= required", { status: 401 });
+        }
+      }
       const upgraded = server.upgrade(req, { data: { type: "terminal" as const } });
       if (upgraded) return new Response(null);
       return new Response("WebSocket upgrade failed", { status: 400 });
@@ -267,8 +276,16 @@ const server = Bun.serve({
             shellArgs = shellPath.endsWith("cmd.exe") ? ["/Q"] : ["--norc", "--noprofile", "-i"];
           }
         }
+        // Filter sensitive env vars for terminal shell
+        const safeEnv: Record<string, string> = {};
+        const SENSITIVE_PATTERN = /API_KEY|SECRET|TOKEN|ENCRYPTION|JWT|PASSWORD|CREDENTIAL/i;
+        for (const [key, value] of Object.entries(process.env)) {
+          if (!SENSITIVE_PATTERN.test(key) && value !== undefined) {
+            safeEnv[key] = value;
+          }
+        }
         const proc = spawn(shellPath, shellArgs, {
-          env: { ...process.env, TERM: "xterm-256color" },
+          env: { ...safeEnv, TERM: "xterm-256color" },
         });
         const encoder = new TextEncoder();
         const decoder = new TextDecoder();

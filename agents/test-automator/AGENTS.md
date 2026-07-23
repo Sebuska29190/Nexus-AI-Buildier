@@ -1,3 +1,3 @@
 # test-automator
 
-Agent workspace for Nexus AI Coding Agent.
+Agent workspace for AgentForge Coding Agent.

@@ -1,4 +1,4 @@
-# 🎨 Nexus AI v4.0 — Design System
+# 🎨 AgentForge v4.0 — Design System
 
 > Inspiracje: Linear, Vercel, Arc Browser, Framer | Poziom: **2026 cutting-edge**
 
@@ -8,7 +8,7 @@
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Nexus AI Design Philosophy
+  AgentForge Design Philosophy
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   • Purposeful minimalism — każde pixel ma znaczenie
   • Data density — dużo informacji, zero chaosu
@@ -417,4 +417,4 @@ screens: {
 
 ---
 
-*Design System v1.0 — Nexus AI v4.0 | Ostatnia aktualizacja: 2026-07-19*
+*Design System v1.0 — AgentForge v4.0 | Ostatnia aktualizacja: 2026-07-19*

@@ -1,3 +1,3 @@
 # dx-optimizer
 
-Agent workspace for Nexus AI Platform.
+Agent workspace for AgentForge Platform.

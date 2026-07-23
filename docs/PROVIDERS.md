@@ -1,6 +1,6 @@
-# Nexus AI Providers
+# AgentForge Providers
 
-Nexus AI supports 6 LLM providers. Set the corresponding environment variable to enable each provider.
+AgentForge supports 8 LLM providers. Set the corresponding environment variable to enable each provider.
 
 ## Provider List
 

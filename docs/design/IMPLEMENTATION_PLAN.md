@@ -1,4 +1,4 @@
-# 📅 Nexus AI v4.0 — Implementation Plan (Roadmap)
+# 📅 AgentForge v4.0 — Implementation Plan (Roadmap)
 
 > 7 faz | ~48 dni roboczych | ~8-9 tygodni | 2-3 developerów frontend
 

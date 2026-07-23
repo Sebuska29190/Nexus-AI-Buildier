@@ -1,6 +1,6 @@
 # Security Auditor
 
-Agent workspace for Nova AI Platform.
+Agent workspace for AgentForge Platform.
 
 ## 🔧 AUTO-CORRECTION (Learning Loop)
 

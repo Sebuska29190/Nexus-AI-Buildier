@@ -10,74 +10,10 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { randomBytes, createCipheriv, createDecipheriv, createHash } from "node:crypto";
+import { join } from "node:path";
 import { registry } from "../plugin/registry.ts";
 import { safeMessage } from "../errors.ts";
-
-// ─── Encryption helpers (AES-256-GCM) ──────────────────────
-
-/** Derive a 256-bit key from the server secret. If no secret, generate one. */
-function getEncryptionKey(): Buffer {
-  // Try env first, then fall back to reading/writing a server key file
-  const envKey = process.env.NOVA_ENCRYPTION_KEY || process.env.NOVA_JWT_SECRET;
-  if (envKey) {
-    return createHash("sha256").update(envKey).digest();
-  }
-  // Auto-generate persistent key
-  const KEY_FILE = join(process.cwd(), "data", ".encryption_key");
-  try {
-    if (existsSync(KEY_FILE)) {
-      return Buffer.from(readFileSync(KEY_FILE, "utf-8").trim(), "hex");
-    }
-  } catch {}
-  const key = randomBytes(32);
-  try {
-    mkdirSync(join(process.cwd(), "data"), { recursive: true });
-    writeFileSync(KEY_FILE, key.toString("hex"), "utf-8");
-    // Gitignore it
-    try {
-      const gi = join(process.cwd(), "data", ".gitignore");
-      if (!existsSync(gi)) writeFileSync(gi, ".encryption_key\n", "utf-8");
-    } catch {}
-  } catch {}
-  return key;
-}
-
-const ENC_KEY = getEncryptionKey();
-
-/** Encrypt a plaintext string → hex-encoded "iv:tag:ciphertext" */
-function encrypt(plaintext: string): string {
-  const iv = randomBytes(16);
-  const cipher = createCipheriv("aes-256-gcm", ENC_KEY, iv);
-  let encrypted = cipher.update(plaintext, "utf-8", "hex");
-  encrypted += cipher.final("hex");
-  const tag = cipher.getAuthTag().toString("hex");
-  return `${iv.toString("hex")}:${tag}:${encrypted}`;
-}
-
-/** Decrypt an "iv:tag:ciphertext" string → plaintext. Returns empty string on failure. */
-function decrypt(encoded: string): string {
-  try {
-    const parts = encoded.split(":");
-    if (parts.length < 3) return "";
-    const iv = Buffer.from(parts[0], "hex");
-    const tag = Buffer.from(parts[1], "hex");
-    const encrypted = parts.slice(2).join(":");
-    const decipher = createDecipheriv("aes-256-gcm", ENC_KEY, iv);
-    decipher.setAuthTag(tag);
-    let decrypted = decipher.update(encrypted, "hex", "utf-8");
-    decrypted += decipher.final("utf-8");
-    return decrypted;
-  } catch {
-    return "";
-  }
-}
-
-/** Check if a string looks like an encrypted value (starts with hex:hex:hex) */
-function isEncrypted(s: string): boolean {
-  return /^[0-9a-f]{32}:[0-9a-f]{32}:[0-9a-f]+$/i.test(s);
-}
+import { encrypt, decrypt, isEncrypted } from "./encryption.ts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

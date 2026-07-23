@@ -45,6 +45,18 @@ class WorkspaceManager {
   setRoot(dir: string): boolean {
     try {
       const resolved = resolve(dir);
+
+      // Block system paths
+      const BLOCKED_POSIX = ["/windows", "/windows/system32", "/etc", "/root", "/boot", "/sys", "/proc", "/dev", "/bin", "/sbin", "/usr/lib", "/var/run", "/usr", "/home"];
+      const BLOCKED_WIN = ["c:/windows", "c:/windows/system32", "c:/program files", "c:/program files (x86)", "c:/users/all users", "c:/system volume information", "c:/recovery", "c:/$recycle.bin"];
+      const normalized = resolved.replace(/\\/g, "/").toLowerCase();
+      const noDrive = normalized.replace(/^[a-z]:\//, "/");
+      for (const blocked of [...BLOCKED_POSIX, ...BLOCKED_WIN.map(b => b.replace(/^[a-z]:\//, "/"))]) {
+          if (normalized === blocked || normalized.startsWith(blocked + "/") || noDrive === blocked || noDrive.startsWith(blocked + "/")) {
+              return false;
+          }
+      }
+
       if (!existsSync(resolved)) {
         mkdirSync(resolved, { recursive: true });
       }
@@ -201,7 +213,8 @@ class WorkspaceManager {
    * Resolve a path relative to workspace primary root
    */
   resolvePath(relativePath: string): string {
-    return join(this.rootDir, relativePath);
+    const safe = this.safePath(relativePath);
+    return safe ? safe.fullPath : join(this.rootDir, relativePath);
   }
 
   /**

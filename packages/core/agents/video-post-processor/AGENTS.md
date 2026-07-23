@@ -1,3 +1,3 @@
 # Video Post-Processor
 
-Agent workspace for Nova AI Platform.
+Agent workspace for AgentForge Platform.

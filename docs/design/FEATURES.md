@@ -1,4 +1,4 @@
-# 🚀 Nexus AI v4.0 — Nowe Funkcjonalności 2026
+# 🚀 AgentForge v4.0 — Nowe Funkcjonalności 2026
 
 > 20+ cutting-edge features | Keyboard-first | Collaborative | AI-native
 

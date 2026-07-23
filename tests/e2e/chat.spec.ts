@@ -10,7 +10,7 @@ test.describe('Chat Interface', () => {
     await expect(chatInput).toBeVisible({ timeout: 5000 });
 
     // Should be able to type a message
-    await chatInput.fill('Hello, Nexus AI!');
+    await chatInput.fill('Hello, AgentForge!');
     await expect(chatInput).not.toBeEmpty();
 
     // Send button or enter should exist
@@ -28,7 +28,7 @@ test.describe('Chat Interface', () => {
     await expect(chatInput).toBeVisible({ timeout: 5000 });
 
     // Type and attempt to send
-    await chatInput.fill('What is Nexus AI?');
+    await chatInput.fill('What is AgentForge?');
 
     // Try pressing Enter
     await chatInput.press('Enter');

@@ -1,4 +1,4 @@
-# 🎯 Nexus AI v4.0 — Inspirations Gallery
+# 🎯 AgentForge v4.0 — Inspirations Gallery
 
 > 18 produktów referencyjnych | Co bierzemy? | Dlaczego?
 

@@ -1,4 +1,4 @@
-# 📄 Nexus AI v4.0 — Pages Redesign
+# 📄 AgentForge v4.0 — Pages Redesign
 
 > 30+ stron | Pełny redesign | Inspiracje: Linear, Vercel, Cursor, Anthropic, GitHub
 

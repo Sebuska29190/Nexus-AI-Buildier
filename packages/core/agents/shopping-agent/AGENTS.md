@@ -1,3 +1,3 @@
 # Shopping Agent
 
-Agent workspace for Nova AI Platform.
+Agent workspace for AgentForge Platform.

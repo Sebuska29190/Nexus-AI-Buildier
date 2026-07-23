@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 
 // ─── API Key management ─────────────────────────────────────────────────────
 
-const API_KEY = process.env.NEXUS_API_KEY || `nx-${randomBytes(24).toString("hex")}`;
+const API_KEY = process.env.NOVA_API_KEY || `nx-${randomBytes(24).toString("hex")}`;
 // Export the key so the app can log its value once at startup
 export { API_KEY };
 

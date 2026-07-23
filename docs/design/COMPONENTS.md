@@ -1,4 +1,4 @@
-# 🧩 Nexus AI v4.0 — Components Library
+# 🧩 AgentForge v4.0 — Components Library
 
 > 40+ komponentów UI | shadcn/ui style | Radix primitives | Fully typed TypeScript
 
