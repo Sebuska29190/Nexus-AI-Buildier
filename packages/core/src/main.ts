@@ -86,7 +86,16 @@ const uiDir = (() => {
 })();
 
 if (uiDir && !existsSync(join(uiDir, "dist", "index.html"))) {
-  try { const { execSync } = await import("node:child_process"); execSync("bun run build", { cwd: uiDir, stdio: "inherit", timeout: 60000 }); } catch {}
+  try {
+    const { execFile } = await import("node:child_process");
+    await new Promise<void>((resolve, reject) => {
+      const proc = execFile("bun", ["run", "build"], { cwd: uiDir, timeout: 60000 });
+      proc.stdout?.on("data", (d: Buffer) => process.stdout.write(d));
+      proc.stderr?.on("data", (d: Buffer) => process.stderr.write(d));
+      proc.on("close", (code: number | null) => code === 0 ? resolve() : reject(new Error(`build exited ${code}`)));
+      proc.on("error", reject);
+    });
+  } catch {}
 }
 
 const distDir = uiDir ? join(uiDir, "dist") : null;
@@ -355,4 +364,4 @@ console.log(`  ✓ Tools: ${listTools().length} registered`);
 console.log();
 
 // Keep event loop alive on Windows
-setInterval(() => {}, 1 << 30);
+setInterval(() => {}, 60_000);

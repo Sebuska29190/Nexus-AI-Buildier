@@ -1,12 +1,15 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { AnimatePresence } from "framer-motion";
 import { api } from "./lib/api";
 import { Sidebar } from "./lib/components/Sidebar";
-import { StatusBar } from "./lib/components/StatusBar";
-import { ToastProvider, useToast } from "./lib/components/ui/Toast";
+import { TopBar } from "./lib/components/TopBar";
+import { Toaster } from "./lib/components/ui/Toast";
 import { MobileNav } from "./lib/components/MobileNav";
 import { CommandPalette } from "./lib/components/CommandPalette";
-import { DashboardPage } from "./routes/DashboardPage"; // Keep as eager load (landing page)
+import { PageTransition } from "./lib/components/PageTransition";
+import { DashboardPage } from "./routes/DashboardPage";
+import { toast } from "sonner";
 
 // Lazy loaded pages — split into separate chunks
 const ChatPage = lazy(() => import("./routes/ChatPage").then(m => ({ default: m.ChatPage })));
@@ -27,19 +30,19 @@ const PluginsPage = lazy(() => import("./routes/PluginsPage").then(m => ({ defau
 const ChannelsPage = lazy(() => import("./routes/ChannelsPage").then(m => ({ default: m.ChannelsPage })));
 const ApiKeysPage = lazy(() => import("./routes/ApiKeysPage").then(m => ({ default: m.ApiKeysPage })));
 
-// Loading fallback
+// Loading skeleton
 function PageFallback() {
   return (
     <div className="flex items-center justify-center h-full">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-[rgba(245,158,11,0.3)] border-t-[#F59E0B] animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-[rgba(6,182,212,0.3)] border-t-[#06b6d4] animate-spin" />
         <span className="text-[10px] text-[#71717A] font-mono">Loading...</span>
       </div>
     </div>
   );
 }
 
-// Error fallback for individual pages
+// Error fallback
 function PageErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
   console.error("Page ErrorBoundary caught:", error);
   return (
@@ -50,17 +53,15 @@ function PageErrorFallback({ error, resetErrorBoundary }: { error: Error; resetE
         </svg>
       </div>
       <h2 className="text-lg font-bold text-red-400">Page Error</h2>
-      <p className="text-xs text-slate-400 text-center max-w-md">
-        Something went wrong while rendering this page.
-      </p>
-      <pre className="text-xs text-slate-400 bg-slate-900/50 rounded-lg p-4 max-w-full overflow-auto font-mono">
+      <p className="text-xs text-[#A1A1AA] text-center max-w-md">Something went wrong while rendering this page.</p>
+      <pre className="text-xs text-[#71717A] bg-[#0a0a0b] rounded-lg p-4 max-w-full overflow-auto font-mono border border-[rgba(255,255,255,0.06)]">
         {error.message || "Unknown error"}
       </pre>
       <div className="flex gap-2">
-        <button onClick={resetErrorBoundary} className="btn-premium px-4 py-2 rounded-lg text-xs">
+        <button onClick={resetErrorBoundary} className="bg-gradient-to-r from-[#06b6d4] to-[#8b5cf6] text-white px-4 py-2 rounded-lg text-xs font-semibold">
           Reload Page
         </button>
-        <button onClick={() => window.location.reload()} className="btn-glass px-4 py-2 rounded-lg text-xs">
+        <button onClick={() => window.location.reload()} className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] px-4 py-2 rounded-lg text-xs">
           Full Reload
         </button>
       </div>
@@ -68,7 +69,7 @@ function PageErrorFallback({ error, resetErrorBoundary }: { error: Error; resetE
   );
 }
 
-// Page component map (lazy)
+// Page map
 const pages: Record<string, React.ComponentType<any>> = {
   dashboard: DashboardPage,
   chat: ChatPage,
@@ -99,29 +100,25 @@ function AppContent() {
   const [agents, setAgents] = useState<any[]>([]);
   const [version, setVersion] = useState("");
   const [connected, setConnected] = useState(false);
-  
-  // Initialize route from URL (supports both hash and pathname routing)
+  const [cmdOpen, setCmdOpen] = useState(false);
+
   const [route, setRoute] = useState(() => {
-    const hash = window.location.hash.replace(/^#\/?/, '');
-    const pathname = window.location.pathname.replace(/^\//, '');
-    // Convert URL format (api-keys) to route state (apikeys)
-    const routeMap: Record<string, string> = {
-      'api-keys': 'apikeys',
-    };
+    const hash = window.location.hash.replace(/^#\/?/, "");
+    const pathname = window.location.pathname.replace(/^\//, "");
+    const routeMap: Record<string, string> = { "api-keys": "apikeys" };
     const fromUrl = hash || pathname;
     return routeMap[fromUrl] || fromUrl || "dashboard";
   });
-  
+
   const [workspaceName, setWorkspaceName] = useState("");
   const [resumeSessionId, setResumeSessionId] = useState("");
   const [selectedModel, setSelectedModel] = useState("deepseek/deepseek-chat");
-  const { showToast } = useToast();
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     try {
       const h = await api.health();
       setHealth(h);
-      setVersion(h.version || "4.0.0");
+      setVersion(h.version || "1.0.0");
       setConnected(true);
     } catch {
       setConnected(false);
@@ -131,31 +128,51 @@ function AppContent() {
       const groupedRes = await fetch("/v1/models");
       if (groupedRes.ok) {
         const data = await groupedRes.json();
-        const flatModels: { id: string }[] = (data.data || []).map((m: any) => ({ id: m.id }));
-        setModels(flatModels);
+        setModels((data.data || []).map((m: any) => ({ id: m.id })));
       }
     } catch { setModels([]); }
     try { setSessions(await api.sessions()); } catch {}
     try { setSkills(await api.skills()); } catch {}
     try { setAgents(await api.agents()); } catch {}
+  }, []);
+
+  function handleNavigate(r: string) {
+    setRoute(r);
+    window.dispatchEvent(new CustomEvent("nova-navigate", { detail: r }));
+  }
+
+  function handleNewChat() {
+    setResumeSessionId("");
+    handleNavigate("chat");
   }
 
   function triggerWorkspacePicker() {
     if ("showDirectoryPicker" in window) {
       (window as any).showDirectoryPicker().then((dir: any) => {
         setWorkspaceName(dir.name);
-        showToast(`Workspace: ${dir.name}`, "success");
+        toast.success(`Workspace: ${dir.name}`);
       }).catch(() => {
-        showToast("Anulowano wybór katalogu", "info");
+        toast.info("Anulowano wybór katalogu");
       });
     } else {
-      showToast("Wybór katalogu niedostępny", "info");
+      // Fallback: prompt for path
+      const path = window.prompt("Wpisz ścieżkę do workspace:");
+      if (path) {
+        fetch("/api/workspace/set-root", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path }),
+        }).then(r => r.json()).then(d => {
+          if (d.success || d.ok) {
+            const name = path.split(/[\\/]/).pop() || path;
+            setWorkspaceName(name);
+            toast.success(`Workspace: ${name}`);
+          } else {
+            toast.error(d.error || "Nie udało się ustawić workspace");
+          }
+        }).catch(() => toast.error("Błąd połączenia z serwerem"));
+      }
     }
-  }
-
-  function handleNewChat() {
-    setResumeSessionId("");
-    setRoute("chat");
   }
 
   useEffect(() => {
@@ -179,98 +196,123 @@ function AppContent() {
       window.removeEventListener("nova-navigate", navHandler);
       window.removeEventListener("nova-resume-session", resumeHandler);
     };
+  }, [refresh]);
+
+  // Cmd+K handler
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCmdOpen(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const PageComponent = pages[route];
 
   return (
     <>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[999] focus:bg-[#06b6d4] focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
+        Skip to content
+      </a>
       <div className="ambient-glow" />
       <div className="h-dvh max-h-dvh flex bg-[#0a0a0b] text-[#E4E4E7] overflow-hidden relative z-10">
-        <Sidebar route={route} onRoute={setRoute} version={version} sessions={sessions} />
+        <Sidebar route={route} onRoute={handleNavigate} version={version} sessions={sessions} />
 
         <div className="flex-1 flex flex-col min-w-0">
-          {route !== "dashboard" && (
-            <StatusBar
-              connected={connected}
-              version={version || "4.0.0"}
-              selectedModel={selectedModel}
-              models={models}
-              workspaceName={workspaceName}
-              onWorkspacePick={triggerWorkspacePicker}
-              onModelChange={setSelectedModel}
-              onNewChat={handleNewChat}
-            />
-          )}
+          <TopBar
+            route={route}
+            connectionStatus={connected ? "connected" : "disconnected"}
+            currentModel={selectedModel}
+            onOpenCommandPalette={() => setCmdOpen(true)}
+          />
 
-          <main className="flex-1 overflow-y-auto relative z-10 animate-fade-in" id="main-content">
+          <main className="flex-1 overflow-y-auto relative z-10" id="main-content">
             <ErrorBoundary FallbackComponent={PageErrorFallback} onError={(err) => console.error("Page error:", err)}>
               <Suspense fallback={<PageFallback />}>
-              {PageComponent ? (
-                <PageComponent
-                  models={models}
-                  skills={skills}
-                  agents={agents}
-                  sessions={sessions}
-                  health={health}
-                  connected={connected}
-                  onResolved={() => {}}
-                  onRefresh={() => refresh()}
-                  onSessionChange={() => refresh()}
-                  onNavigate={setRoute}
-                  sessionKey={route === "chat" ? resumeSessionId : ""}
-                  onSessionKeyChange={(key: string) => setResumeSessionId(key)}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-4 text-[#71717A] max-w-5xl mx-auto w-full">
-                  <div className="w-16 h-16 rounded-lg bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.15)] flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.1)]">
-                    <svg className="w-7 h-7 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
-                    </svg>
-                  </div>
-                  <h2 className="text-lg font-bold text-white">W budowie</h2>
-                  <p className="text-xs text-[#71717A]">Ta sekcja jest w trakcie tworzenia</p>
-                </div>
-              )}
+                <AnimatePresence mode="wait">
+                  <PageTransition routeKey={route}>
+                    {PageComponent ? (
+                      <PageComponent
+                        models={models}
+                        skills={skills}
+                        agents={agents}
+                        sessions={sessions}
+                        health={health}
+                        connected={connected}
+                        onResolved={() => {}}
+                        onRefresh={refresh}
+                        onSessionChange={refresh}
+                        onNavigate={handleNavigate}
+                        sessionKey={route === "chat" ? resumeSessionId : ""}
+                        onSessionKeyChange={(key: string) => setResumeSessionId(key)}
+                        workspaceName={workspaceName}
+                        onWorkspacePick={triggerWorkspacePicker}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full gap-4 text-[#71717A] max-w-5xl mx-auto w-full">
+                        <div className="w-16 h-16 rounded-lg bg-[rgba(6,182,212,0.08)] border border-[rgba(6,182,212,0.15)] flex items-center justify-center shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+                          <svg className="w-7 h-7 text-[#06b6d4]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64l-12.72 12.72"/>
+                          </svg>
+                        </div>
+                        <h2 className="text-lg font-bold text-white">Under Construction</h2>
+                        <p className="text-xs text-[#71717A]">This section is being built</p>
+                      </div>
+                    )}
+                  </PageTransition>
+                </AnimatePresence>
               </Suspense>
             </ErrorBoundary>
           </main>
         </div>
       </div>
-      <MobileNav route={route} onRoute={setRoute} />
-      <CommandPalette onNavigate={setRoute} onNewChat={handleNewChat} />
+      <MobileNav route={route} onRoute={handleNavigate} />
+      <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={handleNavigate} />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "rgba(17, 17, 20, 0.9)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            color: "#E4E4E7",
+            fontSize: "13px",
+          },
+        }}
+      />
     </>
   );
 }
 
 export default function App() {
   return (
-    <ToastProvider>
-      <ErrorBoundary FallbackComponent={({ error, resetErrorBoundary }) => {
-        console.error("Global error:", error);
-        return (
-          <div className="h-screen flex flex-col items-center justify-center gap-4 p-8 bg-[#0a0a0b] text-[#E4E4E7]" role="alert">
-            <div className="w-16 h-16 rounded-lg bg-red-950/50 border border-red-500/30 flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-            </div>
-            <h1 className="text-xl font-bold text-red-400">Application Error</h1>
-            <p className="text-sm text-slate-400">Something went wrong. Please reload the application.</p>
-            <pre className="text-xs text-slate-500 bg-slate-900/50 rounded-lg p-4 max-w-xl font-mono">{error.message}</pre>
-            <div className="flex gap-2">
-              <button onClick={resetErrorBoundary} className="btn-premium px-6 py-2 rounded-lg text-sm">
-                Retry
-              </button>
-              <button onClick={() => window.location.reload()} className="btn-glass px-6 py-2 rounded-lg text-sm">
-                Reload
-              </button>
-            </div>
+    <ErrorBoundary FallbackComponent={({ error, resetErrorBoundary }) => {
+      console.error("Global error:", error);
+      return (
+        <div className="h-screen flex flex-col items-center justify-center gap-4 p-8 bg-[#050507] text-[#E4E4E7]" role="alert">
+          <div className="w-16 h-16 rounded-lg bg-red-950/50 border border-red-500/30 flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
           </div>
-        );
-      }}>
-        <AppContent />
-      </ErrorBoundary>
-    </ToastProvider>
+          <h1 className="text-xl font-bold text-red-400">Application Error</h1>
+          <p className="text-sm text-[#A1A1AA]">Something went wrong. Please reload the application.</p>
+          <pre className="text-xs text-[#71717A] bg-[#0a0a0b] rounded-lg p-4 max-w-xl font-mono border border-[rgba(255,255,255,0.06)]">{error.message}</pre>
+          <div className="flex gap-2">
+            <button onClick={resetErrorBoundary} className="bg-gradient-to-r from-[#06b6d4] to-[#8b5cf6] text-white px-6 py-2 rounded-lg text-sm font-semibold">
+              Retry
+            </button>
+            <button onClick={() => window.location.reload()} className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] px-6 py-2 rounded-lg text-sm">
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }}>
+      <AppContent />
+    </ErrorBoundary>
   );
 }

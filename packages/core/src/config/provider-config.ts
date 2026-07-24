@@ -236,11 +236,14 @@ export function saveProviderConfig(
 
   const entry: ProviderConfigEntry = {
     providerId,
+    name: existing.name,
     key: config.key ?? existing.key,
     baseUrl: config.baseUrl ?? existing.baseUrl,
     enabled: config.enabled ?? existing.enabled,
     maxTokens: config.maxTokens ?? existing.maxTokens,
     thinkingLevel: config.thinkingLevel ?? existing.thinkingLevel,
+    models: existing.models,
+    isDynamic: existing.isDynamic,
     updatedAt: new Date().toISOString(),
   };
 
@@ -258,7 +261,7 @@ export function saveProviderConfig(
 }
 
 /**
- * Remove a provider's API key (unbind).
+ * Remove a provider's API key (unbind) and unregister from runtime registry.
  */
 export function deleteProviderConfig(providerId: string): boolean {
   const store = loadRaw();
@@ -271,6 +274,9 @@ export function deleteProviderConfig(providerId: string): boolean {
   const provider = registry.getProvider(providerId);
   const envVar = provider?.auth?.envVar || `${providerId.toUpperCase()}_API_KEY`;
   delete process.env[envVar];
+
+  // Unregister from runtime registry so it disappears from model list
+  registry.unregisterProvider(providerId);
 
   return true;
 }

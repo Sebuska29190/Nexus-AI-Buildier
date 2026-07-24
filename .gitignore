@@ -2,7 +2,7 @@
 node_modules/
 node_modules_bak/
 dist/
-bun.lockb
+bun.lock
 
 # ─── Environment & Secrets ──────────────────────────────────
 .env

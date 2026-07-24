@@ -1,75 +1,188 @@
 /**
- * ToolCallCard — ZCode-style compact inline tool visualization
- * One-line entries with verb icons, not verbose cards
+ * ToolCallCard — Collapsible card showing tool execution details
+ * Glass card with colored left border based on status.
+ * framer-motion AnimatePresence for expand/collapse.
  */
-import { FileText, FolderOpen, Search, Play, Terminal, Globe, Brain, Zap, Check, X } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Wrench,
+} from "lucide-react";
+import { cn } from "../../utils";
 
-interface ToolCallCardProps {
-  tool: string;
-  args?: any;
+export interface ToolCallCardProps {
+  toolName: string;
+  args?: string;
   result?: string;
-  success?: boolean;
-  duration?: number;
-  status?: "running" | "done" | "error";
+  status: "running" | "done" | "error";
+  durationMs?: number;
 }
 
-const VERB_MAP: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  workspace_read_file: { icon: FileText, color: "#3b82f6", label: "Read" },
-  workspace_list_files: { icon: FolderOpen, color: "#3b82f6", label: "List" },
-  workspace_write_file: { icon: FileText, color: "#22c55e", label: "Wrote" },
-  workspace_edit_file: { icon: FileText, color: "#22c55e", label: "Edited" },
-  workspace_run_command: { icon: Terminal, color: "#F59E0B", label: "Run" },
-  workspace_search_files: { icon: Search, color: "#f59e0b", label: "Searched" },
-  workspace_get_state: { icon: FolderOpen, color: "#3b82f6", label: "Explored" },
-  web_fetch: { icon: Globe, color: "#3b82f6", label: "Fetched" },
-  web_search: { icon: Search, color: "#f59e0b", label: "Searched" },
-  spawn_sub_agent: { icon: Brain, color: "#FCD34D", label: "Delegated" },
-};
+const STATUS_CONFIG = {
+  running: {
+    borderColor: "border-l-[#06b6d4]",
+    glowColor: "shadow-[inset_3px_0_12px_-4px_rgba(6,182,212,0.25)]",
+    iconColor: "text-[#06b6d4]",
+    label: "Running",
+    Icon: Loader2,
+  },
+  done: {
+    borderColor: "border-l-emerald-500",
+    glowColor: "shadow-[inset_3px_0_12px_-4px_rgba(16,185,129,0.2)]",
+    iconColor: "text-emerald-400",
+    label: "Done",
+    Icon: CheckCircle2,
+  },
+  error: {
+    borderColor: "border-l-red-500",
+    glowColor: "shadow-[inset_3px_0_12px_-4px_rgba(239,68,68,0.2)]",
+    iconColor: "text-red-400",
+    label: "Error",
+    Icon: XCircle,
+  },
+} as const;
 
-function getVerbInfo(tool: string) {
-  return VERB_MAP[tool] || { icon: Zap, color: "#94a3b8", label: tool };
+function formatDuration(ms?: number): string {
+  if (ms === undefined) return "";
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
-function getArgsSummary(tool: string, args: any): string {
-  if (!args) return "";
-  const a = typeof args === "string" ? (() => { try { return JSON.parse(args); } catch { return {}; } })() : args;
-  switch (tool) {
-    case "workspace_read_file": return a.path || a.file || "";
-    case "workspace_write_file": return a.path || a.file || "";
-    case "workspace_edit_file": return a.path || a.file || "";
-    case "workspace_list_files": return a.path || a.dir || "";
-    case "workspace_search_files": return a.query || a.pattern || "";
-    case "workspace_run_command": return a.command || a.cmd || "";
-    case "web_fetch": return a.url || "";
-    case "web_search": return a.query || "";
-    default: return a.path || a.file || a.query || a.command || "";
+function formatJson(str?: string): string {
+  if (!str) return "";
+  try {
+    return JSON.stringify(JSON.parse(str), null, 2);
+  } catch {
+    return str;
   }
 }
 
-export function ToolCallCard({ tool, args, result, success, duration, status = "done" }: ToolCallCardProps) {
-  const verb = getVerbInfo(tool);
-  const Icon = verb.icon;
-  const argsSummary = getArgsSummary(tool, args);
+export function ToolCallCard({
+  toolName,
+  args,
+  result,
+  status,
+  durationMs,
+}: ToolCallCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const config = STATUS_CONFIG[status];
+  const StatusIcon = config.Icon;
+  const hasDetails = args || result;
 
-  // ZCode style: compact one-line entry
   return (
-    <div className="flex items-center gap-2 py-1 text-xs text-[#94a3b8]">
-      <Icon size={12} style={{ color: verb.color }} className="flex-shrink-0" />
-      <span className="font-medium" style={{ color: verb.color }}>{verb.label}</span>
-      {argsSummary && (
-        <span className="text-[#475569] font-mono truncate">
-          {argsSummary.length > 40 ? argsSummary.slice(0, 40) + "..." : argsSummary}
+    <div
+      className={cn(
+        "my-2 rounded-lg border-l-[3px] overflow-hidden",
+        "bg-[rgba(17,17,20,0.6)] backdrop-blur-[24px]",
+        "border border-[rgba(255,255,255,0.06)]",
+        config.borderColor,
+        config.glowColor
+      )}
+    >
+      {/* Header */}
+      <button
+        onClick={() => hasDetails && setExpanded(!expanded)}
+        className={cn(
+          "w-full flex items-center gap-2.5 px-3.5 py-2.5 transition-colors duration-150",
+          hasDetails
+            ? "hover:bg-[rgba(255,255,255,0.02)] cursor-pointer"
+            : "cursor-default"
+        )}
+      >
+        {/* Tool icon */}
+        <Wrench size={13} className="text-[#52525b] flex-shrink-0" />
+
+        {/* Status icon */}
+        <StatusIcon
+          size={14}
+          className={cn(
+            config.iconColor,
+            "flex-shrink-0",
+            status === "running" && "animate-spin"
+          )}
+        />
+
+        {/* Tool name */}
+        <span className="text-[12px] font-medium text-[#e4e4e7] font-mono truncate">
+          {toolName}
         </span>
-      )}
-      {status === "done" && success !== false && duration !== undefined && (
-        <span className="text-[#22c55e] ml-auto flex-shrink-0">{duration}ms</span>
-      )}
-      {status === "done" && success === false && (
-        <span className="text-[#ef4444] ml-auto flex-shrink-0">Failed</span>
-      )}
-      {status === "running" && (
-        <span className="text-[#F59E0B] ml-auto flex-shrink-0 animate-pulse">...</span>
-      )}
+
+        {/* Duration */}
+        {durationMs !== undefined && status === "done" && (
+          <span className="text-[10px] text-emerald-400/70 font-mono ml-auto flex-shrink-0">
+            {formatDuration(durationMs)}
+          </span>
+        )}
+
+        {/* Error badge */}
+        {status === "error" && (
+          <span className="ml-auto text-[10px] text-red-400 font-medium flex-shrink-0">
+            Failed
+          </span>
+        )}
+
+        {/* Running indicator */}
+        {status === "running" && (
+          <span className="ml-auto text-[10px] text-[#06b6d4] animate-pulse flex-shrink-0">
+            Running...
+          </span>
+        )}
+
+        {/* Expand chevron */}
+        {hasDetails && (
+          <span className="text-[#52525b] flex-shrink-0 ml-1">
+            {expanded ? (
+              <ChevronDown size={12} />
+            ) : (
+              <ChevronRight size={12} />
+            )}
+          </span>
+        )}
+      </button>
+
+      {/* Collapsible body */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-3.5 pb-3 pt-1 border-t border-[rgba(255,255,255,0.04)]">
+              {/* Arguments */}
+              {args && (
+                <div className="mt-2">
+                  <span className="text-[10px] text-[#52525b] uppercase tracking-wider font-medium">
+                    Arguments
+                  </span>
+                  <pre className="mt-1 p-2.5 rounded-md bg-[#0a0a0f] border border-[rgba(255,255,255,0.04)] text-[11px] text-[#a1a1aa] font-mono overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                    {formatJson(args)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Result */}
+              {result && (
+                <div className="mt-2.5">
+                  <span className="text-[10px] text-[#52525b] uppercase tracking-wider font-medium">
+                    Result
+                  </span>
+                  <pre className="mt-1 p-2.5 rounded-md bg-[#0a0a0f] border border-[rgba(255,255,255,0.04)] text-[11px] text-[#a1a1aa] font-mono overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                    {formatJson(result)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

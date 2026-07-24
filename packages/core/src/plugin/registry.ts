@@ -14,6 +14,16 @@ class PluginRegistry {
     }
   }
 
+  unregisterProvider(id: string): void {
+    this.providers.delete(id);
+    // Remove all models belonging to this provider
+    for (const [key, entry] of [...this.models.entries()]) {
+      if (entry.providerId === id) {
+        this.models.delete(key);
+      }
+    }
+  }
+
   registerChannel(c: ChannelPlugin): void {
     this.channels.set(c.id, c);
   }

@@ -195,11 +195,11 @@ export function AgentActivityPanel({ status, toolCalls, duration, tokens }: Agen
               visibleTools.map((tc, i) => (
                 <ToolCallCard
                   key={`${tc.timestamp}-${i}`}
-                  tool={tc.tool}
-                  args={tc.args}
-                  success={tc.success}
-                  duration={tc.duration}
-                  status={i === visibleTools.length - 1 && status === "acting" ? "running" : "done"}
+                  toolName={tc.tool}
+                  args={typeof tc.args === "string" ? tc.args : JSON.stringify(tc.args)}
+                  result={tc.result}
+                  durationMs={tc.duration}
+                  status={i === visibleTools.length - 1 && status === "acting" ? "running" : tc.success === false ? "error" : "done"}
                 />
               ))
             )}

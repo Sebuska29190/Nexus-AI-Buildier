@@ -26,7 +26,7 @@ interface CustomModel {
   maxTokens: number;
 }
 
-const BUILTIN_PROVIDERS = ["deepseek", "anthropic", "openai", "gemini", "ollama", "grok"];
+const BUILTIN_PROVIDERS = ["deepseek", "anthropic", "openai", "gemini", "ollama", "grok", "qwen", "custom"];
 
 function ApiKeysPage() {
   const [providers, setProviders] = useState<ProviderEntry[]>([]);
@@ -445,10 +445,17 @@ function ApiKeysPage() {
           const { providerId } = confirmDelete;
           setConfirmDelete(null);
           try {
-            await fetch(`/api/config/provider/${providerId}`, { method: "DELETE" });
+            const res = await fetch(`/api/config/provider/${providerId}`, { method: "DELETE" });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              setMessage(`❌ Błąd usuwania: ${err.error || res.statusText}`);
+            } else {
+              setMessage(`✅ Usunięto konfigurację ${providerId}`);
+            }
             loadProviders();
-            setMessage(`✅ Usunięto konfigurację ${providerId}`);
-          } catch {}
+          } catch (e) {
+            setMessage(`❌ Błąd sieci: ${e instanceof Error ? e.message : "Unknown"}`);
+          }
         }}
         onCancel={() => setConfirmDelete(null)}
       />

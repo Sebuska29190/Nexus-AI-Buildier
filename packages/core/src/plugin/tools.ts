@@ -267,6 +267,11 @@ registerTool({
     const guard = workspaceGuard();
     if (!guard.ok) return guard.msg;
     const { path, content } = args as { path: string; content: string };
+    // Block writing secret files (same as workspace_read_file)
+    const SECRET_PATTERNS = /(^|\/)(\.env|jwt_secret|provider-config|\.encryption_key|oauth|secret|password)|\b(private\.key|id_rsa|known_hosts)\b/i;
+    if (SECRET_PATTERNS.test(path)) {
+      return `❌ Security: Writing "${path}" is blocked — contains sensitive data.`;
+    }
     const ok = workspaceManager.writeFile(path, content);
     if (!ok) return `Error: Failed to write "${path}". Check permissions and path validity.`;
     return `✅ Written ${content.length} bytes to \`${path}\``;

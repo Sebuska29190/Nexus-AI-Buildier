@@ -1,180 +1,245 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useHotkeys } from "../hooks/useHotkeys";
+import { useCallback, useEffect } from "react";
+import { Command } from "cmdk";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MessageSquare, Users, History, Terminal,
+  Puzzle, Code2, Brain, BarChart3, BookOpen,
+  Settings, Key, Search, Zap,
+  FileText, RotateCcw,
+} from "lucide-react";
+import { cn } from "../utils";
 
-interface PaletteAction {
-  id: string;
-  label: string;
-  description: string;
-  icon: string;
-  shortcut?: string;
-  action: () => void;
-}
-
-const PAGES: PaletteAction[] = [
-  { id: "dashboard", label: "Dashboard", description: "Główna strona", icon: "◇", action: () => {} },
-  { id: "chat", label: "Chat", description: "Nowa rozmowa", icon: "💬", shortcut: "⌘N", action: () => {} },
-  { id: "agents", label: "Agenci", description: "Lista wszystkich agentów", icon: "🤖", action: () => {} },
-  { id: "sessions", label: "Sesje", description: "Historia sesji", icon: "📋", action: () => {} },
-  { id: "terminal", label: "Terminal", description: "Wbudowany terminal", icon: "⌨️", action: () => {} },
-  { id: "skills", label: "Narzędzia", description: "Lista skilli i pluginów", icon: "🔧", action: () => {} },
-  { id: "settings", label: "Ustawienia", description: "Konfiguracja aplikacji", icon: "⚙️", action: () => {} },
-  { id: "apikeys", label: "Klucze API", description: "Zarządzanie kluczami", icon: "🔑", action: () => {} },
-  { id: "memory", label: "Pamięć", description: "Agent memory viewer", icon: "🧠", action: () => {} },
-  { id: "models", label: "Modele", description: "Dostępne modele LLM", icon: "📡", action: () => {} },
-  { id: "docs", label: "Dokumentacja", description: "Dokumentacja API", icon: "📄", action: () => {} },
-];
-
-const QUICK_ACTIONS: PaletteAction[] = [
-  { id: "new-chat", label: "Nowy czat", description: "Rozpocznij nową rozmowę", icon: "💬", shortcut: "⌘N", action: () => {} },
-  { id: "search-sessions", label: "Szukaj sesji", description: "Znajdź sesję po ID", icon: "🔍", action: () => {} },
-];
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface CommandPaletteProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onNavigate: (route: string) => void;
-  onNewChat?: () => void;
 }
 
-export function CommandPalette({ onNavigate, onNewChat }: CommandPaletteProps) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+interface PaletteItem {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  shortcut?: string;
+  route?: string;
+  action?: () => void;
+}
 
-  const allItems = [...PAGES, ...QUICK_ACTIONS].map(item => ({
-    ...item,
-    action: item.id === "new-chat" ? (onNewChat || item.action) : () => onNavigate(item.id),
-  }));
+// ─── Static data ─────────────────────────────────────────────────────────────
 
-  const filtered = query.trim() === ""
-    ? allItems
-    : allItems.filter(item =>
-        item.label.toLowerCase().includes(query.toLowerCase()) ||
-        item.description.toLowerCase().includes(query.toLowerCase())
-      );
+const PAGE_ITEMS: PaletteItem[] = [
+  { id: "chat",        label: "Chat",        icon: MessageSquare, shortcut: "⌘1", route: "chat" },
+  { id: "agents",      label: "Agents",      icon: Users,         shortcut: "⌘2", route: "agentconfig" },
+  { id: "sessions",    label: "Sessions",    icon: History,       shortcut: "⌘3", route: "sessions" },
+  { id: "terminal",    label: "Terminal",    icon: Terminal,      shortcut: "⌘4", route: "terminal" },
+  { id: "skills",      label: "Skills",      icon: Puzzle,        shortcut: "⌘5", route: "skills" },
+  { id: "editor",      label: "Editor",      icon: Code2,         shortcut: "⌘6", route: "code" },
+  { id: "memory",      label: "Memory",      icon: Brain,         route: "memory" },
+  { id: "workspace",   label: "Workspace",   icon: BarChart3,     route: "workspace" },
+  { id: "models",      label: "Models",      icon: BookOpen,      route: "aimodels" },
+  { id: "docs",        label: "Docs",        icon: FileText,      route: "docs" },
+  { id: "settings",    label: "Settings",    icon: Settings,      shortcut: "⌘,", route: "settings" },
+  { id: "apikeys",     label: "API Keys",    icon: Key,           route: "apikeys" },
+];
 
-  useHotkeys("k", (e) => {
-    e.preventDefault();
-    setOpen(prev => !prev);
-  }, [open]);
+const ACTION_ITEMS: PaletteItem[] = [
+  { id: "new-chat",     label: "New Chat",     icon: MessageSquare, shortcut: "⌘N" },
+  { id: "resume",       label: "Resume Session", icon: RotateCcw },
+  { id: "run-skill",    label: "Run Skill",    icon: Zap },
+];
 
+// ─── Overlay backdrop ────────────────────────────────────────────────────────
+
+function GlassOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 z-[60] bg-[rgba(0,0,0,0.6)] backdrop-blur-sm"
+      onClick={onClose}
+      onKeyDown={() => {}}
+      role="presentation"
+    />
+  );
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPaletteProps) {
   const handleClose = useCallback(() => {
-    setOpen(false);
-    setQuery("");
-    setSelectedIndex(0);
-  }, []);
+    onOpenChange(false);
+  }, [onOpenChange]);
 
-  const handleSelect = useCallback((item: PaletteAction) => {
-    item.action();
-    handleClose();
-  }, [handleClose]);
+  const handleSelect = useCallback(
+    (item: PaletteItem) => {
+      if (item.route) {
+        onNavigate(item.route);
+      } else if (item.action) {
+        item.action();
+      }
+      handleClose();
+    },
+    [onNavigate, handleClose]
+  );
 
+  // Global ⌘K / Ctrl+K toggle
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50);
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        onOpenChange(!open);
+      }
     }
-  }, [open]);
-
-  useEffect(() => {
-    setSelectedIndex(0);
-    if (listRef.current) listRef.current.scrollTop = 0;
-  }, [query]);
-
-  useEffect(() => {
-    const el = listRef.current?.children[selectedIndex] as HTMLElement | undefined;
-    el?.scrollIntoView({ block: "nearest" });
-  }, [selectedIndex]);
-
-  if (!open) return null;
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onOpenChange]);
 
   return (
-    <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-[rgba(0,0,0,0.5)] z-[60]"
-        onClick={handleClose}
-        onKeyDown={() => {}}
-        role="presentation"
-      />
+    <AnimatePresence>
+      {open && (
+        <>
+          <GlassOverlay onClose={handleClose} />
 
-      {/* Palette */}
-      <div className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-lg z-[70] animate-fade-in">
-        <div className="bg-[#111113] border border-[rgba(255,255,255,0.10)] rounded-lg shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_0_1px_rgba(245,158,11,0.10)] overflow-hidden">
-          {/* Search input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
-            <svg className="w-4 h-4 text-[#71717A] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Szukaj strony, akcji..."
-              className="flex-1 bg-transparent border-none outline-none text-sm text-[#E4E4E7] placeholder-[#71717A] font-mono"
-              onKeyDown={(e) => {
-                if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIndex(i => Math.min(i + 1, filtered.length - 1)); }
-                if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIndex(i => Math.max(i - 1, 0)); }
-                if (e.key === "Enter" && filtered[selectedIndex]) handleSelect(filtered[selectedIndex]);
+          {/* ── Palette container ─────────────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: -8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-lg z-[70]"
+          >
+            <Command
+              label="Command palette"
+              className={cn(
+                "overflow-hidden rounded-xl",
+                "bg-[rgba(17,17,20,0.85)] backdrop-blur-2xl",
+                "border border-[rgba(255,255,255,0.08)]",
+                "shadow-[0_16px_64px_rgba(0,0,0,0.6),0_0_0_1px_rgba(6,182,212,0.06)]"
+              )}
+              onKeyDown={(e: React.KeyboardEvent) => {
                 if (e.key === "Escape") handleClose();
               }}
-            />
-            <kbd className="text-[10px] font-mono text-[#71717A] bg-[#161618] px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">ESC</kbd>
-          </div>
-
-          {/* Results */}
-          <div ref={listRef} className="max-h-[300px] overflow-y-auto py-1">
-            {filtered.length === 0 ? (
-              <div className="px-4 py-6 text-center text-xs text-[#71717A] font-mono">
-                Brak wyników dla <span className="text-[#A1A1AA]">"{query}"</span>
-              </div>
-            ) : (
-              filtered.map((item, idx) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSelect(item)}
-                  onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all duration-100 ${
-                    idx === selectedIndex
-                      ? "bg-[rgba(245,158,11,0.08)] text-[#F59E0B]"
-                      : "text-[#A1A1AA] hover:bg-[rgba(255,255,255,0.03)]"
-                  }`}
-                >
-                  <span className="text-base w-5 text-center shrink-0">{item.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium ${idx === selectedIndex ? "text-[#E4E4E7]" : "text-[#E4E4E7]"}`}>
-                      {item.label}
-                    </div>
-                    <div className="text-[10px] text-[#71717A] truncate font-mono">{item.description}</div>
-                  </div>
-                  {item.shortcut && (
-                    <kbd className="text-[9px] font-mono text-[#71717A] bg-[#161618] px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.06)] shrink-0">
-                      {item.shortcut}
-                    </kbd>
+            >
+              {/* ── Search input ──────────────────────────────────────────── */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+                <Search size={16} className="text-[#52525B] shrink-0" />
+                <Command.Input
+                  autoFocus
+                  placeholder="Search pages, actions…"
+                  className={cn(
+                    "flex-1 bg-transparent border-none outline-none text-sm text-[#E4E4E7] placeholder-[#52525B] font-mono"
                   )}
-                </button>
-              ))
-            )}
-          </div>
+                />
+                <kbd
+                  className={cn(
+                    "text-[10px] font-mono text-[#52525B]",
+                    "bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)]",
+                    "px-1.5 py-0.5 rounded"
+                  )}
+                >
+                  ESC
+                </kbd>
+              </div>
 
-          {/* Footer */}
-          <div className="flex items-center gap-4 px-4 py-2 border-t border-[rgba(255,255,255,0.06)] bg-[#0a0a0b]">
-            <div className="flex items-center gap-1.5">
-              <kbd className="text-[9px] font-mono text-[#71717A] bg-[#161618] px-1 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">↑↓</kbd>
-              <span className="text-[9px] text-[#71717A] font-mono">nawigacja</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <kbd className="text-[9px] font-mono text-[#71717A] bg-[#161618] px-1 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">⏎</kbd>
-              <span className="text-[9px] text-[#71717A] font-mono">wybierz</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <kbd className="text-[9px] font-mono text-[#71717A] bg-[#161618] px-1 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">⌘K</kbd>
-              <span className="text-[9px] text-[#71717A] font-mono">zamknij</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+              {/* ── Results ───────────────────────────────────────────────── */}
+              <Command.List className="max-h-[320px] overflow-y-auto py-1 scrollbar-thin">
+                <Command.Empty className="px-4 py-6 text-center text-xs text-[#52525B] font-mono">
+                  No results found.
+                </Command.Empty>
+
+                {/* Pages group */}
+                <Command.Group heading="Pages" className="px-2 [&>[cmdk-group-heading]]:text-[9px] [&>[cmdk-group-heading]]:font-bold [&>[cmdk-group-heading]]:text-[#52525B] [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-[0.15em] [&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:font-mono">
+                  {PAGE_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Command.Item
+                        key={item.id}
+                        value={item.label}
+                        onSelect={() => handleSelect(item)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer",
+                          "text-[#A1A1AA] text-sm font-medium",
+                          "transition-all duration-100",
+                          "data-[selected=true]:bg-[rgba(6,182,212,0.08)] data-[selected=true]:text-[#06b6d4]",
+                          "hover:bg-[rgba(255,255,255,0.04)]"
+                        )}
+                      >
+                        <Icon size={16} className="shrink-0 text-[#71717A] group-data-[selected=true]:text-[#06b6d4]" />
+                        <span className="flex-1">{item.label}</span>
+                        {item.shortcut && (
+                          <kbd
+                            className={cn(
+                              "text-[9px] font-mono text-[#52525B]",
+                              "bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)]",
+                              "px-1.5 py-0.5 rounded shrink-0"
+                            )}
+                          >
+                            {item.shortcut}
+                          </kbd>
+                        )}
+                      </Command.Item>
+                    );
+                  })}
+                </Command.Group>
+
+                {/* Actions group */}
+                <Command.Group heading="Actions" className="px-2 pt-1 [&>[cmdk-group-heading]]:text-[9px] [&>[cmdk-group-heading]]:font-bold [&>[cmdk-group-heading]]:text-[#52525B] [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-[0.15em] [&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:font-mono">
+                  {ACTION_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Command.Item
+                        key={item.id}
+                        value={item.label}
+                        onSelect={() => handleSelect(item)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer",
+                          "text-[#A1A1AA] text-sm font-medium",
+                          "transition-all duration-100",
+                          "data-[selected=true]:bg-[rgba(6,182,212,0.08)] data-[selected=true]:text-[#06b6d4]",
+                          "hover:bg-[rgba(255,255,255,0.04)]"
+                        )}
+                      >
+                        <Icon size={16} className="shrink-0 text-[#71717A]" />
+                        <span className="flex-1">{item.label}</span>
+                        {item.shortcut && (
+                          <kbd
+                            className={cn(
+                              "text-[9px] font-mono text-[#52525B]",
+                              "bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)]",
+                              "px-1.5 py-0.5 rounded shrink-0"
+                            )}
+                          >
+                            {item.shortcut}
+                          </kbd>
+                        )}
+                      </Command.Item>
+                    );
+                  })}
+                </Command.Group>
+              </Command.List>
+
+              {/* ── Footer ────────────────────────────────────────────────── */}
+              <div className="flex items-center gap-4 px-4 py-2 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(0,0,0,0.2)]">
+                <div className="flex items-center gap-1.5">
+                  <kbd className="text-[9px] font-mono text-[#52525B] bg-[rgba(255,255,255,0.04)] px-1 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">↑↓</kbd>
+                  <span className="text-[9px] text-[#52525B] font-mono">navigate</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <kbd className="text-[9px] font-mono text-[#52525B] bg-[rgba(255,255,255,0.04)] px-1 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">⏎</kbd>
+                  <span className="text-[9px] text-[#52525B] font-mono">select</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <kbd className="text-[9px] font-mono text-[#52525B] bg-[rgba(255,255,255,0.04)] px-1 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">⌘K</kbd>
+                  <span className="text-[9px] text-[#52525B] font-mono">toggle</span>
+                </div>
+              </div>
+            </Command>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

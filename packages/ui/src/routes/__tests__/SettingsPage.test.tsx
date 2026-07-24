@@ -47,7 +47,8 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByText('General')).toBeInTheDocument();
-      expect(screen.getByText('Models & Providers')).toBeInTheDocument();
+      expect(screen.getByText('Providers')).toBeInTheDocument();
+      expect(screen.getByText('Agents')).toBeInTheDocument();
       expect(screen.getByText('Security')).toBeInTheDocument();
     });
   });
@@ -56,13 +57,13 @@ describe('SettingsPage', () => {
     render(<SettingsPage />);
     await waitFor(() => {
       expect(screen.getByText(/1 providers/)).toBeInTheDocument();
-      expect(screen.getByText(/2 models available/)).toBeInTheDocument();
+      expect(screen.getByText(/2.*models available/)).toBeInTheDocument();
     });
   });
 
   it('shows loading state initially', () => {
     render(<SettingsPage />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByText('Loading configuration...')).toBeInTheDocument();
   });
 
   it('has save and reset buttons', async () => {
