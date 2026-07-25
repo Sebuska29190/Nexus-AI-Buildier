@@ -50,12 +50,29 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
-  // Defensive fallback: legacy callers outside a <ToastProvider> get
-  // a no-op rather than crashing. Production wiring always wraps
-  // with the provider at the app root.
-  if (!ctx) return { showToast: () => {} };
+  // Defensive fallback: callers outside a <ToastProvider> get a
+  // no-op rather than crashing. Production wiring always wraps
+  // with the provider at the app root, but missing boundaries
+  // happen (route-level test render, refactored subtree). Log
+  // once per mount in dev so the missing boundary surfaces as a
+  // console warning instead of a silent UX regression at runtime.
+  if (!ctx) {
+    if (import.meta.env?.DEV && !warnedNoProvider) {
+      warnedNoProvider = true;
+      console.warn(
+        "[useToast] called outside <ToastProvider> — toasts will be dropped. " +
+          "Wrap the consumer subtree in <ToastProvider> in App.tsx."
+      );
+    }
+    return { showToast: () => {} };
+  }
   return ctx;
 }
+
+// Module-level latch: warn once per page load only. Without it, a
+// hot-reloaded route that mounts/unmounts hundreds of components
+// would spam the console. Resets on full reload.
+let warnedNoProvider = false;
 
 const LEVEL_ICON: Record<ToastLevel, string> = {
   success: "✓",
@@ -81,6 +98,13 @@ export function ToastProvider({ children }: ToastProviderProps) {
   );
 
   const dismiss = useCallback((id: string) => {
+    // Idempotent on state, but a second call would otherwise queue
+    // a stale exit timer that no-ops on filter but stays in the
+    // timers map until it fires. Guard against accidental
+    // double-dismiss (e.g. close button + auto fire within the
+    // same tick).
+    if (timersRef.current.has(`exit:${id}`)) return;
+
     setItems((cur) =>
       cur.map((t) => (t.id === id ? { ...t, phase: "exit" as const } : t))
     );
