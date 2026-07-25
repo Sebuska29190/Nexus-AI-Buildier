@@ -4,6 +4,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "../utils";
+import { isActiveRoute } from "../utils/routeAliases";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ export function MobileNav({ route, onRoute, badgeCounts }: MobileNavProps) {
       <div className="flex items-center justify-around px-1 py-1">
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
-          const isActive = route === item.id;
+          const isActive = isActiveRoute(item.id, route);
           const badge = badgeCounts?.[item.id];
 
           return (

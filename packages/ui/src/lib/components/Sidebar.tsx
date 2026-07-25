@@ -8,6 +8,7 @@ import {
   Search
 } from "lucide-react";
 import { cn } from "../utils";
+import { isActiveRoute } from "../utils/routeAliases";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -42,22 +43,10 @@ interface SidebarProps {
 // ─── Navigation structure ────────────────────────────────────────────────────
 
 // Defensive aliases for route ids that may appear in more than one
-// form. App.tsx already normalises URL hashes to the canonical id,
-// but Sidebar must still highlight correctly when state is set in
-// other ways (extension link, hot nav, direct setRoute, etc.).
-const ROUTE_ALIASES: Record<string, string[]> = {
-  apikeys: ["apikeys", "api-keys"],
-};
-
-function isActiveRoute(itemId: string, route: string): boolean {
-  if (itemId === route) return true;
-  const itemAlias = ROUTE_ALIASES[itemId];
-  const routeAlias = ROUTE_ALIASES[route];
-  if (itemAlias && routeAlias) {
-    return itemAlias.some((a) => routeAlias.includes(a));
-  }
-  return false;
-}
+// form are defined centrally in `lib/utils/routeAliases.ts`
+// (imported at the top of this file). Sidebar uses
+// `isActiveRoute(item.id, route)` so the apikeys button still lights
+// up when state holds an alias like `api-keys`.
 
 const navGroups: NavGroup[] = [
   {
