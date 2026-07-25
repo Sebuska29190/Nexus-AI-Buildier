@@ -8,11 +8,15 @@ export const settingsSchema = z.object({
     .string()
     .min(1, "Nazwa aplikacji jest wymagana")
     .max(64, "Nazwa aplikacji może mieć maksymalnie 64 znaki"),
+  // Zod v4: `errorMap` was removed; use the top-level `message`
+  // option on `z.enum` for fixed-message custom errors. The
+  // `error` callback shape is also still supported, but `message`
+  // is the canonical form for static text.
   theme: z.enum(["dark", "light", "system"], {
-    errorMap: () => ({ message: "Wybierz motyw: dark, light lub system" }),
+    message: "Wybierz motyw: dark, light lub system",
   }),
   language: z.enum(["pl", "en"], {
-    errorMap: () => ({ message: "Wybierz język: polski lub angielski" }),
+    message: "Wybierz język: polski lub angielski",
   }),
   timezone: z.string().min(1, "Strefa czasowa jest wymagana"),
   animations: z.boolean(),
