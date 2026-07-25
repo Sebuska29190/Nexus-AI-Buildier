@@ -18,8 +18,17 @@ export interface CodeBlockProps {
 export function CodeBlock({ code, language = "", filename }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   const codeRef = useRef<HTMLElement>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lines = code.split("\n");
   const lang = language || "text";
+
+  // Clear any pending copy-state timer on unmount so the setCopied
+  // callback never fires after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (codeRef.current && language && hljs.getLanguage(language)) {
@@ -35,7 +44,8 @@ export function CodeBlock({ code, language = "", filename }: CodeBlockProps) {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       /* clipboard not available */
     }
