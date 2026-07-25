@@ -4,7 +4,7 @@
  * Keeps all original settings functionality + react-hook-form + zod validation.
  */
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Settings, Shield, Bot, Globe, Save, RotateCcw, AlertCircle, Bell, Server, Sliders } from "lucide-react";
 import { api } from "../lib/api";
@@ -35,8 +35,15 @@ function SettingsPage() {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<SettingsFormData>({
-    resolver: zodResolver(settingsSchema),
+  } = useForm<SettingsFormData, unknown, SettingsFormData>({
+    // Zod v4 + @hookform/resolvers: `z.coerce.number()` infers the
+    // input type as `unknown`. Without explicit generics on
+    // `useForm` and a `Resolver` cast this surfaces as
+    // `SettingsFormData.port: number` vs `port: unknown` mismatch
+    // on `handleSubmit(onSubmit)`. The 3-generic form fixes the
+    // type bridge: input accepts unknown for coerced fields, the
+    // parsed output matches SettingsFormData.
+    resolver: zodResolver(settingsSchema) as Resolver<SettingsFormData>,
     defaultValues: {
       appName: "AgentForge",
       theme: "dark",
