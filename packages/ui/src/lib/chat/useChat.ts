@@ -51,6 +51,9 @@ export function useChat() {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectAttempts = useRef(0);
   const mountedRef = useRef(true);
+  // Tracks the active run so late streaming chunks from a previous
+  // send() cannot pollute the current session's text and history.
+  const runIdRef = useRef<string | null>(null);
 
   // Sync activity ref
   useEffect(() => { activityRef.current = activity; }, [activity]);
@@ -116,7 +119,11 @@ export function useChat() {
           const msg = JSON.parse(e.data);
           if (msg.type === "pong") return; // Heartbeat response — ignore
           handleMessage(msg);
-        } catch {}
+        } catch (err) {
+          // Surface a non-fatal log so protocol mismatches are visible
+          // during development instead of silently swallowed.
+          console.warn("[useChat] failed to parse WS message:", err);
+        }
       };
       ws.onerror = () => {
         // onclose will fire after this, reconnect handles it
@@ -128,6 +135,12 @@ export function useChat() {
   useEffect(() => { connect(); }, [connect]);
 
   const handleMessage = useCallback((msg: any) => {
+    // If the server tags this message with a runId, ignore messages
+    // belonging to a run that is no longer active. Older runs may
+    // still flush chunks after a newer send() has already started.
+    if (msg.runId && runIdRef.current !== null && msg.runId !== runIdRef.current) {
+      return;
+    }
     switch (msg.type) {
       case "session_created":
         setSessionId(msg.sessionId);
@@ -188,6 +201,7 @@ export function useChat() {
         }
         setStreamingContent(null);
         fullTextRef.current = "";
+        runIdRef.current = null;
         break;
       }
 
@@ -211,7 +225,16 @@ export function useChat() {
 
   const send = useCallback((text: string, opts?: { model?: string; agentId?: string }) => {
     const ws = wsRef.current;
+    // Always clear any previous error first so an old "Not connected"
+    // alert does not linger on top of a fresh send attempt.
+    setError(null);
     if (!ws || ws.readyState !== WebSocket.OPEN) { setError("Not connected"); return; }
+
+    // Allocate a fresh runId and reset transient streaming state BEFORE
+    // publishing, so any in-flight chunks from the previous run are
+    // dropped by runId correlation in handleMessage.
+    const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    runIdRef.current = runId;
 
     setMessages(p => [...p, { id: crypto.randomUUID(), role: "user", content: text, timestamp: Date.now() }]);
     fullTextRef.current = "";
@@ -221,9 +244,7 @@ export function useChat() {
     setPendingApprovals([]);
     setActivity([]);
     setIsRunning(true);
-    setError(null);
     startTimeRef.current = Date.now();
-    const runId = `run_${Date.now()}`;
 
     ws.send(JSON.stringify({
       type: "chat.send", message: text, model: opts?.model || "deepseek/deepseek-chat",
