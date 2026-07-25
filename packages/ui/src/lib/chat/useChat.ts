@@ -69,10 +69,11 @@ export function useChat() {
   // Clean up reconnect timer, heartbeat, and WebSocket on unmount.
   // Without wsRef.close(), StrictMode double-mount leaves orphaned
   // connections and the onclose handler triggers a reconnect loop on
-  // a socket that should be dead.
+  // a socket that should be dead. Note: mountedRef.current = false is
+  // already managed by the dedicated "Track mounted state" effect;
+  // we leave that as the single source of truth for the flag.
   useEffect(() => {
     return () => {
-      mountedRef.current = false;
       if (wsRef.current) {
         // suppress reconnect path inside onclose before closing
         wsRef.current.onclose = null;
@@ -268,6 +269,7 @@ export function useChat() {
     setStreamingContent(null);
     setPendingApprovals([]);
     setIsThinking(false);
+    runIdRef.current = null;
   }, []);
 
   const clearMessages = useCallback(() => {
@@ -280,6 +282,7 @@ export function useChat() {
     setActivity([]);
     setIsRunning(false);
     fullTextRef.current = "";
+    runIdRef.current = null;
   }, []);
 
   return {
