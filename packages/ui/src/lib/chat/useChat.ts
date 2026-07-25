@@ -108,8 +108,10 @@ export function useChat() {
         setConnected(false);
         wsRef.current = null;
         if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
-        // Auto-reconnect with exponential backoff (1s, 2s, 4s, 8s... max 30s)
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+        // Exponential backoff with ±25% jitter to avoid thundering-herd
+        // reconnects when many clients lose the server at the same time.
+        const baseDelay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+        const delay = baseDelay * (0.75 + Math.random() * 0.5);
         reconnectAttempts.current++;
         reconnectRef.current = setTimeout(() => connect(), delay);
       };
