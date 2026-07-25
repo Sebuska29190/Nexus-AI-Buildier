@@ -48,7 +48,7 @@ export type { EmptyStateProps } from "./EmptyState";
 
 export { AnimatedCounter } from "./AnimatedCounter";
 export type { AnimatedCounterProps } from "./AnimatedCounter";
-export { Toaster, toast } from "./Toast";
+export { Toaster, toast, ToastProvider, useToast, type ToastLevel } from "./Toast";
 
 // Legacy exports (backward compatibility — will be removed after migration)
 export { GlassCard } from "./GlassCard";

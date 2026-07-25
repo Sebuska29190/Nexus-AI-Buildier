@@ -4,11 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { api } from "./lib/api";
 import { Sidebar } from "./lib/components/Sidebar";
 import { TopBar } from "./lib/components/TopBar";
-import { Toaster } from "./lib/components/ui/Toast";
+import { ToastProvider, useToast } from "./lib/components/ui/Toast";
 import { MobileNav } from "./lib/components/MobileNav";
 import { CommandPalette } from "./lib/components/CommandPalette";
 import { DashboardPage } from "./routes/DashboardPage";
-import { toast } from "sonner";
 
 // Lazy loaded pages — split into separate chunks
 const ChatPage = lazy(() => import("./routes/ChatPage").then(m => ({ default: m.ChatPage })));
@@ -100,6 +99,7 @@ function AppContent() {
   const [version, setVersion] = useState("");
   const [connected, setConnected] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const { showToast } = useToast();
 
   const [route, setRoute] = useState(() => {
     const hash = window.location.hash.replace(/^#\/?/, "");
@@ -149,9 +149,9 @@ function AppContent() {
     if ("showDirectoryPicker" in window) {
       (window as any).showDirectoryPicker().then((dir: any) => {
         setWorkspaceName(dir.name);
-        toast.success(`Workspace: ${dir.name}`);
+        showToast(`Workspace: ${dir.name}`, "success");
       }).catch(() => {
-        toast.info("Anulowano wybór katalogu");
+        showToast("Anulowano wybór katalogu", "info");
       });
     } else {
       // Fallback: prompt for path
@@ -165,11 +165,11 @@ function AppContent() {
           if (d.success || d.ok) {
             const name = path.split(/[\\/]/).pop() || path;
             setWorkspaceName(name);
-            toast.success(`Workspace: ${name}`);
+            showToast(`Workspace: ${name}`, "success");
           } else {
-            toast.error(d.error || "Nie udało się ustawić workspace");
+            showToast(d.error || "Nie udało się ustawić workspace", "error");
           }
-        }).catch(() => toast.error("Błąd połączenia z serwerem"));
+        }).catch(() => showToast("Błąd połączenia z serwerem", "error"));
       }
     }
   }
@@ -277,18 +277,8 @@ function AppContent() {
       </div>
       <MobileNav route={route} onRoute={handleNavigate} />
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} onNavigate={handleNavigate} />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: "rgba(17, 17, 20, 0.9)",
-            backdropFilter: "blur(24px)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            color: "#E4E4E7",
-            fontSize: "13px",
-          },
-        }}
-      />
+      {/* ToastProvider renders the toast region (role="log") inside
+          its body — no separate <Toaster> viewport needed. */}
     </>
   );
 }
@@ -317,8 +307,10 @@ export default function App() {
           </div>
         </div>
       );
-    }}>
-      <AppContent />
+    }}      >
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </ErrorBoundary>
   );
 }
