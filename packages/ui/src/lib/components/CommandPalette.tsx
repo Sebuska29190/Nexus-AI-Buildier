@@ -60,7 +60,6 @@ function GlassOverlay({ onClose }: { onClose: () => void }) {
       transition={{ duration: 0.15 }}
       className="fixed inset-0 z-[60] bg-[rgba(0,0,0,0.6)] backdrop-blur-sm"
       onClick={onClose}
-      onKeyDown={() => {}}
       role="presentation"
     />
   );
@@ -99,12 +98,11 @@ export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPalett
 
   return (
     <AnimatePresence>
-      {open && (
-        <>
-          <GlassOverlay onClose={handleClose} />
+      {open && [
+        <GlassOverlay key="command-overlay" onClose={handleClose} />,
 
-          {/* ── Palette container ─────────────────────────────────────────── */}
-          <motion.div
+        <motion.div
+          key="command-palette"
             initial={{ opacity: 0, scale: 0.96, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -8 }}
@@ -237,9 +235,8 @@ export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPalett
                 </div>
               </div>
             </Command>
-          </motion.div>
-        </>
-      )}
+          </motion.div>,
+      ]}
     </AnimatePresence>
   );
 }
