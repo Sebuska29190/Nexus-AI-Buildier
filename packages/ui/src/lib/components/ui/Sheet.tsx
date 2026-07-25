@@ -1,6 +1,5 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "../../utils";
 
@@ -25,6 +24,8 @@ const SheetOverlay = React.forwardRef<
     ref={ref}
     className={cn(
       "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm",
+      "data-[state=open]:animate-in data-[state=closed]:animate-out",
+      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -38,27 +39,11 @@ SheetOverlay.displayName = "SheetOverlay";
 
 type SheetSide = "top" | "right" | "bottom" | "left";
 
-const sideVariants: Record<SheetSide, { initial: object; animate: object; exit: object }> = {
-  top: {
-    initial: { y: "-100%" },
-    animate: { y: 0 },
-    exit: { y: "-100%" },
-  },
-  bottom: {
-    initial: { y: "100%" },
-    animate: { y: 0 },
-    exit: { y: "100%" },
-  },
-  left: {
-    initial: { x: "-100%" },
-    animate: { x: 0 },
-    exit: { x: "-100%" },
-  },
-  right: {
-    initial: { x: "100%" },
-    animate: { x: 0 },
-    exit: { x: "100%" },
-  },
+const slideInFrom: Record<SheetSide, string> = {
+  top: "data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2",
+  bottom: "data-[state=closed]:slide-out-to-bottom-2 data-[state=open]:slide-in-from-bottom-2",
+  left: "data-[state=closed]:slide-out-to-left-2 data-[state=open]:slide-in-from-left-2",
+  right: "data-[state=closed]:slide-out-to-right-2 data-[state=open]:slide-in-from-right-2",
 };
 
 const sideClasses: Record<SheetSide, string> = {
@@ -82,55 +67,40 @@ const SheetContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   SheetContentProps
 >(({ side = "right", showClose = true, className, children, ...props }, ref) => (
-  <SheetPortal forceMount>
-    <AnimatePresence>
-      <SheetOverlay asChild forceMount>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-        />
-      </SheetOverlay>
+  <SheetPortal>
+    <SheetOverlay />
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed z-50",
+        "border-white/[0.08] p-6 shadow-2xl",
+        "bg-[rgba(17,17,20,0.85)] backdrop-blur-[32px]",
+        "focus:outline-none",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out",
+        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "duration-300",
+        sideClasses[side],
+        slideInFrom[side],
+        className,
+      )}
+      {...props}
+    >
+      {children}
 
-      <DialogPrimitive.Content
-        ref={ref}
-        asChild
-        forceMount
-        {...props}
-      >
-        <motion.div
-          initial={sideVariants[side].initial}
-          animate={sideVariants[side].animate}
-          exit={sideVariants[side].exit}
-          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+      {showClose && (
+        <DialogPrimitive.Close
           className={cn(
-            "fixed z-50",
-            "border-white/[0.08] p-6 shadow-2xl",
-            "bg-[rgba(17,17,20,0.85)] backdrop-blur-[32px]",
-            "focus:outline-none",
-            sideClasses[side],
-            className,
+            "absolute right-4 top-4 rounded-md p-1.5",
+            "text-white/40 transition-colors",
+            "hover:text-white/80 hover:bg-white/[0.06]",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06b6d4]/50",
           )}
         >
-          {children}
-
-          {showClose && (
-            <DialogPrimitive.Close
-              className={cn(
-                "absolute right-4 top-4 rounded-md p-1.5",
-                "text-white/40 transition-colors",
-                "hover:text-white/80 hover:bg-white/[0.06]",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06b6d4]/50",
-              )}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </DialogPrimitive.Close>
-          )}
-        </motion.div>
-      </DialogPrimitive.Content>
-    </AnimatePresence>
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      )}
+    </DialogPrimitive.Content>
   </SheetPortal>
 ));
 SheetContent.displayName = "SheetContent";

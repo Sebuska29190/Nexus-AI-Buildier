@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { cn } from "../../utils";
 
 type StatusType = "online" | "idle" | "offline";
@@ -42,6 +42,14 @@ export function Avatar({
   ...props
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
+
+  // Reset error state when the source changes, otherwise the avatar
+  // would stay stuck on the initials fallback forever if a broken
+  // URL is later replaced with a valid one.
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
   const showImage = src && !imgError;
 
   const handleImageError = useCallback(() => {

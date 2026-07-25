@@ -13,12 +13,32 @@ interface SliderProps
 const Slider = React.forwardRef<
   React.ComponentRef<typeof SliderPrimitive.Root>,
   SliderProps
->(({ className, showValue = false, formatValue, value, defaultValue, ...props }, ref) => {
+>(({ className, showValue = false, formatValue, value, defaultValue, min = 0, max = 100, onValueChange, ...props }, ref) => {
+  const isControlled = value !== undefined;
+  const [internalValue, setInternalValue] = React.useState<number[]>(
+    defaultValue ?? [min]
+  );
+  const currentValue = isControlled ? value : internalValue;
   const displayValue =
-    value?.[0] ?? defaultValue?.[0] ?? 0;
+    typeof currentValue?.[0] === "number" ? currentValue[0] : min;
+
+  const handleValueChange = React.useCallback(
+    (next: number[]) => {
+      if (!isControlled) setInternalValue(next);
+      onValueChange?.(next);
+    },
+    [isControlled, onValueChange]
+  );
+
+  const span = max - min;
+  const percent =
+    span > 0 ? Math.max(0, Math.min(100, ((displayValue - min) / span) * 100)) : 0;
 
   return (
-    <div className="relative inline-flex w-full">
+    <div
+      className="relative inline-flex w-full"
+      style={{ "--thumb-pos": `${percent}%` } as React.CSSProperties}
+    >
       <SliderPrimitive.Root
         ref={ref}
         className={cn(
@@ -28,6 +48,9 @@ const Slider = React.forwardRef<
         )}
         value={value}
         defaultValue={defaultValue}
+        min={min}
+        max={max}
+        onValueChange={handleValueChange}
         {...props}
       >
         <SliderPrimitive.Track
@@ -44,6 +67,7 @@ const Slider = React.forwardRef<
           />
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
+          aria-label={props["aria-label"] ?? "Slider value"}
           className={cn(
             "block h-5 w-5 rounded-full",
             "bg-[#161618] border-2 border-cyan-400",
@@ -58,12 +82,14 @@ const Slider = React.forwardRef<
       </SliderPrimitive.Root>
 
       {showValue && (
-        <span className={cn(
-          "absolute -top-7 text-[11px] font-mono text-[#A1A1AA]",
-          "bg-[#111113] border border-[rgba(255,255,255,0.08)] rounded px-1.5 py-0.5",
-          "pointer-events-none select-none",
-          "left-[var(--thumb-pos,50%)] -translate-x-1/2"
-        )}>
+        <span
+          className={cn(
+            "absolute -top-7 text-[11px] font-mono text-[#A1A1AA]",
+            "bg-[#111113] border border-[rgba(255,255,255,0.08)] rounded px-1.5 py-0.5",
+            "pointer-events-none select-none",
+            "left-[var(--thumb-pos,50%)] -translate-x-1/2"
+          )}
+        >
           {formatValue ? formatValue(displayValue) : displayValue}
         </span>
       )}

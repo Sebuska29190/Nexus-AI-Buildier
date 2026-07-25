@@ -70,14 +70,21 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       options,
       icon,
       children,
+      id: idProp,
       ...props
     },
     ref
   ) => {
+    const generatedId = React.useId();
+    const id = idProp ?? generatedId;
+    const errorId = error ? `${id}-err` : undefined;
+
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label className="text-xs font-medium text-[#A1A1AA]">{label}</label>
+          <label htmlFor={id} className="text-xs font-medium text-[#A1A1AA]">
+            {label}
+          </label>
         )}
         <div className="relative">
           {icon && (
@@ -96,6 +103,9 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           >
             <select
               ref={ref}
+              id={id}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={errorId}
               className={cn(selectVariants({ size }))}
               {...props}
             >
@@ -132,7 +142,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             </svg>
           </div>
         </div>
-        {error && <span className="text-xs text-[#ef4444]">{error}</span>}
+        {error && (
+          <span id={errorId} className="text-xs text-[#ef4444]" role="alert">
+            {error}
+          </span>
+        )}
       </div>
     );
   }

@@ -1,6 +1,5 @@
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { motion } from "framer-motion";
 import { cn } from "../../utils";
 
 /* ------------------------------------------------------------------ */
@@ -76,7 +75,7 @@ const TabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        "relative inline-flex items-center justify-center whitespace-nowrap",
+        "group relative inline-flex items-center justify-center whitespace-nowrap",
         "text-sm font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06b6d4]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050507]",
         "disabled:pointer-events-none disabled:opacity-50",
@@ -93,12 +92,9 @@ const TabsTrigger = React.forwardRef<
       )}
       {...props}
     >
-      {/* Active indicator */}
-      {variant === "underline" ? (
-        <TabsUnderlineIndicator />
-      ) : (
-        <TabsPillIndicator />
-      )}
+      {/* Active indicator — fades in via group-data-state on the trigger. */}
+      {variant === "underline" && <TabsUnderlineIndicator />}
+      {variant === "pill" && <TabsPillIndicator />}
       <span className="relative z-10">{children}</span>
     </TabsPrimitive.Trigger>
   );
@@ -106,39 +102,42 @@ const TabsTrigger = React.forwardRef<
 TabsTrigger.displayName = "TabsTrigger";
 
 /* ------------------------------------------------------------------ */
-/*  Animated indicators                                                */
+/*  Indicators                                                         */
 /* ------------------------------------------------------------------ */
+
+/**
+ * The indicators are CSS-only: they read the parent trigger's `data-state`
+ * via the `group` + `group-data-[state]` Tailwind variants. Each trigger
+ * owns its own indicator; the indicator inherits visibility from the
+ * trigger's active state. This is robust regardless of how many `<Tabs>`
+ * instances are mounted on the page, and avoids framer-motion layoutId
+ * pitfalls (layoutId only animates between unmount/mount transitions or
+ * when the element's bounding rect actually changes — neither happens
+ * here, since triggers don't reorder or resize on state flip).
+ */
 
 function TabsUnderlineIndicator() {
   return (
-    <motion.span
-      className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#06b6d4] rounded-full"
-      style={{ opacity: 0 }}
-      variants={{
-        active: { opacity: 1 },
-        inactive: { opacity: 0 },
-      }}
-      animate="active"
-      initial="inactive"
-      transition={{ duration: 0.2 }}
-      data-state-indicator
+    <span
+      className={cn(
+        "pointer-events-none absolute bottom-0 left-0 right-0 h-[2px] rounded-full bg-[#06b6d4]",
+        "opacity-0 transition-opacity duration-200",
+        "group-data-[state=active]:opacity-100"
+      )}
+      aria-hidden="true"
     />
   );
 }
 
 function TabsPillIndicator() {
   return (
-    <motion.span
-      className="absolute inset-0 rounded-md bg-[#06b6d4]/15 border border-[#06b6d4]/25"
-      style={{ opacity: 0 }}
-      variants={{
-        active: { opacity: 1 },
-        inactive: { opacity: 0 },
-      }}
-      animate="active"
-      initial="inactive"
-      transition={{ duration: 0.2 }}
-      data-state-indicator
+    <span
+      className={cn(
+        "pointer-events-none absolute inset-0 rounded-md bg-[#06b6d4]/15 border border-[#06b6d4]/25",
+        "opacity-0 transition-opacity duration-200",
+        "group-data-[state=active]:opacity-100"
+      )}
+      aria-hidden="true"
     />
   );
 }

@@ -1,6 +1,5 @@
 import React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../../utils";
 
 /* ─── Primitives re-exported for composability ─── */
@@ -17,33 +16,25 @@ interface DropdownMenuContentProps
 const DropdownMenuContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Content>,
   DropdownMenuContentProps
->(({ className, sideOffset = 6, ...props }, ref) => (
+>(({ className, sideOffset = 6, children, ...props }, ref) => (
   <DropdownMenuPrimitive.Portal>
-    <AnimatePresence>
-      <DropdownMenuPrimitive.Content
-        ref={ref}
-        sideOffset={sideOffset}
-        asChild
-        className={cn(className)}
-        {...props}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -4 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -4 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
-          className={cn(
-            "z-50 min-w-[180px] overflow-hidden rounded-xl p-1",
-            "bg-[#0a0a0c]/95 backdrop-blur-xl",
-            "border border-[rgba(255,255,255,0.08)]",
-            "shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.04)]",
-            className
-          )}
-        >
-          {props.children}
-        </motion.div>
-      </DropdownMenuPrimitive.Content>
-    </AnimatePresence>
+    <DropdownMenuPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
+      className={cn(
+        "z-50 min-w-[180px] overflow-hidden rounded-xl p-1",
+        "bg-[#0a0a0c]/95 backdrop-blur-xl",
+        "border border-[rgba(255,255,255,0.08)]",
+        "shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.04)]",
+        "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+        "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+        "duration-150",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </DropdownMenuPrimitive.Content>
   </DropdownMenuPrimitive.Portal>
 ));
 DropdownMenuContent.displayName = "DropdownMenuContent";
