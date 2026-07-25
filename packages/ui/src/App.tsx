@@ -1,13 +1,12 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { api } from "./lib/api";
 import { Sidebar } from "./lib/components/Sidebar";
 import { TopBar } from "./lib/components/TopBar";
 import { Toaster } from "./lib/components/ui/Toast";
 import { MobileNav } from "./lib/components/MobileNav";
 import { CommandPalette } from "./lib/components/CommandPalette";
-import { PageTransition } from "./lib/components/PageTransition";
 import { DashboardPage } from "./routes/DashboardPage";
 import { toast } from "sonner";
 
@@ -233,7 +232,14 @@ function AppContent() {
             <ErrorBoundary FallbackComponent={PageErrorFallback} onError={(err) => console.error("Page error:", err)}>
               <Suspense fallback={<PageFallback />}>
                 <AnimatePresence mode="wait">
-                  <PageTransition routeKey={route}>
+                  <motion.div
+                    key={route}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+                    className="h-full"
+                  >
                     {PageComponent ? (
                       <PageComponent
                         models={models}
@@ -262,7 +268,7 @@ function AppContent() {
                         <p className="text-xs text-[#71717A]">This section is being built</p>
                       </div>
                     )}
-                  </PageTransition>
+                  </motion.div>
                 </AnimatePresence>
               </Suspense>
             </ErrorBoundary>
