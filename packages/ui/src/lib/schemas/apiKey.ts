@@ -6,8 +6,10 @@ import { z } from "zod/v4";
 export const apiKeySchema = z.object({
   name: z.string().min(3, "Nazwa musi mieć co najmniej 3 znaki"),
   key: z.string().min(10, "Klucz API musi mieć co najmniej 10 znaków"),
+  // Zod v4: `errorMap` was removed; use the top-level `message`
+  // option on `z.enum` for fixed-message custom errors.
   provider: z.enum(["openai", "anthropic", "google", "deepseek", "grok", "qwen", "openrouter", "custom"], {
-    errorMap: () => ({ message: "Wybierz dostawcę API" }),
+    message: "Wybierz dostawcę API",
   }),
   baseUrl: z.string().optional(),
 });
