@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Copy, Check, FileCode, Play } from "lucide-react";
 import hljs from "highlight.js";
+import DOMPurify from "dompurify";
 import { cn } from "../../utils";
 
 export interface CodeBlockProps {
@@ -22,7 +23,11 @@ export function CodeBlock({ code, language = "", filename }: CodeBlockProps) {
 
   useEffect(() => {
     if (codeRef.current && language && hljs.getLanguage(language)) {
-      codeRef.current.innerHTML = hljs.highlight(code, { language }).value;
+      // highlight.js escapes HTML by default, but run the result through
+      // DOMPurify as defense in depth so an attacker-controlled `code`
+      // prop can never inject executable markup into the rendered block.
+      const highlighted = hljs.highlight(code, { language }).value;
+      codeRef.current.innerHTML = DOMPurify.sanitize(highlighted);
     }
   }, [code, language]);
 
