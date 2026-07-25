@@ -9,7 +9,13 @@ import '@testing-library/jest-dom';
 // individual tests can override `globalThis.ResizeObserver` if
 // they need to assert on resize behaviour.
 if (typeof globalThis.ResizeObserver === "undefined") {
+  // Mirror the real constructor signature (callback is accepted
+  // but never invoked) so any consumer that does
+  // `new ResizeObserver(cb)` works the same as on the jsdom 22+
+  // polyfill. jsdom 22+ already provides its own no-op polyfill,
+  // so this branch only runs on older jsdom.
   globalThis.ResizeObserver = class {
+    constructor(_callback: ResizeObserverCallback) {}
     observe(): void {}
     unobserve(): void {}
     disconnect(): void {}

@@ -14,8 +14,14 @@
 /**
  * Map of canonical route id -> every value that should be treated
  * as the same route for nav highlighting purposes.
+ *
+ * Tuple type enforces canonical-first: the first element is the
+ * canonical id that downstream lookups (e.g. TopBar's ROUTE_META)
+ * rely on, and the rest are aliases. Compiler will reject any
+ * entry where the first element doesn't match the key, so a future
+ * contributor cannot silently break nav by reordering an array.
  */
-export const ROUTE_ALIASES: Record<string, string[]> = {
+export const ROUTE_ALIASES: Record<string, readonly [string, ...string[]]> = {
   apikeys: ["apikeys", "api-keys"],
 };
 
