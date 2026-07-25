@@ -8,6 +8,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { cn } from "../utils";
+import { ROUTE_ALIASES } from "../utils/routeAliases";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,8 +45,15 @@ export function TopBar({
   onOpenCommandPalette,
 }: TopBarProps) {
   const breadcrumbs = useMemo(() => {
-    const meta = ROUTE_META[route];
-    if (!meta) return [{ label: route }];
+    // Canonicalise first so an aliased route (e.g. `api-keys`
+    // reaching TopBar via direct setRoute, extension link, etc.)
+    // resolves to the same breadcrumb label Sidebar/MobileNav use.
+    // Without this the breadcrumb could fall through to the raw
+    // lowercase hyphenated id and read `api-keys` next to a
+    // highlighted `API Keys` button.
+    const canonical = ROUTE_ALIASES[route]?.[0] ?? route;
+    const meta = ROUTE_META[canonical];
+    if (!meta) return [{ label: canonical }];
     return [{ label: meta.section }, { label: meta.label }];
   }, [route]);
 
