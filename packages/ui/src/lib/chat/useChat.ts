@@ -63,9 +63,19 @@ export function useChat() {
     };
   }, []);
 
-  // Clean up reconnect timer and heartbeat
+  // Clean up reconnect timer, heartbeat, and WebSocket on unmount.
+  // Without wsRef.close(), StrictMode double-mount leaves orphaned
+  // connections and the onclose handler triggers a reconnect loop on
+  // a socket that should be dead.
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
+      if (wsRef.current) {
+        // suppress reconnect path inside onclose before closing
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+        wsRef.current = null;
+      }
       if (reconnectRef.current) clearTimeout(reconnectRef.current);
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
