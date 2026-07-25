@@ -10,6 +10,20 @@ interface SliderProps
   formatValue?: (value: number) => string;
 }
 
+/**
+ * Accessibility contract:
+ *   - Pass `aria-label` to describe a unique slider on the page;
+ *     it is forwarded onto the underlying <SliderPrimitive.Thumb>
+ *     so screen readers announce it when the thumb gains focus.
+ *   - Pass `aria-labelledby` to point at an externally-rendered
+ *     label element; Radix already threads it through to the Thumb.
+ *   - If neither is provided, the Thumb falls back to
+ *     aria-label="Slider value" so the focus order is still
+ *     labelled rather than empty.
+ *   - The `min`/`max` props are taken from Radix's defaults (0/100)
+ *     unless overridden.
+ */
+
 const Slider = React.forwardRef<
   React.ComponentRef<typeof SliderPrimitive.Root>,
   SliderProps
