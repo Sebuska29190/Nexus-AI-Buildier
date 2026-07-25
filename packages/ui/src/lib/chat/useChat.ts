@@ -29,6 +29,23 @@ export interface ChatActivity {
 
 const WS_URL = import.meta.env.VITE_NOVA_WS_URL || `ws://${window.location.host}/ws`;
 
+/**
+ * useChat is designed for single-instance use: each call opens its
+ * own WebSocket, tracks its own reconnect counter, and owns its own
+ * pendingApprovals / activity state. Mounting it twice in the same
+ * tree will produce two independent sockets against the same
+ * `/ws` endpoint, double-prefixed message handlers, and racing
+ * state updates.
+ *
+ * If you ever need a multi-panel chat UI, give each panel its own
+ * `sessionId` (server-routed) and either:
+ *   - mount useChat in each panel with a distinct context boundary,
+ *   - or hoist the WebSocket to a shared provider and pass the
+ *     handlers down via context.
+ *
+ * Either approach avoids the second socket and keeps reconnect logic
+ * deterministic.
+ */
 export function useChat() {
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([

@@ -41,6 +41,24 @@ interface SidebarProps {
 
 // ─── Navigation structure ────────────────────────────────────────────────────
 
+// Defensive aliases for route ids that may appear in more than one
+// form. App.tsx already normalises URL hashes to the canonical id,
+// but Sidebar must still highlight correctly when state is set in
+// other ways (extension link, hot nav, direct setRoute, etc.).
+const ROUTE_ALIASES: Record<string, string[]> = {
+  apikeys: ["apikeys", "api-keys"],
+};
+
+function isActiveRoute(itemId: string, route: string): boolean {
+  if (itemId === route) return true;
+  const itemAlias = ROUTE_ALIASES[itemId];
+  const routeAlias = ROUTE_ALIASES[route];
+  if (itemAlias && routeAlias) {
+    return itemAlias.some((a) => routeAlias.includes(a));
+  }
+  return false;
+}
+
 const navGroups: NavGroup[] = [
   {
     label: "WORK",
@@ -132,7 +150,7 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
         <nav className="flex flex-col gap-1 w-full px-2">
           {navGroups.flatMap((g) => g.items).map((item) => {
             const Icon = item.icon;
-            const isActive = route === item.id;
+            const isActive = isActiveRoute(item.id, route);
             return (
               <button
                 key={item.id}
@@ -256,7 +274,7 @@ export function Sidebar({ route, onRoute, version, sessions = [] }: SidebarProps
               <div className="space-y-0.5">
                 {group.items.map((item: NavItem) => {
                   const Icon = item.icon;
-                  const isActive = route === item.id;
+                  const isActive = isActiveRoute(item.id, route);
                   return (
                     <button
                       key={item.id}
