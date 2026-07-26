@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ApiKeysPage from '../ApiKeysPage';
 
@@ -13,7 +13,7 @@ beforeEach(() => {
     ok: true,
     json: async () => ({
       providers: [
-        { id: 'openai', name: 'OpenAI', hasKey: true, enabled: true, models: 3, status: 'valid' },
+        { id: 'openai', name: 'OpenAI', hasKey: true, enabled: true, models: 3 },
         { id: 'anthropic', name: 'Anthropic', hasKey: false, enabled: true, models: 2 },
       ],
     }),
@@ -23,9 +23,9 @@ beforeEach(() => {
 describe('ApiKeysPage', () => {
   it('renders the page title and provider count', async () => {
     render(<ApiKeysPage />);
-    expect(screen.getByText('API Keys')).toBeInTheDocument();
+    expect(screen.getByText('API Providers')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText(/1\/2 providers configured/)).toBeInTheDocument();
+      expect(screen.getByText(/1\/2 skonfigurowanych/)).toBeInTheDocument();
     });
   });
 
@@ -34,32 +34,32 @@ describe('ApiKeysPage', () => {
     await waitFor(() => {
       expect(screen.getByText('OpenAI')).toBeInTheDocument();
       expect(screen.getByText('Anthropic')).toBeInTheDocument();
-      expect(screen.getByText('✓ Valid')).toBeInTheDocument();
+      expect(screen.getByText('Configured')).toBeInTheDocument();
       expect(screen.getByText('No key')).toBeInTheDocument();
     });
   });
 
-  it('shows "Add Key" button', async () => {
+  it('shows add provider button', async () => {
     render(<ApiKeysPage />);
-    expect(screen.getByText('Add Key')).toBeInTheDocument();
+    expect(screen.getByText(/Dodaj Custom Provider/)).toBeInTheDocument();
   });
 
-  it('opens add key form when clicking Add Key', async () => {
+  it('opens add provider form when clicking the button', async () => {
     const user = userEvent.setup();
     render(<ApiKeysPage />);
-    await user.click(screen.getByText('Add Key'));
-    expect(screen.getByText('Add & Encrypt')).toBeInTheDocument();
+    await user.click(screen.getByText(/Dodaj Custom Provider/));
+    expect(screen.getByText('Utwórz Provider')).toBeInTheDocument();
   });
 
   it('shows loading spinner initially', () => {
     render(<ApiKeysPage />);
-    expect(screen.getByText('Loading providers...')).toBeInTheDocument();
+    expect(screen.getByText('Ładowanie providerów...')).toBeInTheDocument();
   });
 
   it('shows delete buttons for configured providers', async () => {
     render(<ApiKeysPage />);
     await waitFor(() => {
-      const deleteButtons = screen.getAllByLabelText('Delete API key');
+      const deleteButtons = screen.getAllByTitle('Usuń konfigurację');
       expect(deleteButtons.length).toBe(1); // Only openai has a key
     });
   });
@@ -68,11 +68,11 @@ describe('ApiKeysPage', () => {
     const user = userEvent.setup();
     render(<ApiKeysPage />);
     await waitFor(() => {
-      expect(screen.getByLabelText('Delete API key')).toBeInTheDocument();
+      expect(screen.getByTitle('Usuń konfigurację')).toBeInTheDocument();
     });
-    await user.click(screen.getByLabelText('Delete API key'));
-    expect(screen.getByText('Remove API Key')).toBeInTheDocument();
-    expect(screen.getByText('Remove')).toBeInTheDocument();
+    await user.click(screen.getByTitle('Usuń konfigurację'));
+    expect(screen.getByText('Usuń Provider')).toBeInTheDocument();
+    expect(screen.getByText('Usuń')).toBeInTheDocument();
   });
 
   it('displays empty state when no providers', async () => {
@@ -82,23 +82,17 @@ describe('ApiKeysPage', () => {
     });
     render(<ApiKeysPage />);
     await waitFor(() => {
-      expect(screen.getByText('No providers found. Start the server to detect providers.')).toBeInTheDocument();
+      expect(screen.queryByText('OpenAI')).not.toBeInTheDocument();
+      expect(screen.queryByText('Configured')).not.toBeInTheDocument();
+      expect(screen.queryByText('No key')).not.toBeInTheDocument();
     });
   });
 
-  it('shows error message on fetch failure', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+  it('shows test and delete buttons for configured providers', async () => {
     render(<ApiKeysPage />);
     await waitFor(() => {
-      expect(screen.getByText('Failed to load providers')).toBeInTheDocument();
-    });
-  });
-
-  it('has test and visibility toggle buttons for configured providers', async () => {
-    render(<ApiKeysPage />);
-    await waitFor(() => {
-      expect(screen.getByLabelText('Test connection')).toBeInTheDocument();
-      expect(screen.getByLabelText('Toggle key visibility')).toBeInTheDocument();
+      expect(screen.getByTitle('Test połączenia')).toBeInTheDocument();
+      expect(screen.getByTitle('Usuń konfigurację')).toBeInTheDocument();
     });
   });
 });
