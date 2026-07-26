@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 
+// Enable auth for the router tests so the unauthenticated /api/* test can
+// verify the 401 path. The local-first default keeps auth off otherwise.
+process.env.NOVA_REQUIRE_AUTH = "true";
+
 // Test routes.ts — createRouter should return a Hono app with registered routes
 describe('API Router', () => {
   it('should createRouter return a Hono app', async () => {
@@ -11,10 +15,10 @@ describe('API Router', () => {
     expect(typeof app.routes).toBe('object');
   });
 
-  it('should respond with 401 for unauthenticated /api/* requests', async () => {
+  it('should respond with 401 for unauthenticated /api/* requests when auth is required', async () => {
     const { createRouter } = await import('../api/routes.ts');
     const app = createRouter();
-    const res = await app.request('/api/models', {}, {}, undefined as any);
+    const res = await app.request('/api/models/grouped', {}, {}, undefined as any);
     expect(res.status).toBe(401);
   });
 

@@ -79,6 +79,7 @@ describe('settingsSchema', () => {
     defaultModel: 'deepseek/deepseek-chat',
     autoApprove: false,
     thinkingMode: true,
+    notifications: true,
   };
 
   it('validates correct settings', () => {

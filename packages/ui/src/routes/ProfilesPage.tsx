@@ -67,7 +67,7 @@ export function ProfilesPage() {
 
               {agent.skills?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-auto pt-3 border-t border-slate-800">
-                  {agent.skills.map((skill: string, i: number) => (
+                  {agent.skills.map((skill: string | { name?: string }, i: number) => (
                     <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{skill?.name ?? skill}</span>
                   ))}
                 </div>

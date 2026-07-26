@@ -23,7 +23,7 @@ export function RagPage() {
   const [docSearch, setDocSearch] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => { load(); return () => { if (pollRef.current) clearInterval(pollRef.current); }; }, []);
 
@@ -184,7 +184,7 @@ export function RagPage() {
                 <button onClick={(e) => { e.stopPropagation(); deleteDoc(doc.id); }} className="text-[#71717A] hover:text-[#ef4444] text-[9px]">✕</button>
               </div>))}
               {filtered.length < docTotal && (
-                <button onClick={async () => { await loadMore(); setDisplayLimit(prev => prev + 50); }} className="w-full py-2 text-[10px] text-[#F59E0B] hover:text-[#FCD34D] transition-colors">
+                <button onClick={() => setDisplayLimit(prev => prev + 50)} className="w-full py-2 text-[10px] text-[#F59E0B] hover:text-[#FCD34D] transition-colors">
                   Load more ({docTotal - docs.length} remaining)
                 </button>
               )}

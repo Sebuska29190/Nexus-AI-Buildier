@@ -162,7 +162,7 @@ function AgentReportCard({ memory, onDelete }: { memory: any; onDelete: (id: str
       {/* Tags */}
       {memory.tags && memory.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {memory.tags.map((tag: string, i: number) => (
+          {memory.tags.map((tag: string | { name?: string }, i: number) => (
             <span key={i} className="text-[9px] bg-[#020408]/60 text-slate-500 border border-slate-800 px-1.5 py-0.5 rounded font-mono">
               {tag?.name ?? tag}
             </span>

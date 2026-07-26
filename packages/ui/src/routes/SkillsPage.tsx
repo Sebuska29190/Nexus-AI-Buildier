@@ -125,7 +125,7 @@ export function SkillsPage({ skills = [], onRefresh = () => {} }: SkillsPageProp
 
               {skill.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-auto pt-2 border-t border-[rgba(255,255,255,0.06)]">
-                  {skill.tags.map((tag: string, i: number) => (
+                  {skill.tags.map((tag: string | { name?: string }, i: number) => (
                     <span key={i} className="custom-badge text-[9px]">{tag?.name ?? tag}</span>
                   ))}
                 </div>

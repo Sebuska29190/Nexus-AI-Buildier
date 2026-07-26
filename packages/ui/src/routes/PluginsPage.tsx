@@ -184,7 +184,7 @@ export function PluginsPage() {
                   )}
                   {plugin.tags?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {plugin.tags.map((tag: string, i: number) => (
+                      {plugin.tags.map((tag: string | { name?: string }, i: number) => (
                         <span key={i} className="custom-badge text-[9px]">{tag?.name ?? tag}</span>
                       ))}
                     </div>

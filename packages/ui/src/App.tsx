@@ -41,7 +41,7 @@ function PageFallback() {
 }
 
 // Error fallback
-function PageErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
+function PageErrorFallback({ error, resetErrorBoundary }: { error: unknown; resetErrorBoundary: () => void }) {
   console.error("Page ErrorBoundary caught:", error);
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 p-8" role="alert">
@@ -53,7 +53,7 @@ function PageErrorFallback({ error, resetErrorBoundary }: { error: Error; resetE
       <h2 className="text-lg font-bold text-red-400">Page Error</h2>
       <p className="text-xs text-[#A1A1AA] text-center max-w-md">Something went wrong while rendering this page.</p>
       <pre className="text-xs text-[#71717A] bg-[#0a0a0b] rounded-lg p-4 max-w-full overflow-auto font-mono border border-[rgba(255,255,255,0.06)]">
-        {error.message || "Unknown error"}
+        {error instanceof Error ? error.message : String(error ?? "Unknown error")}
       </pre>
       <div className="flex gap-2">
         <button onClick={resetErrorBoundary} className="bg-gradient-to-r from-[#06b6d4] to-[#8b5cf6] text-white px-4 py-2 rounded-lg text-xs font-semibold">
@@ -296,7 +296,7 @@ export default function App() {
           </div>
           <h1 className="text-xl font-bold text-red-400">Application Error</h1>
           <p className="text-sm text-[#A1A1AA]">Something went wrong. Please reload the application.</p>
-          <pre className="text-xs text-[#71717A] bg-[#0a0a0b] rounded-lg p-4 max-w-xl font-mono border border-[rgba(255,255,255,0.06)]">{error.message}</pre>
+          <pre className="text-xs text-[#71717A] bg-[#0a0a0b] rounded-lg p-4 max-w-xl font-mono border border-[rgba(255,255,255,0.06)]">{error instanceof Error ? error.message : String(error)}</pre>
           <div className="flex gap-2">
             <button onClick={resetErrorBoundary} className="bg-gradient-to-r from-[#06b6d4] to-[#8b5cf6] text-white px-6 py-2 rounded-lg text-sm font-semibold">
               Retry

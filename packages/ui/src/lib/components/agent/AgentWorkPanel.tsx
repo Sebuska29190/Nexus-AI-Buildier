@@ -19,6 +19,7 @@ interface ToolEvent {
     durationMs?: number;
     error?: string;
     resultPreview?: string;
+    text?: string;
     iteration?: number;
   };
   ts: number;

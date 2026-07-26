@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { Search, Plus, Play, MessageSquare, Settings, Users } from "lucide-react";
 import { EmptyState } from "../lib/components/ui/EmptyState";
 
@@ -24,7 +24,7 @@ const container = {
   },
 };
 
-const cardItem = {
+const cardItem: Variants = {
   hidden: { opacity: 0, y: 18, scale: 0.97 },
   show: {
     opacity: 1,

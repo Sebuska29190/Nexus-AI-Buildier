@@ -19,6 +19,8 @@ const variantSizes: Record<ProgressVariant, string> = {
   thick: "h-3",
 };
 
+export type { ProgressProps };
+
 export function Progress({
   value = 0,
   variant = "default",

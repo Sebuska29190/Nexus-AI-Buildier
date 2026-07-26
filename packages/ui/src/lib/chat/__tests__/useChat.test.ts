@@ -8,7 +8,7 @@ class MockWebSocket {
   onclose: (() => void) | null = null;
   onmessage: ((e: MessageEvent) => void) | null = null;
   onerror: (() => void) | null = null;
-  readyState = WebSocket.CONNECTING;
+  readyState: number = WebSocket.CONNECTING;
   close = vi.fn();
   send = vi.fn();
   constructor(public url: string) {
