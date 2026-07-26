@@ -52,9 +52,11 @@ export function redactSecrets(s: string): string {
     // Generic JSON field shape: "apiKey":"...", 'token':'...', secret=...
     // Match quoted and unquoted assignments in error JSON bodies. The
     // `$1` keeps the field name so consumers can still see which
-    // field triggered the redaction.
+    // field triggered the redaction. The value class stops on `\`
+    // (escape char) as well so malformed JSON with nested escapes
+    // doesn't truncate the redaction mid-token.
     .replace(
-      /(\b(?:apiKey|api_key|token|secret|password|accessToken|refreshToken)\b)\s*[:=]\s*["']?([^\s"',}]+)["']?/gi,
+      /(\b(?:apiKey|api_key|token|secret|password|accessToken|refreshToken)\b)\s*[:=]\s*["']?([^\s"'`,}\\]+)["']?/gi,
       "$1=[REDACTED:json-field]"
     );
 }

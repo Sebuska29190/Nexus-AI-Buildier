@@ -10,7 +10,7 @@ and `packages/sdk/`.
 
 1. 🔴 **Critical — upstream error bodies may echo `Authorization`
    headers**, forwarded verbatim to the caller UI via
-   `provider-qwen/src/index.ts:41`. Fixed in commit `fix(provider-qwen):
+   the provider-qwen error sink (originally a single line in `provider-qwen/src/index.ts:41`, now multi-line after the fix). Fixed in commit `fix(provider-qwen):
    redact credential-shaped strings from upstream error bodies`.
 
 2. 🟠 **High — `AuthProfile.apiKey` consumers have no documented
@@ -35,13 +35,15 @@ not the provider.
 
 ## 证据 (Evidence)
 
-### Defect 1 (Critical): `provider-qwen/src/index.ts` line 41
+### Defect 1 (Critical): `provider-qwen/src/index.ts` error sink (originally line 41)
 
 ```ts
 if (!res.ok) { p.onChunk({ type: "error", message: `Qwen ${res.status}: ${await res.text()}` }); return; }
 ```
 
-`res.text()` is the raw upstream response body. Observed threat:
+Pre-fix shape (single line, the post-fix version is multi-line spanning
+roughly lines 41–49 of the current file). `res.text()` is the raw
+upstream response body. Observed threat:
 intermediate proxies that echo `Authorization:` headers in 502/504
 error pages; misconfigured gateways that include request headers in
 debug-mode error JSON. Both shapes contain `Authorization: Bearer …`,
