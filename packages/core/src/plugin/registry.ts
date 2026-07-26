@@ -1,4 +1,4 @@
-import type { ProviderPlugin, ModelDef, ChannelPlugin } from "@nova/sdk";
+import type { ProviderPlugin, ModelDef, ChannelPlugin } from "@agentforge/sdk";
 
 class PluginRegistry {
   providers = new Map<string, ProviderPlugin>();

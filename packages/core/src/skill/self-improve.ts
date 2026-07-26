@@ -8,7 +8,7 @@
 
 import { join, dirname } from "node:path";
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
-import type { AgentMessage } from "@nova/sdk";
+import type { AgentMessage } from "@agentforge/sdk";
 import { registerTool } from "../plugin/tools.ts";
 
 const SKILLS_DIR = join(process.cwd(), "skills");

@@ -38,5 +38,5 @@ Examples:
 ## Adding a New Provider
 
 1. Create `packages/provider-<name>/src/index.ts`
-2. Implement `ProviderPlugin` interface from `@nova/sdk`
+2. Implement `ProviderPlugin` interface from `@agentforge/sdk`
 3. Import and register in `packages/core/src/main.ts`

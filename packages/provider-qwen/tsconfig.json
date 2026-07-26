@@ -12,7 +12,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@nova/sdk": ["../sdk/src/index.ts"]
+      "@agentforge/sdk": ["../sdk/src/index.ts"]
     }
   },
   "include": ["src"]

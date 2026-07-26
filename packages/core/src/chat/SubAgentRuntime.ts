@@ -1,7 +1,7 @@
 import { sessionManager } from "../session/manager.ts";
 import { piHarness } from "../harness/pi.ts";
 import { registry } from "../plugin/registry.ts";
-import type { AgentMessage } from "@nova/sdk";
+import type { AgentMessage } from "@agentforge/sdk";
 import type { SubAgentDef } from "./sub-agents.ts";
 
 export interface SubAgentResult {

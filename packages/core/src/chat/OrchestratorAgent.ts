@@ -1,7 +1,7 @@
 import { piHarness } from "../harness/pi.ts";
 import { registry } from "../plugin/registry.ts";
 import { sessionManager } from "../session/manager.ts";
-import type { AgentMessage } from "@nova/sdk";
+import type { AgentMessage } from "@agentforge/sdk";
 import { SUB_AGENTS } from "./sub-agents.ts";
 import { runSubAgent, runSubAgentsParallel } from "./SubAgentRuntime.ts";
 import type { TaskPlan, TaskPlanItem } from "./types.ts";

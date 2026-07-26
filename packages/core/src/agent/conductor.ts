@@ -5,7 +5,7 @@
  * The conductor never lies — it always truthfully reports what it can and cannot do.
  */
 
-import type { AgentMessage, ToolCall } from "@nova/sdk";
+import type { AgentMessage, ToolCall } from "@agentforge/sdk";
 import { emitEvent } from "../event-bus/index.ts";
 import { piHarness } from "../harness/pi.ts";
 import { registry } from "../plugin/registry.ts";

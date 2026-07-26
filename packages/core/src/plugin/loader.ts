@@ -1,7 +1,7 @@
 // Plugin loader — discovers and loads plugins from filesystem
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { PluginManifest } from "@nova/sdk";
+import type { PluginManifest } from "@agentforge/sdk";
 
 export interface PluginEntry {
   id: string; path: string;

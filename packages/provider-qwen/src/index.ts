@@ -1,5 +1,5 @@
-import type { ProviderPlugin, ModelDef, StreamParams } from "@nova/sdk";
-import { redactSecrets } from "@nova/sdk";
+import type { ProviderPlugin, ModelDef, StreamParams } from "@agentforge/sdk";
+import { redactSecrets } from "@agentforge/sdk";
 
 const BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 

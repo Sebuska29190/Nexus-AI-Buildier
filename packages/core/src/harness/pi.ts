@@ -1,4 +1,4 @@
-import type { HarnessV2, HarnessContext, HarnessResult, HarnessOutcome, ToolCall } from "@nova/sdk";
+import type { HarnessV2, HarnessContext, HarnessResult, HarnessOutcome, ToolCall } from "@agentforge/sdk";
 import { registry } from "../plugin/registry.ts";
 import { emitEvent } from "../event-bus/index.ts";
 import { loadRaw } from "../config/provider-config.ts";

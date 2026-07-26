@@ -1,4 +1,4 @@
-import type { ProviderPlugin, ModelDef, StreamParams } from "@nova/sdk";
+import type { ProviderPlugin, ModelDef, StreamParams } from "@agentforge/sdk";
 
 const modelId = process.env.CUSTOM_MODEL_NAME ?? "mimo-v2.5";
 

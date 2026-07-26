@@ -1,8 +1,8 @@
-// @nova/sdk — Core Types + Redaction Helper
+// @agentforge/sdk — Core Types + Redaction Helper
 //
 // Public surface re-export. Provider plugins in this monorepo
 // (provider-qwen) and downstream consumers (UI / harness / channel)
-// import types AND the runtime helper from `@nova/sdk`.
+// import types AND the runtime helper from `@agentforge/sdk`.
 
 export type {
   PluginManifest, ModelDef, ProviderPlugin, StreamParams, StreamChunk,
@@ -17,7 +17,7 @@ export type {
 //
 // Replaces credential-shaped tokens in `s` with `[REDACTED:<kind>]`
 // markers. The original string is never mutated; a new redacted copy
-// is returned. Inlined in the barrel so `@nova/sdk` consumers don't
+// is returned. Inlined in the barrel so `@agentforge/sdk` consumers don't
 // pull in a separate file path that bundler-mode tsc + a downstream
 // import boundary occasionally mis-resolves under strict conventions.
 //
@@ -41,7 +41,7 @@ export type {
 //
 // Regex-based, no tokenizer dep, O(n) over input string with one
 // allocation (the result). Single source of truth — provider-qwen
-// and any future provider imports this from `@nova/sdk`.
+// and any future provider imports this from `@agentforge/sdk`.
 export function redactSecrets(s: string): string {
   if (!s) return s;
   return s

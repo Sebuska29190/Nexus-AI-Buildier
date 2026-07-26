@@ -4,7 +4,7 @@ import { registry } from "../plugin/registry.ts";
 import { getTool, listTools } from "../plugin/tools.ts";
 import { classifyToolRisk, requestApproval } from "../agent/approval.ts";
 import { safety } from "../safety/circuit-breaker-tools.ts";
-import type { AgentMessage } from "@nova/sdk";
+import type { AgentMessage } from "@agentforge/sdk";
 import { OrchestratorAgent } from "./OrchestratorAgent.ts";
 import { SUB_AGENTS } from "./sub-agents.ts";
 import type { ChatEvent, TaskPlan } from "./types.ts";

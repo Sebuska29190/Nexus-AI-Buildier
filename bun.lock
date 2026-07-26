@@ -26,10 +26,10 @@
       "version": "0.3.0",
     },
     "packages/core": {
-      "name": "nexus-ai-core",
+      "name": "@agentforge/core",
       "version": "1.0.0",
       "dependencies": {
-        "@nova/sdk": "workspace:*",
+        "@agentforge/sdk": "workspace:*",
         "dotenv": "^16.4.0",
         "hono": "^4.7.0",
         "pino": "^10.3.1",
@@ -48,14 +48,14 @@
       "name": "provider-custom",
       "version": "0.4.0",
       "dependencies": {
-        "@nova/sdk": "workspace:*",
+        "@agentforge/sdk": "workspace:*",
       },
     },
     "packages/provider-deepseek": {
       "name": "provider-deepseek",
       "version": "0.3.0",
       "dependencies": {
-        "@nova/sdk": "workspace:*",
+        "@agentforge/sdk": "workspace:*",
       },
     },
     "packages/provider-gemini": {
@@ -66,7 +66,7 @@
       "name": "provider-grok",
       "version": "0.4.0",
       "dependencies": {
-        "@nova/sdk": "workspace:*",
+        "@agentforge/sdk": "workspace:*",
       },
     },
     "packages/provider-ollama-v2": {
@@ -81,15 +81,15 @@
       "name": "provider-qwen",
       "version": "0.4.0",
       "dependencies": {
-        "@nova/sdk": "workspace:*",
+        "@agentforge/sdk": "workspace:*",
       },
     },
     "packages/sdk": {
-      "name": "@nova/sdk",
+      "name": "@agentforge/sdk",
       "version": "1.0.0",
     },
     "packages/ui": {
-      "name": "nexus-ai-ui",
+      "name": "@agentforge/ui",
       "version": "1.0.0",
       "dependencies": {
         "@hookform/resolvers": "^5.4.0",
@@ -149,6 +149,12 @@
   },
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.5.0", "", {}, "sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q=="],
+
+    "@agentforge/core": ["@agentforge/core@workspace:packages/core"],
+
+    "@agentforge/sdk": ["@agentforge/sdk@workspace:packages/sdk"],
+
+    "@agentforge/ui": ["@agentforge/ui@workspace:packages/ui"],
 
     "@asamuzakjp/css-color": ["@asamuzakjp/css-color@5.1.11", "", { "dependencies": { "@asamuzakjp/generational-cache": "^1.0.1", "@csstools/css-calc": "^3.2.0", "@csstools/css-color-parser": "^4.1.0", "@csstools/css-parser-algorithms": "^4.0.0", "@csstools/css-tokenizer": "^4.0.0" } }, "sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg=="],
 
@@ -309,8 +315,6 @@
     "@monaco-editor/loader": ["@monaco-editor/loader@1.7.0", "", { "dependencies": { "state-local": "^1.0.6" } }, "sha512-gIwR1HrJrrx+vfyOhYmCZ0/JcWqG5kbfG7+d3f/C1LXk2EvzAbHSg3MQ5lO2sMlo9izoAZ04shohfKLVT6crVA=="],
 
     "@monaco-editor/react": ["@monaco-editor/react@4.7.0", "", { "dependencies": { "@monaco-editor/loader": "^1.5.0" }, "peerDependencies": { "monaco-editor": ">= 0.25.0 < 1", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-cyzXQCtO47ydzxpQtCGSQGOC8Gk3ZUeBXFAxD+CWXYFo5OqZyZUonFl0DwUlTyAfRHntBfw2p3w4s9R6oe1eCA=="],
-
-    "@nova/sdk": ["@nova/sdk@workspace:packages/sdk"],
 
     "@pinojs/redact": ["@pinojs/redact@0.4.0", "", {}, "sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg=="],
 
@@ -807,10 +811,6 @@
     "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
 
     "nanoid": ["nanoid@3.3.16", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q=="],
-
-    "nexus-ai-core": ["nexus-ai-core@workspace:packages/core"],
-
-    "nexus-ai-ui": ["nexus-ai-ui@workspace:packages/ui"],
 
     "node-releases": ["node-releases@2.0.46", "", {}, "sha512-GYVXHE2KnrzAfsAjl4uP++evGFCrAU1jta4ubEjIG7YWt/64Gqv66a30yKwWczVjA6j3bM4nBwH7Pk1JmDHaxQ=="],
 

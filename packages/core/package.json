@@ -1,5 +1,5 @@
 {
-  "name": "nexus-ai-core",
+  "name": "@agentforge/core",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "test:coverage:watch": "vitest --coverage"
   },
   "dependencies": {
-    "@nova/sdk": "workspace:*",
+    "@agentforge/sdk": "workspace:*",
     "dotenv": "^16.4.0",
     "hono": "^4.7.0",
     "pino": "^10.3.1",

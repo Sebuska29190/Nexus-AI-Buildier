@@ -1,4 +1,4 @@
-import type { HarnessV2 } from "@nova/sdk";
+import type { HarnessV2 } from "@agentforge/sdk";
 
 const harnesses = new Map<string, HarnessV2>();
 

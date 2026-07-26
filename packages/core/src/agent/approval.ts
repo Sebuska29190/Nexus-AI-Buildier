@@ -3,7 +3,7 @@
  * Allows the user to approve/reject tool calls before execution.
  */
 
-import type { ToolPlugin } from "@nova/sdk";
+import type { ToolPlugin } from "@agentforge/sdk";
 
 export interface ApprovalResult {
   approved: boolean;

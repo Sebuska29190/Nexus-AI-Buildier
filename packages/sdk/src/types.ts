@@ -138,7 +138,7 @@ export interface SessionEntry {
 //
 // SECURITY: the optional `apiKey` field carries a credential in
 // plaintext at runtime. Consumers MUST run values of this field
-// through `redactSecrets` (re-exported from `@nova/sdk`) before any
+// through `redactSecrets` (re-exported from `@agentforge/sdk`) before any
 // of these operations:
 //   • `console.log` / `JSON.stringify` of any object referencing this
 //     profile (e.g. when dumping the auth store on debug)

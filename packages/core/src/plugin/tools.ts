@@ -1,4 +1,4 @@
-﻿import type { ToolPlugin, ToolContext } from "@nova/sdk";
+﻿import type { ToolPlugin, ToolContext } from "@agentforge/sdk";
 
 const tools = new Map<string, ToolPlugin>();
 

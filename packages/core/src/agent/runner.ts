@@ -1,4 +1,4 @@
-﻿import type { AgentMessage, ToolCall } from "@nova/sdk";
+﻿import type { AgentMessage, ToolCall } from "@agentforge/sdk";
 import { safeMessage } from "../errors.ts";
 import { registry } from "../plugin/registry.ts";
 import { getTool, listTools } from "../plugin/tools.ts";

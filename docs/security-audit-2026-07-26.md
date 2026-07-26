@@ -190,7 +190,7 @@ Suggested next pass:
 1. **Extract `redact.ts` into `@nova/redact`** as a shared package,
    then update every provider (openai, anthropic, google) to import
    from there. Currently each provider would need a relative import;
-   the workspace pattern (`@nova/sdk` already exists) supports one
+   the workspace pattern (`@agentforge/sdk` already exists) supports one
    more package.
 2. **Grep all consumers of `AuthProfile.apiKey`** and confirm
    `redactSecrets` runs before any `JSON.stringify`/`localStorage`/

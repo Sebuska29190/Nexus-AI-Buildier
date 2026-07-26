@@ -1,4 +1,4 @@
-import type { ProviderPlugin, ModelDef, StreamParams, ThinkingProfile } from "@nova/sdk";
+import type { ProviderPlugin, ModelDef, StreamParams, ThinkingProfile } from "@agentforge/sdk";
 
 const BASE = "https://api.deepseek.com";
 

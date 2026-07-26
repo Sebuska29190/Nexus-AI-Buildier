@@ -1,4 +1,4 @@
-import type { ProviderPlugin, ModelDef, StreamParams } from "@nova/sdk";
+import type { ProviderPlugin, ModelDef, StreamParams } from "@agentforge/sdk";
 
 const BASE = "https://api.x.ai/v1";
 
