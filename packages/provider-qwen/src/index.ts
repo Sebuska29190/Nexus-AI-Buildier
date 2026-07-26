@@ -15,7 +15,7 @@ const models: ModelDef[] = [
 
 const plugin: ProviderPlugin = {
   id: "qwen", name: "Qwen (Alibaba)", models, auth: { method: "api-key", envVar: "DASHSCOPE_API_KEY" },
-  classifyError: (e) => {
+  classifyError: (e: unknown) => {
     const m = (e instanceof Error ? e.message : String(e)).toLowerCase();
     if (m.includes("401")||m.includes("auth")) return "auth";
     if (m.includes("429")||m.includes("rate")) return "rate";
