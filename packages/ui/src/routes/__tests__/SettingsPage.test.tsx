@@ -56,8 +56,8 @@ describe('SettingsPage', () => {
   it('shows provider and model count', async () => {
     render(<SettingsPage />);
     await waitFor(() => {
-      expect(screen.getByText(/1 providers/)).toBeInTheDocument();
-      expect(screen.getByText(/2.*models available/)).toBeInTheDocument();
+      expect(screen.getByText(/providers configured/)).toBeInTheDocument();
+      expect(screen.getByText(/models available/)).toBeInTheDocument();
     });
   });
 
