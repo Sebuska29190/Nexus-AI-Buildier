@@ -1,4 +1,5 @@
 import type { ProviderPlugin, ModelDef, StreamParams } from "@nova/sdk";
+import { redactSecrets } from "@nova/sdk";
 
 const BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
@@ -35,7 +36,15 @@ const plugin: ProviderPlugin = {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify(body), signal: p.signal,
     });
-    if (!res.ok) { p.onChunk({ type: "error", message: `Qwen ${res.status}: ${await res.text()}` }); return; }
+    if (!res.ok) {
+      // SECURITY: `res.text()` may contain a leaked `Authorization: Bearer …`
+      // header echoed by an intermediate proxy or misconfigured upstream.
+      // Pass the body through `redactSecrets` before forwarding so any such
+      // leakage becomes `[REDACTED:bearer]` at the caller boundary.
+      const raw = await res.text();
+      p.onChunk({ type: "error", message: `Qwen ${res.status}: ${redactSecrets(raw)}` });
+      return;
+    }
 
     const reader = res.body!.getReader();
     const dec = new TextDecoder();
