@@ -27,7 +27,8 @@
 
 ## 4. Rzeczy do usunięcia / wygaszenia (Deprecation)
 
-- **Ghost Packages:** Usunąć nazewnictwo `nexus-ai-ui`, `nexus-ai-core`. Obecnie widnieją w `package.json` — ujednolicić tagi monorepo pod `@agentforge/core`, `@agentforge/ui` itp.
+- **Ghost Packages:** ✅ Usunięto nazewnictwo `nexus-ai-*`/`@nova/sdk`. Wszystkie pakiety monorepo są teraz pod scope `@agentforge/*` (`@agentforge/core`, `@agentforge/ui`, `@agentforge/sdk`).
+- **Dług TypeScript:** Pozostaje 730 błędów `tsc --noEmit` w `packages/ui`, spowodowanych brakiem deklaracji typów w zainstalowanych pakietach `react`/`react-dom` (środowisko nie zawiera `.d.ts`). Zalecane rozwiązania: reinstalacja React z deklaracjami, patch `types`/`exports` w `node_modules/react`, lub przejście na `moduleResolution: "node"` po usunięciu `allowImportingTsExtensions`.
 - **Customowe SDK:** Pakiety definiujące manualnie struktury request/response można wygaszać na rzecz Hono RPC.
 - **Dostawcy niszowi:** Jeżeli któryś z 8-12 dostawców jest przestarzały, zdeprecjonować ich kod i oprzeć się w pełni uniwersalnym pluginie "Custom / OpenAI-compatible".
 
