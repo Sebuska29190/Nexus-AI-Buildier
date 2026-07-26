@@ -135,6 +135,21 @@ export interface SessionEntry {
 }
 
 // --- Auth ---
+//
+// SECURITY: the optional `apiKey` field carries a credential in
+// plaintext at runtime. Consumers MUST run values of this field
+// through `redactSecrets` (re-exported from `@nova/sdk`) before any
+// of these operations:
+//   • `console.log` / `JSON.stringify` of any object referencing this
+//     profile (e.g. when dumping the auth store on debug)
+//   • Persisting to disk (including localStorage/sessionStorage and
+//     any IPC bridge to renderer code)
+//   • Echoing the profile in error messages that include user-visible
+//     text
+//
+// Provider plugins (provider-qwen, etc.) are expected to read the
+// key into a narrow closure scope and never log the header value in
+// any way that would survive past the request lifetime.
 export interface AuthProfile {
   id: string; providerId: string;
   apiKey?: string; baseUrl?: string;
